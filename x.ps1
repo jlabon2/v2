@@ -17,20 +17,14 @@
 Remove-Variable * -ErrorAction SilentlyContinue
 $ConfirmPreference = "None"
 Copy-Item -Path "\\labtop\TempData\v3\v3\MainWindow.xaml"  -Destination C:\TempData\MainWindow.xaml -Force
-
+Copy-Item -Path "\\labtop\TempData\v3\v3\Window1.xaml"  -Destination C:\TempData\HelpContent.xaml -Force
 $xamlPath = "C:\TempData\MainWindow.xaml"
-$psexec = "C:\TempData\asm\PSExec.exe" # REVISE - REMOVE
+$helpXAMLPath = "C:\TempData\HelpContent.xaml"
+
 
 ######
 
 $savedConfig = "C:\TempData\config.json"
-
-$segChar = @{} # REVISE - WPF
-$segChar.Add("segWarn", "")
-$segChar.Add("segCaution", "")
-$segChar.Add("segCheck", "")
-$segChar.Add("segUp", "")
-$segChar.Add("segDown", "")
 
 Import-Module C:\TempData\func\func.psm1
 Remove-Module internal
@@ -59,7 +53,8 @@ foreach ($dll in ((Get-ChildItem C:\TempData\asm\ -Filter *.dll).FullName)) {
 }
 
 # read xaml and load wpf controls into synchash (named synchash)
-Set-WPFControls $syncHash -XAMLPath $xamlPath
+Set-WPFControls -TargetHash $syncHash -XAMLPath $xamlPath
+Set-WPFControls -TargetHash $helpHash -XAMLPath $helpXAMLPath
 
 # builds custom WPF controls from whatever was defined and saved in ConfigHash
 Add-CustomRTControls -SyncHash $syncHash -ConfigHash $configHash
@@ -88,7 +83,6 @@ $syncHash.itemToolGridItemsGrid.Add_AutoGeneratingColumn({
     }
 
 })
-
 
 # REVISE - FUNCTION
 $syncHash.ItemToolADSelectionButton.Add_Click({
@@ -335,8 +329,8 @@ $syncHash.settingLogo.add_Loaded( {
             
             $sysCheckHash.sysChecks[0].RSModule = 'True'
 
-            Start-RSJob -Name init -ArgumentList $syncHash, $psexec, $segChar, $sysCheckHash, $configHash, $savedConfig -ModulesToImport ActiveDirectory, C:\TempData\internal\internal.psm1 -ScriptBlock {        
-                Param($syncHash, $psExec, $segChar, $sysCheckHash, $configHash, $savedConfig)
+            Start-RSJob -Name init -ArgumentList $syncHash, $psexec, $sysCheckHash, $configHash, $savedConfig -ModulesToImport ActiveDirectory, C:\TempData\internal\internal.psm1 -ScriptBlock {        
+                Param($syncHash, $psExec, $sysCheckHash, $configHash, $savedConfig)
              
                 Start-BasicADCheck -SysCheckHash $sysCheckHash
                 
@@ -486,6 +480,8 @@ $syncHash.settingNetFlyoutExit.Add_Click( {
                [Array]$configHash.netMapList.RemoveAt([Array]::IndexOf($configHash.netMapList.ID,$_.ID))
             }
         }
+
+        $configHash.Remove('NetMapListView')
 
     
 
@@ -815,22 +811,45 @@ $syncHash.settingNetImportClick.Add_Click( {
         $configHash.netMapList = (New-Object System.Collections.ObjectModel.ObservableCollection[Object])
         $subnets = Get-ADReplicationSubnet -Filter * -Properties * | Select-Object Name, Site, Location, Description
 
-        for ($i = 1; $i -le (($subnets | Measure-Object).Count); $i++) {
+        if (!($subnets)) {
+            $localAddress = ((Get-NetIPInterface -AddressFamily IPv4 | Get-NetIPAddress | Where-Object {$_.PrefixOrigin -ne 'WellKnown'}))
+            
+
+            $ip = [ipaddress]$localAddress.IPAddress
+            $subNet = [ipaddress]([ipaddress]([math]::pow(2, 32) -1 -bxor [math]::pow(2, (32 - $($localAddress.PrefixLength)))-1))
+            $netid = [ipaddress]($ip.address -band $subnet.address)
+
+           
                 
             $configHash.netMapList.Add([PSCustomObject]@{
-                    Id           = $i
-                    Network      = ($subnets[$i - 1].Name -replace "//*.*", "")
+                    Id           = 1
+                    Network      = $netid.IPAddressToString
                     ValidNetwork = $true
-                    Mask         = ($subnets[$i - 1].Name -replace ".*/", "")
+                    Mask         = $localAddress.PrefixLength
                     ValidMask    = $true
-                    Location     = if ($subnets[$i - 1].Location -ne $null) { $subnets[$i - 1].Location }
-                    elseif ($subnets[$i - 1].Description -ne $null) { $subnets[$i - 1].Description }
+                    Location     = "Default"
+                    
                     
                 })                                                               
+            
         }
 
+        else {
 
-       
+            for ($i = 1; $i -le (($subnets | Measure-Object).Count); $i++) {
+                
+                $configHash.netMapList.Add([PSCustomObject]@{
+                        Id           = $i
+                        Network      = ($subnets[$i - 1].Name -replace "//*.*", "")
+                        ValidNetwork = $true
+                        Mask         = ($subnets[$i - 1].Name -replace ".*/", "")
+                        ValidMask    = $true
+                        Location     = if ($subnets[$i - 1].Location -ne $null) { $subnets[$i - 1].Location }
+                        elseif ($subnets[$i - 1].Description -ne $null) { $subnets[$i - 1].Description }
+                    
+                })                                                               
+            }
+        }
 
         $syncHash.settingNetDataGrid.ItemsSource = $configHash.netMapList
     
@@ -1001,9 +1020,6 @@ $syncHash.settingLoggingPcPathClick.Add_Click( {
                 $configHash.pcLogPath = $pcLogSelection
                 $configHash.pcLogInUse = $true
                 $syncHash.compLogPopupButton.IsEnabled = $true
-                $syncHash.settingLoggingPC.Content = $segChar.segCheck
-                $syncHash.settingLoggingPC.Foreground = "Green"
-                $syncHash.settingLoggingPC.Tooltip = "Client logging path found"
             }
 
             else {
@@ -1021,12 +1037,7 @@ $syncHash.settingLoggingUserPathClick.Add_Click( {
             if (Test-Path $UserLogSelection) {
                 $configHash.UserLogPath = $UserLogSelection
                 $configHash.UserLogInUse = $true
-                $syncHash.settingLoggingUser.Content = $segChar.segCheck
-                $syncHash.settingLoggingUser.Foreground = "Green"
                 $syncHash.userLogPopupButton.IsEnabled = $true
-                $syncHash.settingLoggingUser.Tooltip = "Client logging path found"
-            
-           
 
             }
 
@@ -1051,11 +1062,6 @@ $syncHash.settingModClick.add_Click( {
         $syncHash.settingChildWindow.IsOpen = $true
     })
 
-$syncHash.settingToolClick.add_Click( {
-        $syncHash.settingToolContent.Visibility = "Visible"
-        $syncHash.settingChildWindow.Title = "Required Tools"
-        $syncHash.settingChildWindow.IsOpen = $true
-    })
 
 $syncHash.settingADClick.add_Click( {
         $syncHash.settingADContent.Visibility = "Visible"
@@ -1101,9 +1107,10 @@ $syncHash.settingImportClick.add_Click( {
 
 $syncHash.settingConfigClick.add_Click( {
        
-       Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
+        Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
+       
 
-
+        Start-Sleep -Seconds 1
         $syncHash.Window.Close()
         Start-Process -WindowStyle Hidden -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $($PSCommandPath)"
         exit
@@ -1162,7 +1169,7 @@ $syncHash.tabMenu.add_Loaded( {
                 do {} until ($sysCheckHash.checkComplete)
            
 
-                if ($sysCheckHash.missingCheckFail -or $sysCheckHash.adCheckFail -or $sysCheckHash.adminCheckFail) {
+                if ($sysCheckHash.sysChecks.Admin -eq $false -or $sysCheckHash.sysChecks.ADDS -eq $false  -or $sysCheckHash.sysChecks.Modules -eq $false ) {
                     Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck  
                 }
 
@@ -2478,10 +2485,9 @@ $syncHash.SearchBox.add_KeyDown( {
                                             $rawLogEntry = $_
                                             $comp = $_.ComputerName
                                             $ruleCount = ($configHash.nameMapList | Measure-Object).Count
-                                            $queryHash.$($match.SamAccountName)
                                             
                                             $hostConnectivity = Test-OnlineFast -ComputerName $_.ComputerName
-                                            $clientOnline = Test-OnlineFast -ComputerName $_.ClientName
+                                            if ($_.ClientName) {$clientOnline = Test-OnlineFast -ComputerName $_.ClientName}
                                             
                                             if ($hostConnectivity.Online) {
                                                 $sessionInfo = Get-RDSession -ComputerName $_.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue
@@ -2536,7 +2542,7 @@ $syncHash.SearchBox.add_KeyDown( {
                                                         DeviceLocation = $hostLocation
                                                         Type           = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
     
-                                                            if ($r -eq 0) {
+                                                            if ($r -le 0) {
                                                                 "Computer"
                                                             }
 
@@ -2556,8 +2562,8 @@ $syncHash.SearchBox.add_KeyDown( {
                                                                 }
                                                             }
                                                         }
-                                                        ClientOnline = ($clientOnline.Online).toString()
-                                                        ClientIPAddress = $clientOnline.IPV4Address
+                                                        ClientOnline = if ($clientOnline) { ($clientOnline.Online).toString()};
+                                                        ClientIPAddress = if ($clientOnline) {$clientOnline.IPV4Address};
                                                         ClientType           = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
                                                                 
                                                             $comp = $_.ClientName
@@ -2891,7 +2897,7 @@ $syncHash.itemToolDialog.Add_ClosingFinished({
 
 [System.Windows.RoutedEventHandler]$eventonNetDataGrid = {
     $button = $_.OriginalSource
-    $configHash.button = $button
+   
 
     if ($button.Name -match "settingNetClearItem") { 
         $configHash.netMapList.Remove(($configHash.netMapList | Where-Object { $_.ID -eq ($syncHash.settingNetDataGrid.SelectedItem.ID) }))
@@ -2938,7 +2944,6 @@ $syncHash.itemToolDialog.Add_ClosingFinished({
 
 [System.Windows.RoutedEventHandler]$eventonNameDataGrid = {
     $button = $_.OriginalSource
-    $configHash.button = $button
 
     if ($button.Name -match "settingNameClearItem") { 
         $id = $syncHash.settingNameDataGrid.SelectedItem.ID 
@@ -3542,8 +3547,17 @@ $syncHash.settingNameDataGrid.AddHandler([System.Windows.Controls.TextBox]::Prev
 $syncHash.settingNameDialogClose.Add_Click( {
         $syncHash.settingNameDialog.IsOpen = $false
         $configHash.nameMapListView.Refresh()
+})
 
-    })
+$syncHash.settingInfoDialogClose.Add_Click({
+    $syncHash.settingInfoDialog.IsOpen = $false
+
+})
+
+$syncHash.settingInfoDialogOpen.Add_Click({
+    if ($syncHash.settingInfoDialog.IsOpen) { $syncHash.settingInfoDialog.IsOpen = $false }
+    else { $syncHash.settingInfoDialog.IsOpen = $true }
+})
 
 $syncHash.settingRtAddClick.Add_Click( {
 
@@ -3571,9 +3585,6 @@ $syncHash.settingRtAddClick.Add_Click( {
                 Text  = "Custom remote tool $($rtID -replace 'rt')"
                 Style = $syncHash.Window.FindResource('rtSubHeader')
             }
-            AlertGlyph      = New-Object System.Windows.Controls.Label -Property @{
-                Style = $syncHash.Window.FindResource('rtLabel')
-            }
             ConfigureButton = New-Object System.Windows.Controls.Button -Property  @{
                 Style = $syncHash.Window.FindResource('rtClick')
             }
@@ -3585,7 +3596,6 @@ $syncHash.settingRtAddClick.Add_Click( {
         $syncHash.customRt.$rtID.ConfigureButton.Name = $rtID
         $syncHash.customRt.$rtID.DelButton.Name = $rtID + 'del'
         $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.childStack)
-        $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.AlertGlyph)
         $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.ConfigureButton)
         $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.DelButton)
         $syncHash.customRt.$rtID.childStack.AddChild($syncHash.customRt.$rtID.InfoHeader)

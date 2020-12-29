@@ -917,7 +917,7 @@
                 BorderThickness="1"
                 CloseByEscape="True"
                 EnableDropShadow="False"
-                IsOpen="True"
+                IsOpen="False"
                 ShowCloseButton="True">
                 <simpleChildWindow:ChildWindow.OverlayBrush>
                     <SolidColorBrush Color="Transparent" />
@@ -1164,7 +1164,7 @@
                         MaxWidth="750"
                         HorizontalAlignment="Stretch"
                         Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Visible">
+                        Visibility="Collapsed">
 
                         <TextBlock
                             Name="itemToolGridSelectText"
@@ -1430,6 +1430,102 @@
                     x:Name="settingChildHeight"
                     Width="400"
                     Height="220">
+                    <DockPanel
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Panel.ZIndex="500">
+
+                        <Button
+                            Name="settingInfoDialogOpen"
+                            Width="25"
+                            Height="25"
+                            Padding="0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Content=""
+                            DockPanel.Dock="Top"
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="18"
+                            ToolTip="Help">
+                            <Button.Style>
+                                <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
+                                    <Setter Property="Margin" Value="0,-27.5,0,0" />
+                                    <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Button.Flat.Background}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=settingChildWindow, Path=ShowCloseButton}" Value="True">
+                                            <Setter Property="Margin" Value="0,-27.5,35,0" />
+                                        </DataTrigger>
+
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Badged.Foreground}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <md:DialogHost
+                            Name="settingInfoDialog"
+                            Margin="0,-30,0,0"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch"
+                            Panel.ZIndex="500"
+                            DialogMargin="0"
+                            IsOpen="True"
+                            Style="{StaticResource MaterialDesignEmbeddedDialogHost}">
+                            <md:DialogHost.DialogContent>
+
+                                <Border Background="{StaticResource MahApps.Brushes.Window.Background}" BorderThickness="0">
+                                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="15" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <Button
+                                            Name="settingInfoDialogClose"
+                                            Grid.RowSpan="2"
+                                            Width="15"
+                                            Height="15"
+                                            Margin="0,3.5,3.5,0"
+                                            Padding="0"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            md:RippleAssist.IsCentered="True"
+                                            md:RippleAssist.RippleOnTop="True"
+                                            md:RippleAssist.RippleSizeMultiplier="5"
+                                            Content=""
+                                            FontFamily="Segoe MDL2 Assets"
+                                            FontSize="10"
+                                            Foreground="Silver"
+                                            IsTabStop="False"
+                                            Style="{StaticResource MaterialDesignIconButton}" />
+                                        <HeaderedContentControl
+                                            Grid.Row="1"
+                                            Margin="10,0,0,0"
+                                            FontFamily="{StaticResource MaterialDesignFont}"
+                                            Header="Help" />
+                                        <RichTextBox
+                                            Grid.Row="1"
+                                            Margin="7.5"
+                                            md:HintAssist.IsFloating="True"
+                                            md:TextFieldAssist.DecorationVisibility="Hidden"
+                                            md:TextFieldAssist.NewSpecHighlightingEnabled="False"
+                                            md:TextFieldAssist.UnderlineBrush="Transparent"
+                                            BorderThickness="0"
+                                            Cursor="Arrow"
+                                            FontFamily="Segoe Light UI"
+                                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                            SelectionBrush="Transparent"
+                                            Style="{StaticResource MaterialDesignRichTextBox}">
+                                            <FlowDocument Name="childHelpText" />
+
+                                        </RichTextBox>
+                                    </Grid>
+                                </Border>
+                            </md:DialogHost.DialogContent>
+                        </md:DialogHost>
+                    </DockPanel>
                     <Canvas
                         x:Name="settingModContent"
                         Height="206"
@@ -1906,48 +2002,23 @@
                                         Foreground="LightGray"
                                         Text="Enables connections to clients using RDP" />
                                 </DockPanel>
-
-                                <Label
-                                    x:Name="settingNetMapLabel"
-                                    Grid.Row="0"
+                                <Button
+                                    x:Name="settingNetMapClick"
                                     Grid.Column="3"
-                                    Margin="3,7,3,0"
-                                    Content=""
+                                    Margin="5,10,5,6"
+                                    VerticalAlignment="Top"
+                                    Content=""
                                     FontFamily="Segoe MDL2 Assets"
-                                    FontSize="25"
-                                    Foreground="Yellow"
-                                    ToolTip="Networks not mapped &#x0a;Add network addresses for automatic location lookup" />
-                                <Grid Grid.Column="2" ShowGridLines="False">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="40" />
-                                        <ColumnDefinition Width="40" />
-                                        <ColumnDefinition Width="40" />
-
-                                    </Grid.ColumnDefinitions>
-                                    <Button
-                                        x:Name="settingNetMapClick"
-                                        Grid.Column="2"
-                                        Margin="5,10,5,6"
-                                        VerticalAlignment="Top"
-                                        Content=""
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="16"
-                                        Visibility="Visible" />
-
-                                </Grid>
-
+                                    FontSize="16"
+                                    Visibility="Visible" />
                             </Grid>
-
-
-
-
                         </Grid>
 
                     </Canvas>
                     <Canvas
                         x:Name="settingNameContent"
                         Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Hidden">
+                        Visibility="Collapsed">
                         <Controls:Flyout
                             Name="settingNameFlyout"
                             Width="{Binding ElementName=settingNameContent, Path=ActualWidth}"
@@ -2241,10 +2312,6 @@
 
                                     </DataGrid>
                                 </StackPanel>
-
-
-
-
                             </Grid>
 
                         </Controls:Flyout>
@@ -2260,14 +2327,14 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="10" />
                                     <ColumnDefinition Width="220" />
-                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="160" />
 
                                     <ColumnDefinition Width="40" />
                                     <ColumnDefinition Width="10" />
                                 </Grid.ColumnDefinitions>
                                 <DockPanel Grid.Column="1">
                                     <Label
-                                        Content="Device Naming Convetion"
+                                        Content="Computer Naming Convention"
                                         DockPanel.Dock="Top"
                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                         FontSize="16" />
@@ -2278,26 +2345,16 @@
                                         Text="Enables connections to clients using RDP" />
                                 </DockPanel>
 
-                                <Label
-                                    x:Name="settingNameMapLabel"
-                                    Grid.Row="0"
-                                    Grid.Column="3"
-                                    Margin="3,7,3,0"
-                                    Content=""
-                                    FontFamily="Segoe MDL2 Assets"
-                                    FontSize="25"
-                                    Foreground="Yellow"
-                                    ToolTip="Names not mapped &#x0a;" />
                                 <Grid Grid.Column="2" ShowGridLines="False">
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
                                         <ColumnDefinition Width="40" />
-                                        <ColumnDefinition Width="40" />
-                                        <ColumnDefinition Width="40" />
+                                        <ColumnDefinition Width="25" />
 
                                     </Grid.ColumnDefinitions>
                                     <Button
                                         x:Name="settingNameMapClick"
-                                        Grid.Column="2"
+                                        Grid.Column="1"
                                         Margin="5,10,5,6"
                                         VerticalAlignment="Top"
                                         Content=""
@@ -2542,12 +2599,10 @@
                                             <Label Content="RDP Client (MSTSC.exe)" Style="{StaticResource rtHeader}" />
                                             <TextBlock Style="{StaticResource rtSubHeader}" Text="Enables connections to clients using RDP" />
                                         </StackPanel>
-                                        <Label
-                                            x:Name="settingRTRDPLabel"
-                                            Style="{StaticResource rtLabel}"
-                                            ToolTip="MSTSC could not be found" />
                                         <Button
                                             x:Name="settingRtRDPClick"
+                                            Margin="0,0,7.5,0"
+                                            DockPanel.Dock="Right"
                                             Style="{StaticResource rtClick}"
                                             Visibility="Visible" />
 
@@ -2558,12 +2613,10 @@
                                             <Label Content="MS Remote Assist (MSRA.exe)" Style="{StaticResource rtHeader}" />
                                             <TextBlock Style="{StaticResource rtSubHeader}" Text="Enables session sharing for remote assistance" />
                                         </StackPanel>
-                                        <Label
-                                            x:Name="settingRTMSRALabel"
-                                            Style="{StaticResource rtLabel}"
-                                            ToolTip="MSRA could not be found" />
                                         <Button
                                             x:Name="settingRtMSRAClick"
+                                            Margin="0,0,7.5,0"
+                                            DockPanel.Dock="Right"
                                             Style="{StaticResource rtClick}"
                                             Visibility="Visible" />
                                     </DockPanel>
@@ -2576,7 +2629,7 @@
                     <Canvas
                         x:Name="settingLoggingContent"
                         Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Hidden">
+                        Visibility="Collapsed">
                         <Controls:Flyout
                             Name="settingLoggingCompFlyout"
                             Width="{Binding ElementName=settingLoggingContent, Path=ActualWidth}"
@@ -2965,21 +3018,12 @@
 
 
                             </StackPanel>
-                            <Label
-                                x:Name="settingLoggingPC"
-                                Grid.Row="0"
-                                Grid.Column="4"
-                                Margin="3,7,3,0"
-                                Content=""
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="25"
-                                Foreground="Yellow"
-                                ToolTip="Login logs undefined" />
+
 
                             <Button
                                 x:Name="settingLoggingPcPathClick"
                                 Grid.Row="0"
-                                Grid.Column="3"
+                                Grid.Column="4"
                                 Width="34"
                                 Margin="0,8,8,8"
                                 Content=""
@@ -2991,7 +3035,7 @@
                             <Button
                                 Name="compLogPopupButton"
                                 Grid.Row="0"
-                                Grid.Column="2"
+                                Grid.Column="3"
                                 Width="34"
                                 Content=""
                                 FontFamily="Segoe MDL2 Assets"
@@ -3027,7 +3071,7 @@
                             <Button
                                 x:Name="settingLoggingUserPathClick"
                                 Grid.Row="3"
-                                Grid.Column="3"
+                                Grid.Column="4"
                                 Width="34"
                                 Margin="0,8,8,8"
                                 Content=""
@@ -3037,24 +3081,12 @@
                             <Button
                                 Name="userLogPopupButton"
                                 Grid.Row="3"
-                                Grid.Column="2"
+                                Grid.Column="3"
                                 Width="34"
                                 Content=""
                                 FontFamily="Segoe MDL2 Assets"
                                 FontSize="16"
                                 Visibility="Visible" />
-
-                            <Label
-                                x:Name="settingLoggingUser"
-                                Grid.Row="3"
-                                Grid.Column="4"
-                                Margin="3,7,3,0"
-                                Content=""
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="25"
-                                Foreground="Yellow"
-                                ToolTip="Login logs undefined" />
-
 
                         </Grid>
                     </Canvas>
@@ -3063,11 +3095,7 @@
                         MaxWidth="650"
                         HorizontalAlignment="Left"
                         Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Hidden">
-
-
-
-
+                        Visibility="Collapsed">
                         <Controls:Flyout
                             Name="settingContextDefFlyout"
                             Width="{Binding ElementName=settingChildHeight, Path=ActualWidth}"
@@ -3137,9 +3165,6 @@
                                         VerticalScrollBarVisibility="Auto">
 
                                         <StackPanel>
-
-
-
                                             <StackPanel>
                                                 <Label
                                                     Padding="0"
@@ -3275,33 +3300,7 @@
                                     </ScrollViewer>
                                 </StackPanel>
                             </Grid>
-
-
-
-
                         </Controls:Flyout>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                         <Grid
                             MaxWidth="650"
@@ -3332,9 +3331,9 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="10" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="160" />
 
-                                    <ColumnDefinition Width="40" />
+
                                     <ColumnDefinition Width="10" />
                                 </Grid.ColumnDefinitions>
                                 <DockPanel Grid.Column="1">
@@ -3350,17 +3349,10 @@
                                         Text="Define actions used with logging data" />
                                 </DockPanel>
 
-                                <Label
-                                    x:Name="settingContextPropMapLabel"
-                                    Grid.Column="3"
-                                    Margin="3,7,3,0"
-                                    Content=""
-                                    FontFamily="Segoe MDL2 Assets"
-                                    FontSize="25"
-                                    Foreground="Yellow"
-                                    ToolTip="Propeties not selected" />
+
                                 <Grid
                                     Grid.Column="2"
+                                    Grid.ColumnSpan="2"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Stretch"
                                     ShowGridLines="False">
@@ -3368,23 +3360,22 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="40" />
                                         <ColumnDefinition Width="40" />
-                                        <ColumnDefinition Width="40" />
 
                                     </Grid.ColumnDefinitions>
                                     <Button
                                         x:Name="settingContextAddItemClick"
-                                        Grid.Column="2"
+                                        Grid.Column="1"
                                         Margin="5,10,5,6"
                                         VerticalAlignment="Top"
                                         Content=""
                                         FontFamily="Segoe MDL2 Assets"
                                         FontSize="16"
                                         ToolTip="Add item"
-                                        Visibility="Collapsed" />
+                                        Visibility="Visible" />
 
                                     <Button
                                         x:Name="settingContextPropMapClick"
-                                        Grid.Column="3"
+                                        Grid.Column="2"
                                         Margin="5,10,5,6"
                                         VerticalAlignment="Top"
                                         Content=""
@@ -4114,7 +4105,7 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="10" />
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="160" />
 
                                         <ColumnDefinition Width="40" />
                                         <ColumnDefinition Width="10" />
@@ -4132,47 +4123,33 @@
                                             Text="Choose user related properties to display" />
                                     </DockPanel>
 
-                                    <Label
-                                        x:Name="settingUserPropMapLabel"
-                                        Grid.Column="3"
-                                        Margin="3,7,3,0"
-                                        Content=""
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="25"
-                                        Foreground="Yellow"
-                                        ToolTip="Propeties not selected" />
+
                                     <Grid
                                         Grid.Column="2"
+                                        Grid.ColumnSpan="2"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Stretch"
                                         ShowGridLines="False">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="30" />
                                             <ColumnDefinition Width="40" />
                                             <ColumnDefinition Width="40" />
-                                            <ColumnDefinition Width="40" />
+
+                                            <ColumnDefinition Width="35" />
 
                                         </Grid.ColumnDefinitions>
                                         <Button
                                             x:Name="settingUserAddItemClick"
-                                            Grid.Column="1"
+                                            Grid.Column="2"
                                             Margin="5,10,5,6"
                                             VerticalAlignment="Top"
                                             Content=""
                                             FontFamily="Segoe MDL2 Assets"
                                             FontSize="16"
                                             ToolTip="Add item"
-                                            Visibility="Collapsed" />
-                                        <Button
-                                            x:Name="settingUserPropImportClick"
-                                            Grid.Column="2"
-                                            Margin="5,10,5,6"
-                                            VerticalAlignment="Top"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            ToolTip="Populate suggested values from ADDS"
-                                            Visibility="Collapsed" />
+                                            Visibility="Visible" />
+
                                         <Button
                                             x:Name="settingUserPropMapClick"
                                             Grid.Column="3"
@@ -4401,7 +4378,7 @@
                                     </Grid.ColumnDefinitions>
                                     <DockPanel Grid.Column="1">
                                         <Label
-                                            Content="Comp Properties"
+                                            Content="Computer Properties"
                                             DockPanel.Dock="Top"
                                             FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                             FontSize="16" />
@@ -4409,20 +4386,12 @@
                                             Margin="5,0,0,0"
                                             FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                             Foreground="LightGray"
-                                            Text="Choose Comp related properties to display" />
+                                            Text="Choose computer related properties to display" />
                                     </DockPanel>
 
-                                    <Label
-                                        x:Name="settingCompPropMapLabel"
-                                        Grid.Column="3"
-                                        Margin="3,7,3,0"
-                                        Content=""
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="25"
-                                        Foreground="Yellow"
-                                        ToolTip="Propeties not selected" />
                                     <Grid
                                         Grid.Column="2"
+                                        Grid.ColumnSpan="2"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Stretch"
                                         ShowGridLines="False">
@@ -4431,37 +4400,29 @@
                                             <ColumnDefinition Width="40" />
                                             <ColumnDefinition Width="40" />
                                             <ColumnDefinition Width="40" />
+                                            <ColumnDefinition Width="40" />
+                                            <ColumnDefinition Width="25" />
 
                                         </Grid.ColumnDefinitions>
                                         <Button
                                             x:Name="settingCompAddItemClick"
-                                            Grid.Column="1"
+                                            Grid.Column="3"
                                             Margin="5,10,5,6"
                                             VerticalAlignment="Top"
                                             Content=""
                                             FontFamily="Segoe MDL2 Assets"
                                             FontSize="16"
                                             ToolTip="Add item"
-                                            Visibility="Collapsed" />
-                                        <Button
-                                            x:Name="settingCompPropImportClick"
-                                            Grid.Column="2"
-                                            Margin="5,10,5,6"
-                                            VerticalAlignment="Top"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            ToolTip="Populate suggested values from ADDS"
-                                            Visibility="Collapsed" />
+                                            Visibility="Visible" />
                                         <Button
                                             x:Name="settingCompPropMapClick"
-                                            Grid.Column="3"
+                                            Grid.Column="4"
                                             Margin="5,10,5,6"
                                             VerticalAlignment="Top"
                                             Content=""
                                             FontFamily="Segoe MDL2 Assets"
                                             FontSize="16"
-                                            ToolTip="This"
+                                            ToolTip="..."
                                             Visibility="Visible" />
 
 
@@ -4646,7 +4607,7 @@
                     <Canvas
                         x:Name="settingItemToolsContent"
                         Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Visible">
+                        Visibility="Hidden">
 
 
 
@@ -4667,7 +4628,7 @@
                             AreAnimationsEnabled="True"
                             Background="#FF363333"
                             CloseButtonVisibility="Collapsed"
-                            IsOpen="True"
+                            IsOpen="False"
                             Position="Right">
 
                             <Grid Panel.ZIndex="14">
@@ -5046,10 +5007,9 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="10" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="120" />
-
                                     <ColumnDefinition Width="40" />
-                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="130" />
+
                                 </Grid.ColumnDefinitions>
                                 <DockPanel Grid.Column="1">
                                     <Label
@@ -5064,30 +5024,21 @@
                                         Text="Define tools for use with queried objects" />
                                 </DockPanel>
 
-                                <Label
-                                    x:Name="settingObjectToolsPropMapLabel"
-                                    Grid.Column="3"
-                                    Margin="3,7,3,0"
-                                    Content=""
-                                    FontFamily="Segoe MDL2 Assets"
-                                    FontSize="25"
-                                    Foreground="Yellow"
-                                    ToolTip="Propeties not selected" />
+
                                 <Grid
-                                    Grid.Column="2"
+                                    Grid.Column="3"
+                                    Margin="15,0,0,0"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Stretch"
                                     ShowGridLines="False">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="40" />
                                         <ColumnDefinition Width="40" />
                                         <ColumnDefinition Width="40" />
 
                                     </Grid.ColumnDefinitions>
                                     <Button
                                         x:Name="settingObjectToolsAddItemClick"
-                                        Grid.Column="2"
+                                        Grid.Column="0"
                                         Margin="5,10,5,6"
                                         VerticalAlignment="Top"
                                         Content=""
@@ -5098,13 +5049,13 @@
 
                                     <Button
                                         x:Name="settingObjectToolsMapClick"
-                                        Grid.Column="3"
+                                        Grid.Column="1"
                                         Margin="5,10,5,6"
                                         VerticalAlignment="Top"
                                         Content=""
                                         FontFamily="Segoe MDL2 Assets"
                                         FontSize="16"
-                                        ToolTip="This"
+                                        ToolTip="Create and map tools"
                                         Visibility="Visible" />
 
 
@@ -5141,7 +5092,7 @@
                                 SelectionMode="Single"
                                 Style="{StaticResource MahApps.Styles.DataGrid}"
                                 VerticalScrollBarVisibility="Auto"
-                                Visibility="Visible">
+                                Visibility="Hidden">
 
                                 <DataGrid.Columns>
 
@@ -6679,180 +6630,139 @@
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top">
 
-                                <UniformGrid Margin="15,25,15,25" Columns="2">
+                                <UniformGrid Margin="15,25,15,25" Columns="3">
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingModCheck"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="158" />
+                                                <ColumnDefinition Width="*" MaxWidth="100" />
+                                                <ColumnDefinition Width="60" />
+                                                <ColumnDefinition Width="60" />
 
-                                    <Grid
-                                        x:Name="settingModCheck"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
-
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel>
 
 
+                                                <Label
+                                                    Content="Modules"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Required modules" />
+
+                                            </DockPanel>
+                                            <DockPanel />
+                                            <Button
+                                                x:Name="settingModClick"
+                                                Grid.Column="2"
+                                                Height="35"
+                                                Margin="5,12,5,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="25" />
                                             <Label
-                                                Content="Modules"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Verify required PS modules exist" />
+                                                x:Name="settingModLabel"
+                                                Grid.Column="3"
+                                                Margin="5,12,5,12"
+                                                Style="{StaticResource StatusLabel}"
+                                                Tag="{Binding Modules}" />
 
-                                        </DockPanel>
-                                        <DockPanel />
-                                        <Button
-                                            x:Name="settingModClick"
-                                            Grid.Column="2"
-                                            Height="35"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25" />
-                                        <Label
-                                            x:Name="settingModLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Style="{StaticResource StatusLabel}"
-                                            Tag="{Binding Modules}" />
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingADCheck"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
 
-                                    </Grid>
-                                    <Grid
-                                        x:Name="settingToolCheck"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="158" />
+                                                <ColumnDefinition Width="*" MaxWidth="100" />
+                                                <ColumnDefinition Width="60" />
+                                                <ColumnDefinition Width="60" />
 
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Stretch">
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="ADDS Infrastructure"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="ADDS functionality" />
 
-
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingADClick"
+                                                Grid.Column="2"
+                                                Height="36"
+                                                Margin="5,12,5,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="25" />
                                             <Label
-                                                Content="Tools"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Verify required tools exist" />
+                                                x:Name="settingADLabel"
+                                                Grid.Column="3"
+                                                Margin="5,12,5,12"
+                                                Style="{StaticResource StatusLabel}"
+                                                Tag="{Binding ADDS}" />
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingPermCheck"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="158" />
+                                                <ColumnDefinition Width="*" MaxWidth="100" />
+                                                <ColumnDefinition Width="60" />
+                                                <ColumnDefinition Width="60" />
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
 
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingToolClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25" />
-                                        <Label
-                                            x:Name="settingToolLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="Red"
-                                            ToolTip="Required tools are not installed" />
-                                    </Grid>
-                                    <Grid
-                                        x:Name="settingADCheck"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
 
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="Permissions"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Administrative rights" />
+
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingPermClick"
+                                                Grid.Column="2"
+                                                Height="36"
+                                                Margin="5,12,5,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="25" />
                                             <Label
-                                                Content="ADDS Infrastructure"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Verify ADDS membership &amp; connectivity" />
-
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingADClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25" />
-                                        <Label
-                                            x:Name="settingADLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Style="{StaticResource StatusLabel}"
-                                            Tag="{Binding ADDS}" />
-                                    </Grid>
-                                    <Grid
-                                        x:Name="settingPermCheck"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
-
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
-
-
-                                            <Label
-                                                Content="Permissions"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Verify current user is local &amp; domain user" />
-
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingPermClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25" />
-                                        <Label
-                                            x:Name="settingPermLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Style="{StaticResource StatusLabel}"
-                                            Tag="{Binding Admin}" />
-                                    </Grid>
-
+                                                x:Name="settingPermLabel"
+                                                Grid.Column="3"
+                                                Margin="5,12,5,12"
+                                                Style="{StaticResource StatusLabel}"
+                                                Tag="{Binding Admin}" />
+                                        </Grid>
+                                    </DockPanel>
                                 </UniformGrid>
 
                                 <Separator x:Name="settingConfigSeperator" Margin="50,0,50,0" />
@@ -6861,372 +6771,303 @@
                                     Name="settingsConfigItems"
                                     Margin="15,25,15,25"
                                     Columns="2">
-
-                                    <Grid
-                                        x:Name="settingRemoteAccess"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
-
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
-                                            <Label
-                                                Content="Remote Access"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Configure available remote access tools" />
-
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingRemoteClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="22" />
-                                        <Label
-                                            x:Name="settingRemoteLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="White" />
-                                    </Grid>
-
-                                    <Grid
-                                        x:Name="settingNaming"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
-
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingRemoteAccess"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
 
 
-                                            <Label
-                                                Content="Naming Convention"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Define user and computer naming convention" />
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="Remote Access"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure available remote access tools" />
 
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingNamingClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="22" />
-                                        <Label
-                                            x:Name="settingNamingLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="White" />
-                                    </Grid>
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingRemoteClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
 
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingNaming"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
 
-
-
-
-
-                                    <Grid
-                                        x:Name="settingLogging"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
-
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
-                                            <Label
-                                                Content="Login Logging"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Configure usage and paths to login logs" />
-
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingLoggingClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="22" />
-                                        <Label
-                                            x:Name="settingLoggingLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="White" />
-                                    </Grid>
-
-                                    <Grid
-                                        x:Name="settingNetworkAccess"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
-
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
-                                            <Label
-                                                Content="Network Settings"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Configure advanced network options" />
-
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingNetworkClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="22" />
-                                        <Label
-                                            x:Name="settingNetworkLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="White"
-                                            ToolTip="Not all options are configured" />
-                                    </Grid>
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
 
 
+                                                <Label
+                                                    Content="Naming Convention"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Define user and computer naming convention" />
+
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingNamingClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingLogging"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
 
 
-                                    <Grid
-                                        x:Name="settingUserProps"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="Login Logging"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure usage and paths to login logs" />
 
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
-                                            <Label
-                                                Content="User Properties"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Configure displayed user properties" />
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingLoggingClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
 
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingUserPropClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="22" />
-                                        <Label
-                                            x:Name="settingUserPropLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="White"
-                                            ToolTip="Not all options are configured" />
-                                    </Grid>
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingNetworkAccess"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
 
-                                    <Grid
-                                        x:Name="settingCompProps"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="Network Settings"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure advanced network options" />
 
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
-                                            <Label
-                                                Content="Computer Properties"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Configure displayed computer properties" />
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingNetworkClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingUserProps"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
 
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingCompPropClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="22" />
-                                        <Label
-                                            x:Name="settingCompPropLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="White"
-                                            ToolTip="Not all options are configured" />
-                                    </Grid>
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="User Properties"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure displayed user properties" />
+
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingUserPropClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingCompProps"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
+
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="Computer Properties"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure displayed computer properties" />
+
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingCompPropClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingContextTools"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
+
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
 
 
+                                                <Label
+                                                    Content="Contextual Tools"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure contextual tools used with logs" />
 
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingContextClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
 
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingItemTools"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
 
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="Item Tools"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure computer/user tools" />
 
-                                    <Grid
-                                        x:Name="settingContextTools"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
-
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
-
-
-                                            <Label
-                                                Content="Contextual Tools"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Define contextual tools used in logging" />
-
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingContextClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="22" />
-                                        <Label
-                                            x:Name="settingContextLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="White" />
-                                    </Grid>
-
-                                    <Grid
-                                        x:Name="settingItemTools"
-                                        Margin="25,0,25,0"
-                                        HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="280" />
-                                            <ColumnDefinition Width="*" MaxWidth="275" />
-                                            <ColumnDefinition Width="80" />
-                                            <ColumnDefinition Width="80" />
-
-                                        </Grid.ColumnDefinitions>
-                                        <DockPanel HorizontalAlignment="Left">
-                                            <Label
-                                                Content="Item Tools"
-                                                DockPanel.Dock="Top"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="16" />
-                                            <TextBlock
-                                                Margin="5,0,0,0"
-                                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                FontSize="14"
-                                                Foreground="LightGray"
-                                                Text="Configure computer/user tools" />
-
-                                        </DockPanel>
-                                        <Button
-                                            x:Name="settingObjectToolsClick"
-                                            Grid.Column="2"
-                                            Height="36"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="22" />
-                                        <Label
-                                            x:Name="settingObjectToolsLabel"
-                                            Grid.Column="3"
-                                            Margin="15,12,15,12"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="25"
-                                            Foreground="White"
-                                            ToolTip="Not all options are configured" />
-                                    </Grid>
-
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingObjectToolsClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
+                                        </Grid>
+                                    </DockPanel>
                                 </UniformGrid>
 
 
