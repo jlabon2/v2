@@ -14,6 +14,9 @@ function New-HashTables {
     # Stores WPF controls
     $global:syncHash = [hashtable]::Synchronized(@{})
 
+     # Stores WPF Help controls
+    $global:helpHash = [hashtable]::Synchronized(@{})
+
     # Stores data related to queried objects
     $global:queryHash = [hashtable]::Synchronized(@{})
 
@@ -22,33 +25,34 @@ function New-HashTables {
 function Set-WPFControls {
     param (
         [Parameter(Mandatory)]$XAMLPath,
-        [Parameter(Mandatory)][Hashtable]$SyncHash
+        [Parameter(Mandatory)][Hashtable]$TargetHash
     ) 
 
     $inputXML = Get-Content -Path $xamlPath
     
-    $inputXML = $inputXML -replace 'mc:Ignorable="d"', '' -replace ' x:Class="V3.Build.MainWindow"', '' -replace "x:N", 'N' -replace '^<Win.*', '<Window'
+    $inputXML = $inputXML -replace 'mc:Ignorable="d"', '' -replace ' x:Class="v3.Window1"' -replace ' x:Class="V3.Build.MainWindow"', '' -replace "x:N", 'N' -replace '^<Win.*', '<Window'
     [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
     [xml]$XAML = $inputXML
 
     $xmlReader = (New-Object System.Xml.XmlNodeReader $xaml)
     
-    try { $SyncHash.Window = [Windows.Markup.XamlReader]::Load($xmlReader) }
+    try { $TargetHash.Window = [Windows.Markup.XamlReader]::Load($xmlReader) }
     catch { Write-Warning "Unable to parse XML, with error: $($Error[0])" }
 
     ## Load each named control into PS hashtable
     foreach ($controlName in ($xaml.SelectNodes("//*[@Name]").Name)) {
-        $syncHash.$controlName = $syncHash.Window.FindName($controlName) 
+        $TargetHash.$controlName = $TargetHash.Window.FindName($controlName) 
     }
 
-    
-    $syncHash.windowContent.Visibility = "Hidden"
-    $syncHash.Window.Height = 500
-    $syncHash.Window.ResizeMode = "NoResize"
-    $syncHash.Window.ShowTitleBar = $false
-    $syncHash.Window.ShowCloseButton = $false
-    $syncHash.Window.Width = 500
-    $syncHash.splashLoad.Visibility = "Visible" 
+    if ($TargetHash -eq 'SyncHash') {
+        $syncHash.windowContent.Visibility = "Hidden"
+        $syncHash.Window.Height = 500
+        $syncHash.Window.ResizeMode = "NoResize"
+        $syncHash.Window.ShowTitleBar = $false
+        $syncHash.Window.ShowCloseButton = $false
+        $syncHash.Window.Width = 500
+        $syncHash.splashLoad.Visibility = "Visible" 
+    }
     
 }
 
