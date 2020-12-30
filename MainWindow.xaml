@@ -21,11 +21,13 @@
     ResizeMode="CanResizeWithGrip"
     ShowMinButton="True"
     WindowStartupLocation="CenterOwner"
+    WindowTitleBrush="{DynamicResource MahApps.Brushes.Accent}"
     mc:Ignorable="d">
     <Window.Resources>
         <ResourceDictionary>
 
             <ResourceDictionary.MergedDictionaries>
+
 
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
@@ -35,6 +37,7 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Steel.xaml" />
+
 
             </ResourceDictionary.MergedDictionaries>
 
@@ -712,30 +715,37 @@
     </Window.Resources>
     <Grid>
         <Grid Name="splashLoad" Visibility="Hidden">
-            <StackPanel
+            <DockPanel
                 x:Name="settingPopup"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
                 Panel.ZIndex="1"
-                Orientation="Vertical"
                 Visibility="Visible">
-                <Label
-                    x:Name="settingLogo"
-                    HorizontalAlignment="Center"
-                    Panel.ZIndex="2"
-                    Content=" V²"
-                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                    FontSize="250"
-                    Foreground="{DynamicResource MahApps.Brushes.Accent}"
-                    Visibility="Visible" />
-                <Controls:MetroProgressBar
+
+
+
+                <ProgressBar
                     x:Name="settingProgressBar"
                     Width="400"
-                    Margin="0,50,0,0"
+                    Height="10"
+                    Margin="0,0,0,50"
+                    HorizontalAlignment="Center"
+                    Panel.ZIndex="5"
+                    DockPanel.Dock="Bottom"
                     IsIndeterminate="True"
+                    Style="{StaticResource MaterialDesignLinearProgressBar}"
+                    Visibility="Visible" />
+                <Image
+                    Name="settingLogo"
+                    Margin="50"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Panel.ZIndex="2"
+                    DockPanel.Dock="Top"
+                    Opacity=".5"
                     Visibility="Visible" />
 
-            </StackPanel>
+            </DockPanel>
         </Grid>
 
         <Grid Name="windowContent" Visibility="Visible">
@@ -1421,7 +1431,7 @@
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
                 BorderThickness="3"
                 CloseByEscape="False"
-                IsOpen="True"
+                IsOpen="False"
                 ShowCloseButton="True">
                 <simpleChildWindow:ChildWindow.OverlayBrush>
                     <SolidColorBrush Color="Transparent" />
@@ -1472,7 +1482,7 @@
                             VerticalContentAlignment="Stretch"
                             Panel.ZIndex="500"
                             DialogMargin="0"
-                            IsOpen="True"
+                            IsOpen="False"
                             Style="{StaticResource MaterialDesignEmbeddedDialogHost}">
                             <md:DialogHost.DialogContent>
 
@@ -3371,7 +3381,7 @@
                                         FontFamily="Segoe MDL2 Assets"
                                         FontSize="16"
                                         ToolTip="Add item"
-                                        Visibility="Visible" />
+                                        Visibility="Collapsed" />
 
                                     <Button
                                         x:Name="settingContextPropMapClick"
@@ -5244,7 +5254,7 @@
                     DockPanel.Dock="Top">
                     <Label
                         Name="itemHeader"
-                        Margin="45,7.5,0,0"
+                        Margin="50,7.5,0,0"
                         HorizontalAlignment="Center"
                         Controls:ControlsHelper.ContentCharacterCasing="Upper"
                         Content=""
@@ -5281,11 +5291,37 @@
 
 
                             <Grid>
+                                <DockPanel
+                                    Margin="0,0,0,100"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom">
+                                    <Image
+                                        Name="logoBackdrop"
+                                        Margin="50"
+                                        Opacity=".06" />
 
-                                <Grid
-                                    Name="userGrid"
-                                    ShowGridLines="False"
-                                    Visibility="Visible">
+                                    <DockPanel.Style>
+                                        <Style TargetType="DockPanel">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ElementName=tabControl, Path=Items.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DockPanel.Style>
+                                </DockPanel>
+                                <Grid Name="userGrid">
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ElementName=tabControl, Path=Items.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="10" />
                                         <ColumnDefinition Width="*" />
@@ -6413,7 +6449,7 @@
 
                             <Controls:MetroAnimatedSingleRowTabControl
                                 Name="tabControl"
-                                Margin="0,0,0,38"
+                                Margin="0,0,55,38"
                                 Panel.ZIndex="-1"
                                 ItemsSource="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
                                 Style="{DynamicResource MahApps.Styles.TabControl.AnimatedSingleRow}">
@@ -6491,11 +6527,20 @@
                                         Height="40"
                                         MinWidth="80"
                                         MaxWidth="800"
+                                        Padding="2.5,0,2.5,0"
                                         HorizontalAlignment="Stretch"
                                         VerticalAlignment="Bottom"
                                         VerticalContentAlignment="Center"
                                         Controls:TextBoxHelper.IsSpellCheckContextMenuEnabled="False"
-                                        FontSize="16" />
+                                        md:HintAssist.Hint="Query users or computers"
+                                        md:HintAssist.HintOpacity=".15"
+                                        md:TextFieldAssist.DecorationVisibility="Hidden"
+                                        BorderBrush="{StaticResource MahApps.Brushes.Accent2}"
+                                        BorderThickness="1.5"
+                                        CaretBrush="{StaticResource MahApps.Brushes.Button.Border.MouseOver}"
+                                        FontSize="16"
+                                        Foreground="{StaticResource MahApps.Brushes.Button.Border.MouseOver}"
+                                        Style="{StaticResource MaterialDesignTextBoxBase}" />
                                     <Button
                                         Name="SearchBoxButton"
                                         Width="30"
@@ -6617,7 +6662,10 @@
 
 
                     </Controls:MetroTabItem>
-                    <Controls:MetroTabItem Name="newTab" Tag="New">
+                    <Controls:MetroTabItem
+                        Name="newTab"
+                        Tag="New"
+                        Visibility="Collapsed">
                         <Controls:MetroTabItem.Header>
                             <Label Content="" Style="{StaticResource customTabLabel}" />
                         </Controls:MetroTabItem.Header>
@@ -6771,6 +6819,97 @@
                                     Name="settingsConfigItems"
                                     Margin="15,25,15,25"
                                     Columns="2">
+
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingGeneralConfig"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
+
+
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="General Settings"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure general tool settings" />
+
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingGeneralClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
+
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <Grid
+                                            x:Name="settingVarConfig"
+                                            Margin="25,0,25,0"
+                                            HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="280" />
+                                                <ColumnDefinition Width="*" MaxWidth="275" />
+                                                <ColumnDefinition Width="160" />
+
+
+                                            </Grid.ColumnDefinitions>
+                                            <DockPanel HorizontalAlignment="Left">
+                                                <Label
+                                                    Content="Resources and Variables"
+                                                    DockPanel.Dock="Top"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="16" />
+                                                <TextBlock
+                                                    Margin="5,0,0,0"
+                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                                    FontSize="14"
+                                                    Foreground="LightGray"
+                                                    Text="Configure resources and vars to reference" />
+
+                                            </DockPanel>
+                                            <Button
+                                                x:Name="settingVarClick"
+                                                Grid.Column="2"
+                                                Width="50"
+                                                Height="36"
+                                                Margin="15,12,15,12"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="22" />
+
+                                        </Grid>
+                                    </DockPanel>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                                     <DockPanel HorizontalAlignment="Center">
                                         <Grid
                                             x:Name="settingRemoteAccess"
@@ -7189,7 +7328,7 @@
 
             <DockPanel
                 Width="58"
-                Margin="0,300,0,0"
+                Margin="0,250,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Stretch"
                 Panel.ZIndex="0"

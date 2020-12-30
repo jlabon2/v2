@@ -15,7 +15,6 @@ function New-HashTables {
     $global:syncHash = [hashtable]::Synchronized(@{})
 
      # Stores WPF Help controls
-    $global:helpHash = [hashtable]::Synchronized(@{})
 
     # Stores data related to queried objects
     $global:queryHash = [hashtable]::Synchronized(@{})
@@ -44,16 +43,14 @@ function Set-WPFControls {
         $TargetHash.$controlName = $TargetHash.Window.FindName($controlName) 
     }
 
-    if ($TargetHash -eq 'SyncHash') {
         $syncHash.windowContent.Visibility = "Hidden"
         $syncHash.Window.Height = 500
         $syncHash.Window.ResizeMode = "NoResize"
         $syncHash.Window.ShowTitleBar = $false
         $syncHash.Window.ShowCloseButton = $false
         $syncHash.Window.Width = 500
-        $syncHash.splashLoad.Visibility = "Visible" 
-    }
-    
+        $syncHash.splashLoad.Visibility = "Visible"     
+
 }
 
 function Set-Config {
@@ -299,10 +296,6 @@ function Add-CustomRTControls {
                 Style               = $syncHash.Window.FindResource('rtSubHeader')
             }
         
-            AlertGlyph              = New-Object System.Windows.Controls.Label -Property @{
-                Style               = $syncHash.Window.FindResource('rtLabel')
-            }
-        
             ConfigureButton         = New-Object System.Windows.Controls.Button -Property  @{
                 Style               = $syncHash.Window.FindResource('rtClick')
             }
@@ -317,7 +310,6 @@ function Add-CustomRTControls {
         $syncHash.customRt.$rtID.DelButton.Name = $rtID + 'del'
     
         $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.childStack)
-        $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.AlertGlyph)
         $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.ConfigureButton)
         $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.DelButton)
     
@@ -647,12 +639,12 @@ function Add-CustomToolControls {
 }
 
 function Start-BasicADCheck {
-param ($SysCheckHash) 
+param ($SysCheckHash, $configHash) 
 
     if ((Get-WmiObject -Class Win32_ComputerSystem).PartofDomain) {               
         $sysCheckHash.sysChecks[0].ADMember = 'True'
                     
-        if (($sysCheckHash.sysChecks[0].ADModule -eq $true) -and (Test-Connection -Quiet -Count 1 -ComputerName ($env:logonServer -replace '\\', ''))) {                                                 
+        if ($sysCheckHash.sysChecks[0].ADModule -eq $true) {                                                 
             $selectedDC = Get-ADDomainController -Discover -Service ADWS -ErrorAction SilentlyContinue 
 
             if (Test-Connection -Count 1 -Quiet -ComputerName $selectedDC.HostName) {             

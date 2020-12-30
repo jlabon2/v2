@@ -1,4 +1,24 @@
 ﻿
+
+# TODO
+#
+#- help dialogs : textbox databound to hashtable, text triggered by title contents
+
+#- general options item: searchBase, other search patterns, logging options
+#- static variables / source item:
+#- cut out new?
+#- Color switches on glyph buttons???
+
+# credmgr package?
+# Tool pane?
+#
+# https://github.com/JimmyCushnie/Font-Character-Lister
+
+
+
+
+
+
 #$SW_HIDE, $SW_SHOW = 0, 5
 #$TypeDef = '[DllImport("User32.dll")]public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'
 #Add-Type -MemberDefinition $TypeDef -Namespace Win32 -Name Functions
@@ -17,7 +37,7 @@
 Remove-Variable * -ErrorAction SilentlyContinue
 $ConfirmPreference = "None"
 Copy-Item -Path "\\labtop\TempData\v3\v3\MainWindow.xaml"  -Destination C:\TempData\MainWindow.xaml -Force
-Copy-Item -Path "\\labtop\TempData\v3\v3\Window1.xaml"  -Destination C:\TempData\HelpContent.xaml -Force
+#Copy-Item -Path "\\labtop\TempData\v3\v3\Window1.xaml"  -Destination C:\TempData\HelpContent.xaml -Force
 $xamlPath = "C:\TempData\MainWindow.xaml"
 $helpXAMLPath = "C:\TempData\HelpContent.xaml"
 
@@ -54,7 +74,9 @@ foreach ($dll in ((Get-ChildItem C:\TempData\asm\ -Filter *.dll).FullName)) {
 
 # read xaml and load wpf controls into synchash (named synchash)
 Set-WPFControls -TargetHash $syncHash -XAMLPath $xamlPath
-Set-WPFControls -TargetHash $helpHash -XAMLPath $helpXAMLPath
+$syncHash.settingLogo.Source = "C:\tempdata\trident.png"
+$syncHash.logoBackdrop.Source = "C:\tempdata\trident.png"
+#Set-WPFControls -TargetHash $helpHash -XAMLPath $helpXAMLPath
 
 # builds custom WPF controls from whatever was defined and saved in ConfigHash
 Add-CustomRTControls -SyncHash $syncHash -ConfigHash $configHash
@@ -286,6 +308,7 @@ $syncHash.settingObjectToolsClick.add_Click({
 })
 
 $syncHash.settingContextClick.add_Click({
+    $syncHash.settingContextGrid.Visibility = "Visible"
     Set-ChildWindow -Panel settingContextPropContent -Title "Contextual Actions Mappings" -SyncHash $syncHash
 })
 
@@ -298,7 +321,7 @@ $syncHash.settingLoggingClick.add_Click( {
 })
 
 ### Glyph load
-$glyphs = Get-Content C:\TempData\segoeGlyphs.txt
+$glyphs = ((Get-Content C:\TempData\segoeGlyphs.txt))
 
 $configHash.buttonGlyphs = [System.Collections.ArrayList]@()
 
@@ -332,7 +355,7 @@ $syncHash.settingLogo.add_Loaded( {
             Start-RSJob -Name init -ArgumentList $syncHash, $psexec, $sysCheckHash, $configHash, $savedConfig -ModulesToImport ActiveDirectory, C:\TempData\internal\internal.psm1 -ScriptBlock {        
                 Param($syncHash, $psExec, $sysCheckHash, $configHash, $savedConfig)
              
-                Start-BasicADCheck -SysCheckHash $sysCheckHash
+                Start-BasicADCheck -SysCheckHash $sysCheckHash -ConfigHash $configHash
                 
                 Start-AdminCheck -SysCheckHash $sysCheckhash
                    
@@ -387,6 +410,7 @@ $syncHash.settingLogo.add_Loaded( {
             $syncHash.Window.ShowTitleBar = $true
             $syncHash.Window.ShowCloseButton = $true                   
             $syncHash.splashLoad.Visibility = "Collapsed" 
+            $syncHash.SearchBox.Focus() 
         }
     })
 
@@ -531,7 +555,15 @@ $syncHash.settingRtExeSelect.Add_Click( {
         if (Test-Path $customSelection.fileName) {
             $configHash.rtConfig.$rtID.Path = $customSelection.fileName
             $syncHash.settingRtPathSelect.Text = $customSelection.fileName
-            $configHash.rtConfig.$rtID.Icon = Get-Icon -Path $customSelection.fileName -ToBase64
+
+            if ($customSelection.fileName -like "\\*") {
+                Copy-item $customSelection.fileName -Destination C:\tmp.exe
+                $configHash.rtConfig.$rtID.Icon = Get-Icon -Path C:\tmp.exe -ToBase64
+                Remove-Item c:\tmp.exe
+            }
+
+            else { $configHash.rtConfig.$rtID.Icon = Get-Icon -Path $customSelection.fileName -ToBase64 }
+
             $syncHash.settingRTIcon.Source = ([Convert]::FromBase64String(($configHash.rtConfig.$rtID.Icon)))
         }
     }
@@ -751,7 +783,7 @@ $syncHash.settingNameAddClick.Add_Click( {
 })
 
 $syncHash.settingNameFlyoutExit.Add_Click( {
-    Reset-ChildWindow -SyncHash $syncHash -Title "Computer Categorization" -SkipContentPaneReset 
+    Reset-ChildWindow -SyncHash $syncHash -Title "Computer Categorization" -SkipContentPaneReset    
 })
 
 
@@ -1126,7 +1158,11 @@ $syncHash.TabMenu.add_SelectionChanged( {
         $syncHash.TabMenu.Items.Header | ForEach-Object { $_.Foreground = "Gray" }
         $syncHash.tabMenu.SelectedItem.Header.Foreground = "AliceBlue"
 
-        if ($syncHash.tabMenu.SelectedIndex -eq 4) {         
+        if ($syncHash.tabMenu.SelectedItem.Tag -eq 'Query') {
+            $syncHash.SearchBox.Focus()
+        }
+
+        if ($syncHash.tabMenu.SelectedItem.Tag -eq 'Console') {         
            $syncHash.consoleControl.StartProcess(("$PSHOME\powershell.exe"))            
         }
 
@@ -1178,7 +1214,7 @@ $syncHash.tabMenu.add_Loaded( {
                 }
         
                 else {  
-                    $syncHash.Window.Dispatcher.invoke([action] { $syncHash.tabMenu.SelectedIndex = 0 })  
+                    $syncHash.Window.Dispatcher.invoke([action] {$syncHash.tabMenu.SelectedIndex = 0 })                  
                 }
             }
 
@@ -1628,7 +1664,9 @@ $syncHash.tabMenu.add_Loaded( {
                             $id = 'rt' + ([int]($sender.Name -replace ".*but") - 2)              
 
                             if ($sender.Name -match "rbut") {
-                
+                                
+
+
                                 if ($syncHash.userCompFocusHostToggle.IsChecked) {
                                     $comp = $syncHash.UserCompGrid.SelectedItem.HostName
                                 }
@@ -1834,7 +1872,7 @@ $syncHash.tabMenu.add_Loaded( {
         
             }
         
-
+            
       
 
         }
@@ -1868,16 +1906,19 @@ $syncHash.tabControl.add_SelectionChanged( {
 
         Get-RSJob -State Completed | Remove-RSJob
         $syncHash.tabControl.IsEnabled = $true
-        $currentTabItem = $syncHash.tabControl.SelectedItem.Name
-        $configHash.currentTabItem = $currentTabItem
-    
-        $queryHash.Keys | ForEach-Object { $queryHash[$_].ActiveItem = $false }
-        $queryHash[$currentTabItem].ActiveItem = $true
         
-
+        $configHash.currentTabItem = $syncHash.tabControl.SelectedItem.Name
+        $queryHash.Keys | ForEach-Object { $queryHash.$_.ActiveItem = $false }
+        
+        
+        
+         $currentTabItem = $syncHash.tabControl.SelectedItem.Name
     
         Start-RSJob -Name "VisualChange" -ThreadOptions UseNewThread -ArgumentList  $syncHash, $queryHash, $configHash, $currentTabItem -ScriptBlock {
             Param($syncHash, $queryHash, $configHash, $currentTabItem)
+                
+                $queryHash.$currentTabItem.ActiveItem = $true
+
                 $syncHash.Window.Dispatcher.Invoke([Action]{
                     $syncHash.expanderDisplay.Content = $null
                     $syncHash.expanderTypeDisplay.Content = $null
@@ -1979,7 +2020,6 @@ $syncHash.tabControl.add_SelectionChanged( {
                                 $syncHash.compExpanderTypeDisplay.Content = "USERS   "
                                 $syncHash.expanderDisplay.Content = "$($queryHash[$currentTabItem].Name)"
                                 $syncHash.userExpander.IsExpanded = $true
-                                $synchash.userGrid.Visibility = "Visible" 
                                 $syncHash.expanderProgressBar.Visibility = "Hidden"
 
                                 if (($syncHash.compToolControlPanel.Children | Measure-Object).Count -gt 0) {
@@ -2054,10 +2094,8 @@ $syncHash.tabControl.add_tabItemClosingEvent( {
         if ($syncHash.tabControl.Items.Count -le 1) {
             $syncHash.userExpander.IsExpanded = $false
             $syncHash.compExpander.IsExpanded = $false
-            $syncHash.compExpanderProgressBar.Visibility = "Visible"
-            $syncHash.expanderProgressBar.Visibility = "Visible"
-            $synchash.userGrid.Visibility = "Collapsed"
-            $syncHash.userCompGrid.Visibility = "Collapsed"
+            $syncHash.compExpanderProgressBar.Visibility = "Hidden"
+            $syncHash.expanderProgressBar.Visibility = "Hidden"
             
         }
        
@@ -2407,7 +2445,6 @@ $syncHash.SearchBox.add_KeyDown( {
                 Start-RSJob -Name Search -ArgumentList $queryHash, $configHash, $match, $syncHash, $rsCmd -ThreadOptions UseNewThread  -FunctionsToImport Test-OnlineFast, Resolve-Location, Get-RDSession -ScriptBlock {
                 param($queryHash, $configHash, $match, $syncHash, $rsCmd) 
                
-                $rscmd > C:\wtf.txt
                 if ($rsCmd.key -eq 'Escape') {
                     $match = (Get-ADObject -Filter "(SamAccountName -eq '$($rsCmd.searchTag)'  -and ObjectClass -eq 'User') -or 
                         (Name -eq '$($rsCmd.searchTag)' -and ObjectClass -eq 'Computer')" -Properties SamAccountName) 
@@ -2461,7 +2498,7 @@ $syncHash.SearchBox.add_KeyDown( {
                                 Start-Sleep -Milliseconds 1250
                                   
 
-                                if (Test-Path (Join-Path -Path $confighash.UserLogPath -ChildPath "$($match.SamAccountName).txt")) {
+                                if ($confighash.UserLogPath -and (Test-Path (Join-Path -Path $confighash.UserLogPath -ChildPath "$($match.SamAccountName).txt"))) {
                                         
                                             
 
@@ -2485,6 +2522,7 @@ $syncHash.SearchBox.add_KeyDown( {
                                             $rawLogEntry = $_
                                             $comp = $_.ComputerName
                                             $ruleCount = ($configHash.nameMapList | Measure-Object).Count
+                                            $configHash.nameMapList = $configHash.nameMapList | Sort-Object -Property ID
                                             
                                             $hostConnectivity = Test-OnlineFast -ComputerName $_.ComputerName
                                             if ($_.ClientName) {$clientOnline = Test-OnlineFast -ComputerName $_.ClientName}
@@ -2504,7 +2542,7 @@ $syncHash.SearchBox.add_KeyDown( {
                           
                                                         logonTime      = Get-Date($_.DateTime) -Format MM/dd/yyyy
                                                         HostName       = $_.ComputerName
-                                                        LoginDC        = $_.LoginDC
+                                                        LoginDC        = $_.LoginDC -replace '\\'
                                                         UserName       = $match.SamAccountName
                                                         Connectivity   = ($hostConnectivity.Online).toString()
                                                         CompType       = "VM"
@@ -2548,7 +2586,7 @@ $syncHash.SearchBox.add_KeyDown( {
 
                                                             else {
 
-                                                                if ($configHash.nameMapList[$r].Condition) {
+                                                                if (($configHash.nameMapList | Sort-Object -Descending -Property ID)[$r].Condition) {
                                                                     try {
                                                                         if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
                                                                             $configHash.nameMapList[$r].Name
@@ -2647,7 +2685,7 @@ $syncHash.SearchBox.add_KeyDown( {
                                   
                                 Start-Sleep -Milliseconds 1250                               
 
-                                if (Test-Path (Join-Path -Path $configHash.pcLogPath -ChildPath "$($match.Name).txt")) {
+                                if ($configHash.pcLogPath -and (Test-Path (Join-Path -Path $configHash.pcLogPath -ChildPath "$($match.Name).txt"))) {
                                         
                                             
                                     $queryHash.$($match.Name).LoginLogRaw = Get-Content (Join-Path -Path $confighash.pcLogPath -ChildPath "$($match.Name).txt") | Select-Object -Last 100 | 
@@ -2665,6 +2703,7 @@ $syncHash.SearchBox.add_KeyDown( {
                                         $queryHash.$($match.Name).LoginLogListView.GroupDescriptions.Add((New-Object System.Windows.Data.PropertyGroupDescription "compLogon"))
                                         $syncHash.compUserGrid.Dispatcher.Invoke([Action] { $syncHash.compUserGrid.ItemsSource = $queryHash.$($match.Name).LoginLogListView })
                                         $ruleCount = ($configHash.nameMapList | Measure-Object).Count
+                                        $configHash.nameMapList = $configHash.nameMapList | Sort-Object -Property ID
 
                                        
                                             
@@ -2701,14 +2740,12 @@ $syncHash.SearchBox.add_KeyDown( {
                                                                                                          
                                             $rawLogEntry = $_
                                             $tempCN = $_.User                                           
-                                            $clientOnline = Test-OnlineFast -ComputerName $_.ClientName
+                                            if ($_.ClientName) {$clientOnline = Test-OnlineFast -ComputerName $_.ClientName}
                                             $userSession = $sessionInfo.Where{$_.UserName -eq $tempCN}                                           
                                             
                                             Remove-Variable clientLocation -ErrorAction SilentlyContinue
-
                                             if ($clientOnline.Online) {
-
-                                                $clientLocation = (Resolve-Location -ComputerName $_.ClientName -IPList $configHash.netMapList).Location
+                                                $clientLocation = (Resolve-Location -computerName $_.ClientName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location
                                             }
                                             
 
@@ -2716,9 +2753,10 @@ $syncHash.SearchBox.add_KeyDown( {
                                             $queryHash.$($match.Name).LoginLog.Add((
                                                     New-Object PSCustomObject -Property @{
                                                         logonTime  = Get-Date($_.DateTime) -Format MM/dd/yyyy
-                                                        UserName   = $_.User
-                                                        LoginDC    = $_.LoginDC
+                                                        UserName   = ($_.User).ToLower()
+                                                        LoginDC    = $_.LoginDC -replace '\\'
                                                         Name       = (Get-ADUser -Identity $_.User).Name
+                                                        loginCount     = ($loginCounts | Where-Object { $_.Name -eq $tempCN }).Count
                                                         userOnline     = if ($userSession) {
                                                                             $true
                                                                         }
@@ -2748,32 +2786,32 @@ $syncHash.SearchBox.add_KeyDown( {
                                                                      else {
                                                                         "Past"
                                                                      }
-                                                        loginCount = ($loginCounts | Where-Object { $_.Name -eq $tempCN }).Count
-                                                        ClientOnline = ($clientOnline.Online).toString()
-                                                        ClientIPAddress = $clientOnline.IPV4Address
-                                                        ClientLocation = $clientLocation
+                                                      
                                                         
                                                         ClientType = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
                                                                 
                                                             $comp = $_.ClientName
 
-                                                            if ($r -eq 0) {
-                                                                "Computer"
-                                                            }
+                                                            if ($comp) {
 
-                                                            else {
+                                                                if ($r -eq 0) {
+                                                                    "Computer"
+                                                                }
 
-                                                                if ($configHash.nameMapList[$r].Condition) {
-                                                                    try {
-                                                                        if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
-                                                                            $configHash.nameMapList[$r].Name
-                                                                            break
+                                                                else {
+
+                                                                    if ($configHash.nameMapList[$r].Condition) {
+                                                                        try {
+                                                                            if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
+                                                                                $configHash.nameMapList[$r].Name
+                                                                                break
+                                                                            }
                                                                         }
-                                                                    }
 
-                                                                    catch {}
+                                                                        catch {}
             
                                                                    
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -2798,7 +2836,7 @@ $syncHash.SearchBox.add_KeyDown( {
                                                 $queryHash[$match.Name].logsSearched = $true
                                             }
 
-                                        }                                  
+                                        }                                    
                                             
                                     }
                                             
@@ -2828,12 +2866,7 @@ $syncHash.SearchBox.add_KeyDown( {
                             $itemIndex = [Array]::IndexOf($syncHash.tabControl.Items.Name,$($match.Name))     
                             $syncHash.Window.Dispatcher.Invoke([Action]{ $syncHash.tabControl.SelectedIndex = $itemIndex  })
                         }   
-                    }
-
-                    $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.userGrid.Visibility = "Visible"})
-
-                    
-
+                    }                    
                 }
 
                 elseif (($match | Measure-Object).Count -gt 1) {
