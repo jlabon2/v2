@@ -3252,14 +3252,14 @@
                                                                 md:CheckBoxAssist.CheckBoxSize="15"
                                                                 Content="Target user must be logged in"
                                                                 FontSize="10"
-                                                                IsChecked="{Binding requireUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                IsChecked="{Binding RequireUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                 Style="{DynamicResource MaterialDesignAccentCheckBox}" />
                                                             <CheckBox
                                                                 Name="settingContextActionCompOnline"
                                                                 md:CheckBoxAssist.CheckBoxSize="15"
                                                                 Content="Target must be online"
                                                                 FontSize="10"
-                                                                IsChecked="{Binding requireUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                IsChecked="{Binding RequireOnline, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                 Style="{DynamicResource MaterialDesignAccentCheckBox}" />
                                                         </StackPanel>
                                                         <CheckBox
@@ -3374,24 +3374,13 @@
                                     </Grid.ColumnDefinitions>
                                     <Button
                                         x:Name="settingContextAddItemClick"
-                                        Grid.Column="1"
+                                        Grid.Column="2"
                                         Margin="5,10,5,6"
                                         VerticalAlignment="Top"
                                         Content=""
                                         FontFamily="Segoe MDL2 Assets"
                                         FontSize="16"
                                         ToolTip="Add item"
-                                        Visibility="Collapsed" />
-
-                                    <Button
-                                        x:Name="settingContextPropMapClick"
-                                        Grid.Column="2"
-                                        Margin="5,10,5,6"
-                                        VerticalAlignment="Top"
-                                        Content=""
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="16"
-                                        ToolTip="This"
                                         Visibility="Visible" />
 
 
@@ -4151,7 +4140,7 @@
                                         </Grid.ColumnDefinitions>
                                         <Button
                                             x:Name="settingUserAddItemClick"
-                                            Grid.Column="2"
+                                            Grid.Column="3"
                                             Margin="5,10,5,6"
                                             VerticalAlignment="Top"
                                             Content=""
@@ -4160,16 +4149,7 @@
                                             ToolTip="Add item"
                                             Visibility="Visible" />
 
-                                        <Button
-                                            x:Name="settingUserPropMapClick"
-                                            Grid.Column="3"
-                                            Margin="5,10,5,6"
-                                            VerticalAlignment="Top"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            ToolTip="This"
-                                            Visibility="Visible" />
+
 
 
                                     </Grid>
@@ -4416,23 +4396,13 @@
                                         </Grid.ColumnDefinitions>
                                         <Button
                                             x:Name="settingCompAddItemClick"
-                                            Grid.Column="3"
+                                            Grid.Column="4"
                                             Margin="5,10,5,6"
                                             VerticalAlignment="Top"
                                             Content=""
                                             FontFamily="Segoe MDL2 Assets"
                                             FontSize="16"
                                             ToolTip="Add item"
-                                            Visibility="Visible" />
-                                        <Button
-                                            x:Name="settingCompPropMapClick"
-                                            Grid.Column="4"
-                                            Margin="5,10,5,6"
-                                            VerticalAlignment="Top"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            ToolTip="..."
                                             Visibility="Visible" />
 
 
@@ -5048,25 +5018,16 @@
                                     </Grid.ColumnDefinitions>
                                     <Button
                                         x:Name="settingObjectToolsAddItemClick"
-                                        Grid.Column="0"
+                                        Grid.Column="1"
                                         Margin="5,10,5,6"
                                         VerticalAlignment="Top"
                                         Content=""
                                         FontFamily="Segoe MDL2 Assets"
                                         FontSize="16"
                                         ToolTip="Add item"
-                                        Visibility="Collapsed" />
-
-                                    <Button
-                                        x:Name="settingObjectToolsMapClick"
-                                        Grid.Column="1"
-                                        Margin="5,10,5,6"
-                                        VerticalAlignment="Top"
-                                        Content=""
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="16"
-                                        ToolTip="Create and map tools"
                                         Visibility="Visible" />
+
+
 
 
                                 </Grid>
@@ -5257,12 +5218,15 @@
                         Margin="50,7.5,0,0"
                         HorizontalAlignment="Center"
                         Controls:ControlsHelper.ContentCharacterCasing="Upper"
-                        Content=""
+                        Content="{Binding ElementName=tabMenu, Path=SelectedItem.Tag, UpdateSourceTrigger=PropertyChanged}"
                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                         FontSize="24">
                         <Label.Effect>
                             <DropShadowEffect />
                         </Label.Effect>
+
+
+
                     </Label>
 
 
@@ -7343,8 +7307,21 @@
                     Content=""
                     FontFamily="Segoe MDL2 Assets"
                     FontSize="26"
-                    Foreground="Gray"
-                    ToolTip="Help" />
+                    ToolTip="Help">
+                    <Label.Style>
+                        <Style TargetType="Label">
+                            <Setter Property="Foreground" Value="Gray" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="#576573" />
+                                    <Setter Property="Background" Value="#454545" />
+                                </Trigger>
+
+                            </Style.Triggers>
+                        </Style>
+                    </Label.Style>
+                </Label>
             </DockPanel>
 
 
