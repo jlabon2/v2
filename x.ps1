@@ -6,8 +6,9 @@
 
 #- general options item: searchBase, other search patterns, logging options
 #- static variables / source item:
-#- cut out new?
 #- Color switches on glyph buttons???
+# - categorzation horzontal scrollbar on dialog textbox
+
 
 # credmgr package?
 # Tool pane?
@@ -40,7 +41,7 @@ Copy-Item -Path "\\labtop\TempData\v3\v3\MainWindow.xaml"  -Destination C:\TempD
 #Copy-Item -Path "\\labtop\TempData\v3\v3\Window1.xaml"  -Destination C:\TempData\HelpContent.xaml -Force
 $xamlPath = "C:\TempData\MainWindow.xaml"
 $helpXAMLPath = "C:\TempData\HelpContent.xaml"
-
+$glyphList = 'C:\TempData\segoeGlyphs.txt'
 
 ######
 
@@ -74,20 +75,22 @@ foreach ($dll in ((Get-ChildItem C:\TempData\asm\ -Filter *.dll).FullName)) {
 
 # read xaml and load wpf controls into synchash (named synchash)
 Set-WPFControls -TargetHash $syncHash -XAMLPath $xamlPath
+
+Get-Glyphs -ConfigHash $configHash -GlyphList $glyphList
 $syncHash.settingLogo.Source = "C:\tempdata\trident.png"
 $syncHash.logoBackdrop.Source = "C:\tempdata\trident.png"
 #Set-WPFControls -TargetHash $helpHash -XAMLPath $helpXAMLPath
 
 # builds custom WPF controls from whatever was defined and saved in ConfigHash
-Add-CustomRTControls -SyncHash $syncHash -ConfigHash $configHash
 Add-CustomItemBoxControls -SyncHash $syncHash -ConfigHash $configHash
 Add-CustomToolControls -SyncHash $syncHash -ConfigHash $configHash
+Add-CustomRTControls -SyncHash $syncHash -ConfigHash $configHash
 $sysCheckHash.missingCheckFail = $false
 
 
-# parse custom RT settings
-
-
+#region Item Tool Events
+#region Item Tools - Grid
+$syncHash.ItemToolGridADSelectionButton.Add_Click({ Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control Grid })
 
 $syncHash.itemToolGridItemsGrid.Add_SelectionChanged({
 
@@ -98,187 +101,65 @@ $syncHash.itemToolGridItemsGrid.Add_SelectionChanged({
 })
 
 $syncHash.itemToolGridItemsGrid.Add_AutoGeneratingColumn({
-
     if ($_.Column.Header -eq 'Image') {
         $_.Cancel = $true 
         $syncHash.itemToolImageBorder.Visibility = "Visible"
     }
-
 })
 
-# REVISE - FUNCTION
-$syncHash.ItemToolADSelectionButton.Add_Click({
-
-
-
- Start-RSJob -Name PopulateListboxAD -ArgumentList $configHash, $syncHash, $syncHash.itemToolListSelectConfirmButton.Tag -FunctionsToImport Select-ADObject -ScriptBlock {
- param($configHash, $syncHash, $toolID)
-
-
-    $syncHash.Window.Dispatcher.Invoke([Action]{
-        $syncHash.itemToolListSelectListBox.ItemsSource = $null
-    })
-
-     $selectedObject = (Select-ADObject -Type All -MultiSelect $false).FetchedAttributes -replace '$'
-     $syncHash.Window.Dispatcher.Invoke([Action]{
-        $syncHash.itemToolADSelectedItem.Content = $selectedObject
-        $syncHash.itemTooListBoxProgress.Visibility = "Visible"
-    })
-     
-     $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-     
-    Invoke-Expression ($configHash.objectToolConfig[$toolId - 1].toolFetchCmd) | ForEach-Object {$list.Add([PSCUstomObject]@{'Name' = $_})}
-
-    $syncHash.Window.Dispatcher.Invoke([Action]{
-        $syncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list
-        $syncHash.itemTooListBoxProgress.Visibility = "Collapsed"
-     })
- }      
-
+$synchash.itemToolGridSearchBox.Add_TextChanged({
+    $syncHash.itemToolGridItemsGrid.ItemsSource.Filter = $null
+    $syncHash.itemToolGridItemsGrid.ItemsSource.Filter = {param ($item) $item -match $syncHash.itemToolGridSearchBox.Text}
 })
 
-# REVISE - FUNCTION
-$syncHash.ItemToolGridADSelectionButton.Add_Click({
+$syncHash.itemToolGridSelectConfirmCancel.Add_Click({ $syncHash.itemToolDialog.IsOpen = $false })
 
- Start-RSJob -Name PopulateGridbox -ArgumentList $configHash, $syncHash, $syncHash.itemToolGridSelectConfirmButton.Tag -FunctionsToImport Select-ADObject -ScriptBlock {
- param($configHash, $syncHash, $toolID)
-
-     $selectedObject = (Select-ADObject -Type All -MultiSelect $false).FetchedAttributes -replace '$'
-     $syncHash.Window.Dispatcher.Invoke([Action]{
-        $syncHash.itemToolGridADSelectedItem.Content = $selectedObject
-        $syncHash.itemToolGridProgress.Visibility = "Visible"
-    })
-     
-     $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-     
-    Invoke-Expression ($configHash.objectToolConfig[$toolId - 1].toolFetchCmd) | ForEach-Object {$list.Add($_)}
-     
-    $syncHash.Window.Dispatcher.Invoke([Action]{
-        $syncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list
-        $syncHash.itemToolGridProgress.Visibility = "Collapsed"
-     })
- }      
-
+$syncHash.itemToolGridSelectAllButton.Add_Click({    
+    if ($syncHash.itemToolGridItemsGrid.Items.Count -eq  $syncHash.itemToolGridItemsGrid.SelectedItems.Count) {
+       $syncHash.itemToolGridItemsGrid.UnselectAll()
+    } 
+    else {
+        $syncHash.itemToolGridItemsGrid.SelectAll()
+    }      
 })
+
+#endregion
+
+#region Item Tools - List
+$syncHash.ItemToolADSelectionButton.Add_Click({ Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox })
 
 $syncHash.itemToolListSearchBox.Add_TextChanged({
     $syncHash.itemToolListSelectListBox.ItemsSource.Filter = $null
     $syncHash.itemToolListSelectListBox.ItemsSource.Filter = {param ($item) $item -match $syncHash.itemToolListSearchBox.Text}
-
 })
 
-$synchash.itemToolGridSearchBox.Add_TextChanged({
-
-    $syncHash.itemToolGridItemsGrid.ItemsSource.Filter = $null
-    $syncHash.itemToolGridItemsGrid.ItemsSource.Filter = {param ($item) $item -match $syncHash.itemToolGridSearchBox.Text}
-
-})
-        
-
-# REVISE - FUNCTION
 $syncHash.itemToolListSelectConfirmButton.Add_Click({
-
     $itemList = $syncHash.itemToolListSelectListBox.SelectedItems.Name
-
-    Start-RSJob -ArgumentList $configHash, $itemList, $syncHash.snackMsg.MessageQueue, $syncHash.itemToolListSelectConfirmButton.Tag -ScriptBlock {
-    param($configHash, $itemList, $queue, $toolID) 
-
-        $toolName = $configHash.objectToolConfig[$toolID - 1].toolActionToolTip
-        $target = $configHash.currentTabItem
-
-        try {
-
-            Invoke-Expression -Command $configHash.objectToolConfig[$toolID - 1].toolTargetFetchCmd
-
-            foreach ($selectedItem in $itemList) {
-                Invoke-Expression -Command $configHash.objectToolConfig[$toolID - 1].toolAction
-            }
-
-            $queue.Enqueue("[$toolName]: SUCCESS: tool ran on $target")
-
-        }
-
-        catch {
-             $queue.Enqueue("[$toolName]: FAIL: tool incomplete on $target")
-
-        }
-    }
-
-    $syncHash.itemToolDialog.IsOpen = $false
-
+    Start-ItemToolAction -ConfigHash $configHash -SyncHash $syncHash -Control List -ItemList $ItemList
 })
 
-$syncHash.itemToolListSelectConfirmCancel.Add_Click({
-    $syncHash.itemToolDialog.IsOpen = $false
-})
-# REVISE - FUNCTION
 $syncHash.itemToolGridSelectConfirmButton.Add_Click({
-
     $itemList = $syncHash.itemToolGridItemsGrid.SelectedItems
-
-    Start-RSJob -ArgumentList $configHash, $itemList, $syncHash.snackMsg.MessageQueue, $syncHash.itemToolGridSelectConfirmButton.Tag -ScriptBlock {
-    param($configHash, $itemList, $queue, $toolID) 
-
-        $toolName = $configHash.objectToolConfig[$toolID - 1].toolActionToolTip
-        $target = $configHash.currentTabItem
-
-        try {
-
-            Invoke-Expression -Command $configHash.objectToolConfig[$toolID - 1].toolTargetFetchCmd
-
-            foreach ($selectedItem in $itemList) {
-                Invoke-Expression -Command $configHash.objectToolConfig[$toolID - 1].toolAction
-            }
-
-            $queue.Enqueue("[$toolName]: SUCCESS: tool ran on $target")
-
-        }
-
-        catch {
-             $queue.Enqueue("[$toolName]: FAIL: tool incomplete on $target")
-
-        }
-    }
-
-    $syncHash.itemToolDialog.IsOpen = $false
-
+    Start-ItemToolAction -ConfigHash $configHash -SyncHash $syncHash -Control Grid -ItemList $ItemList
 })
 
-$syncHash.itemToolGridSelectConfirmCancel.Add_Click({
-    $syncHash.itemToolDialog.IsOpen = $false
-})
+$syncHash.itemToolListSelectConfirmCancel.Add_Click({ $syncHash.itemToolDialog.IsOpen = $false })
 
-# REVISE - FUNCTION
 $syncHash.itemToolListSelectAllButton.Add_Click({
-    
-    
     if ($syncHash.itemToolListSelectListBox.Items.Count -eq  $syncHash.itemToolListSelectListBox.SelectedItems.Count) {
        $syncHash.itemToolListSelectListBox.UnselectAll()
     } 
-
     else {
         $syncHash.itemToolListSelectListBox.SelectAll()
-    }
-        
+    }      
 })
- 
- # REVISE - FUNCTION
-$syncHash.itemToolGridSelectAllButton.Add_Click({
-    
-    
-    if ($syncHash.itemToolGridItemsGrid.Items.Count -eq  $syncHash.itemToolGridItemsGrid.SelectedItems.Count) {
-       $syncHash.itemToolGridItemsGrid.UnselectAll()
-    } 
+#endregion
+#endregion
 
-    else {
-        $syncHash.itemToolGridItemsGrid.SelectAll()
-    }
-        
-})
   
   
 
-
+#region ChildWindow opening events
 
 $syncHash.settingRemoteClick.add_Click({
     Set-ChildWindow -Panel settingRTContent -Title "Configure Remote Connection Clients" -SyncHash $syncHash
@@ -292,871 +173,286 @@ $syncHash.settingNamingClick.add_Click({
     Set-ChildWindow -Panel settingNameContent -Title "Device Categorization" -SyncHash $syncHash -Height 275
 })
 
-$syncHash.settingUserPropClick.add_Click({
-    $syncHash.settingPropContent.Visibility = "Visible"
-    Set-ChildWindow -Panel settingUserPropContent -Title "User Property Mappings" -SyncHash $syncHash  
-})
+$syncHash.settingUserPropClick.add_Click({ Set-ChildWindow -Panel settingUserPropContent -Title "User Property Mappings" -SyncHash $syncHash -Height 365 -Width 600 })
 
-$syncHash.settingCompPropClick.add_Click({
-    $syncHash.settingPropContent.Visibility = "Visible"
-    Set-ChildWindow -Panel settingCompPropContent -Title "Computer Property Mappings" -SyncHash $syncHash 
-})
+$syncHash.settingCompPropClick.add_Click({ Set-ChildWindow -Panel settingCompPropContent -Title "Computer Property Mappings" -SyncHash $syncHash -Height 365 -Width 600 })
 
-$syncHash.settingObjectToolsClick.add_Click({
-    $syncHash.settingPropContent.Visibility = "Visible"
-    Set-ChildWindow -Panel settingItemToolsContent -Title "Object Tools Mappings" -SyncHash $syncHash 
-})
+$syncHash.settingObjectToolsClick.add_Click({ Set-ChildWindow -Panel settingItemToolsContent -Title "Object Tools Mappings" -SyncHash $syncHash -Height 365 -Width 600 })
 
-$syncHash.settingContextClick.add_Click({
-    $syncHash.settingContextGrid.Visibility = "Visible"
-    Set-ChildWindow -Panel settingContextPropContent -Title "Contextual Actions Mappings" -SyncHash $syncHash
-})
-
+$syncHash.settingContextClick.add_Click({ Set-ChildWindow -Panel settingContextPropContent -Title "Contextual Actions Mappings"-SyncHash $syncHash -Height 365 -Width 390 })
 
 $syncHash.settingLoggingClick.add_Click( {
-    if (!($configHash.pcLogPath) -or !(Test-Path $configHash.pcLogPath)) {$syncHash.compLogPopupButton.IsEnabled = $false}
+    if (!($configHash.compLogPath) -or !(Test-Path $configHash.compLogPath)) {$syncHash.compLogPopupButton.IsEnabled = $false}
     if (!($configHash.userLogPath) -or !(Test-Path $configHash.userLogPath)) {$syncHash.userLogPopupButton.IsEnabled = $false}
 
     Set-ChildWindow -Panel settingLoggingContent -Title "Login Log Paths" -SyncHash $syncHash -Height 300 -Width 480
 })
 
-### Glyph load
-$glyphs = ((Get-Content C:\TempData\segoeGlyphs.txt))
-
-$configHash.buttonGlyphs = [System.Collections.ArrayList]@()
-
-$glyphs | ForEach-Object { $configHash.buttonGlyphs.Add($_) | Out-Null }
+#endregion
 
 #region settingload / systems check
 $syncHash.settingLogo.add_Loaded( {
-        $syncHash.Window.Activate()
-        
-        $sysCheckHash.sysChecks = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-            $sysCheckHash.sysChecks.Add([PSCustomObject]@{
-                'ADModule'           = 'False'
-                'RSModule'           = 'False'
-                'ADMember'           = 'False'
-                'ADDCConnectivity'   = 'False'
-                'IsInAdmin'          = 'False'
-                'IsDomainAdmin'      = 'False'
-                'Admin'              = 'False'
-                'Modules'            = 'False'
-                'ADDS'               = 'False'
-         })
-
-        $modList = Get-Module -ListAvailable ActiveDirectory, PoshRSJob | Sort-Object -Unique
-
-        if ($modList.Name -contains "ActiveDirectory") { $sysCheckHash.sysChecks[0].ADModule = 'True' }
-
-        if ($modList.Name -contains "PoshRSJob") {
-            
-            $sysCheckHash.sysChecks[0].RSModule = 'True'
-
-            Start-RSJob -Name init -ArgumentList $syncHash, $psexec, $sysCheckHash, $configHash, $savedConfig -ModulesToImport ActiveDirectory, C:\TempData\internal\internal.psm1 -ScriptBlock {        
-                Param($syncHash, $psExec, $sysCheckHash, $configHash, $savedConfig)
-             
-                Start-BasicADCheck -SysCheckHash $sysCheckHash -ConfigHash $configHash
-                
-                Start-AdminCheck -SysCheckHash $sysCheckhash
-                   
-                # Check individual checks; mark parent categories as true is children are true       
-                switch ($sysCheckHash.sysChecks) {
-                    {$_.ADModule -eq $true -and $_.RSModule -eq $true} {$sysCheckHash.sysChecks[0].Modules = 'True'}
-                    {$_.ADMember -eq $true -and $_.ADDCConnectivity -eq $true} {$sysCheckHash.sysChecks[0].ADDS = 'True'}
-                    {$_.IsInAdmin -eq $true -and $_.IsDomainAdmin -eq $true} {$sysCheckHash.sysChecks[0].Admin = 'True'}
-                }
-
-                @('settingADMemberLabel','settingADDCLabel','settingModADLabel','settingModRSLabel','settingDomainAdminLabel',
-                'settingLocalAdminLabel','settingPermLabel','settingADLabel','settingModLabel') | 
-                Set-RSDataContext -SyncHash $syncHash -DataContext $sysCheckHash.sysChecks
-               
-
-                $sysCheckHash.checkComplete = $true
-
-
-                ############ Begin Loading Window
-                Start-Sleep -Seconds 2
-
-                if ($sysCheckHash.sysChecks[0].ADDS -eq $false -or $sysCheckHash.sysChecks[0].Modules -eq $false -or $sysCheckHash.sysChecks[0].Admin -eq $false) {
-
-                    Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck
-
-                }
-                
-                else {
-
-                    Start-PropBoxPopulate -ConfigHash $configHash  
-                    
-                }  
-                
-                $syncHash.Window.Dispatcher.invoke([action] {                       
-                    $syncHash.windowContent.Visibility = "Visible"
-                    $syncHash.Window.MinWidth = "1000"
-                    $syncHash.Window.MinHeight = "700"
-                    $syncHash.Window.ResizeMode = "CanResizeWithGrip"
-                    $syncHash.Window.ShowTitleBar = $true
-                    $syncHash.Window.ShowCloseButton = $true                   
-                    $syncHash.splashLoad.Visibility = "Collapsed" 
-                })           
-            }
-        }
-        else {                                   
-            Suspend-FailedItems -SyncHash $syncHash -CheckedItems RSCheck
-
-            $syncHash.windowContent.Visibility = "Visible"
-            $syncHash.Window.MinWidth = "1000"
-            $syncHash.Window.MinHeight = "700"
-            $syncHash.Window.ResizeMode = "CanResizeWithGrip"
-            $syncHash.Window.ShowTitleBar = $true
-            $syncHash.Window.ShowCloseButton = $true                   
-            $syncHash.splashLoad.Visibility = "Collapsed" 
-            $syncHash.SearchBox.Focus() 
-        }
+    $syncHash.Window.Activate()
+    
+    $sysCheckHash.sysChecks = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+    
+    $sysCheckHash.sysChecks.Add([PSCustomObject]@{
+        'ADModule'           = 'False'
+        'RSModule'           = 'False'
+        'ADMember'           = 'False'
+        'ADDCConnectivity'   = 'False'
+        'IsInAdmin'          = 'False'
+        'IsDomainAdmin'      = 'False'
+        'Admin'              = 'False'
+        'Modules'            = 'False'
+        'ADDS'               = 'False'
     })
+
+    $modList = Get-Module -ListAvailable ActiveDirectory, PoshRSJob | Sort-Object -Unique
+
+    if ($modList.Name -contains "ActiveDirectory") { $sysCheckHash.sysChecks[0].ADModule = 'True' }
+
+    if ($modList.Name -contains "PoshRSJob") {
+            
+        $sysCheckHash.sysChecks[0].RSModule = 'True'
+
+        Start-RSJob -Name init -ArgumentList $syncHash, $psexec, $sysCheckHash, $configHash, $savedConfig -ModulesToImport ActiveDirectory, C:\TempData\internal\internal.psm1 -ScriptBlock {        
+            Param($syncHash, $psExec, $sysCheckHash, $configHash, $savedConfig)
+             
+            Start-BasicADCheck -SysCheckHash $sysCheckHash -ConfigHash $configHash
+                
+            Start-AdminCheck -SysCheckHash $sysCheckhash
+                   
+            # Check individual checks; mark parent categories as true is children are true       
+            switch ($sysCheckHash.sysChecks) {
+                {$_.ADModule -eq $true -and $_.RSModule -eq $true} {$sysCheckHash.sysChecks[0].Modules = 'True'}
+                {$_.ADMember -eq $true -and $_.ADDCConnectivity -eq $true} {$sysCheckHash.sysChecks[0].ADDS = 'True'}
+                {$_.IsInAdmin -eq $true -and $_.IsDomainAdmin -eq $true} {$sysCheckHash.sysChecks[0].Admin = 'True'}
+            }
+
+            @('settingADMemberLabel','settingADDCLabel','settingModADLabel','settingModRSLabel','settingDomainAdminLabel',
+                'settingLocalAdminLabel','settingPermLabel','settingADLabel','settingModLabel') | 
+                    Set-RSDataContext -SyncHash $syncHash -DataContext $sysCheckHash.sysChecks
+               
+            $sysCheckHash.checkComplete = $true
+
+            Start-Sleep -Seconds 2
+
+            if ($sysCheckHash.sysChecks[0].ADDS -eq $false -or 
+                $sysCheckHash.sysChecks[0].Modules -eq $false -or 
+                $sysCheckHash.sysChecks[0].Admin -eq $false) {
+
+                Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck
+            }
+                
+            else { Start-PropBoxPopulate -ConfigHash $configHash }  
+                
+            Show-WPFWindow -SyncHash $syncHash     
+        }
+    }
+    else {                                   
+        Suspend-FailedItems -SyncHash $syncHash -CheckedItems RSCheck
+        Show-WPFWindow -SyncHash $syncHash
+    }
+})
 
 #endregion 
 
-#region Configurable popup items
+
+
+#region RemoteTools events
+
+$syncHash.settingRtRDPClick.Add_Click( { Set-StaticRTContent -SyncHash $syncHash -ConfigHash $configHash -Tool MSTSC  })
+
+$syncHash.settingRtMSRAClick.Add_Click({ Set-StaticRTContent -SyncHash $syncHash -ConfigHash $configHash -Tool MSRA })
+
+$syncHash.settingRemoteFlyout.Add_OpeningFinished({ Get-RTFlyoutContent -ConfigHash $configHash -SyncHash $syncHash })
+
+$syncHash.settingRemoteFlyoutExit.Add_Click( {
+    Reset-ChildWindow -SyncHash $syncHash -Title "Configure Remote Connection Clients" -SkipContentPaneReset -SkipResize
+    Set-SelectedRTTypes -SyncHash $syncHash -ConfigHash $configHash
+})
+
+
+$syncHash.settingRtExeSelect.Add_Click( {
+    Get-RTExePath -SyncHash $syncHash -ConfigHash $configHash    
+})
+
+$syncHash.settingRtAddClick.Add_Click({
+
+    if (!($syncHash.customRt)) { $syncHash.customRt = @{} }
+    if (!$configHash.rtConfig) { $configHash.rtConfig = @{} }
+
+    $rtID = "rt" + [string]([int](((($configHash.rtConfig.Keys | Where-Object {$_ -like "RT*"}) -replace 'rt') |
+         Sort-Object -Descending | Select-Object -First 1)) + 1) 
+       
+    New-CustomRTConfigControls -SyncHash $syncHash -ConfigHash $configHash -RTID $rtID -NewTool
+
+})
+
+#endregion
+
+#region NetworkMap events
+
+$syncHash.settingNetMapClick.Add_Click({
+    $syncHash.settingNetDataGrid.Visibility = "Visible"
+    $syncHash.settingNetDataGrid.ItemsSource = $configHash.netMapList 
+    Set-ChildWindow -SyncHash $syncHash -Title "Network Mappings" -HideCloseButton -Background Flyout
+    $syncHash.settingNetFlyout.IsOpen = $true
+})
+
+$syncHash.settingNetAddClick.Add_Click({ Set-NetworkMapItem -SyncHash $syncHash -ConfigHash $configHash })
+
+$syncHash.settingNetImportClick.Add_Click({ Set-NetworkMapItem -SyncHash $syncHash -ConfigHash $configHash -Import })
+
+$syncHash.settingNetFlyoutExit.Add_Click( {
+    $syncHash.settingNetFlyout.IsOpen = $false
+    Set-ChildWindow -SyncHash $syncHash -Background Standard -Title "Networking Mappings"        
+       
+    [Array]$configHash.netMapList | ForEach-Object {
+        if ($_.ValidMask -ne $true -and $_.ValidNetwork -ne $true) {
+            [Array]$configHash.netMapList.RemoveAt([Array]::IndexOf($configHash.netMapList.ID,$_.ID))
+        }
+    }
+
+    $configHash.Remove('NetMapListView')
+
+})
 
 
 #endregion
 
-#region Config events/logic
 
-$syncHash.settingRtRDPClick.Add_Click( {
+#region UserLog events
+$syncHash.userLogPopupButton.Add_Click({ Set-LogMapGrid -SyncHash $syncHash -ConfigHash $configHash -Type User })
 
-        $syncHash.settingRtExeSelect.Visibility = "Hidden"
-        $syncHash.settingRtPathSelect.Visibility = "Hidden"
-        $syncHash.rtSettingRequiresOnline.Visibility = "Hidden"
-        $syncHash.rtSettingRequiresUser.Visibility = "Hidden"
-        $syncHash.rtDock.DataContext = $configHash.rtConfig.mstsc
-        $syncHash.settingRemoteFlyout.isOpen = $true
-    })
+$syncHash.compLogPopupButton.Add_Click({ Set-LogMapGrid -SyncHash $syncHash -ConfigHash $configHash -Type Comp })
+#endregion
 
-$syncHash.settingRtMSRAClick.Add_Click( {
-        $syncHash.settingRtExeSelect.Visibility = "Hidden"
-        $syncHash.settingRtPathSelect.Visibility = "Hidden"
-        $syncHash.rtSettingRequiresOnline.Visibility = "Hidden"
-        $syncHash.rtSettingRequiresUser.Visibility = "Hidden"
-        $syncHash.rtDock.DataContext = $configHash.rtConfig.MSRA
-        $syncHash.settingRemoteFlyout.isOpen = $true
-     
-
-    })
-
-$syncHash.settingRemoteFlyout.Add_OpeningFinished( {
-
-   
-        $syncHash.settingRemoteListTypes.ItemsSource = $configHash.nameMapList
- 
-        switch ($syncHash.settingRALabel.Content) {
-            
-            'MSTSC' {
-                if ($configHash.rtConfig.MSTSC.Icon) {
-                    $syncHash.settingRTIcon.Source = ([Convert]::FromBase64String($configHash.rtConfig.MSTSC.Icon))
-                }
-
-                $syncHash.settingRemoteListTypes.Items | Where-Object {$_.Name -in $configHash.rtConfig.MSTSC.Types} | ForEach-Object { 
-                    $syncHash.settingRemoteListTypes.SelectedItems.Add(($_))
-                }
-                break
-            }
-            'MSRA' {
-                if ($configHash.rtConfig.MSRA.Icon) {
-                    $syncHash.settingRTIcon.Source = ([Convert]::FromBase64String($configHash.rtConfig.MSRA.Icon))
-                }
-                 $syncHash.settingRemoteListTypes.Items | Where-Object {$_.Name -in $configHash.rtConfig.MSRA.Types} | ForEach-Object { 
-                    $syncHash.settingRemoteListTypes.SelectedItems.Add(($_))
-                }
-                break
-            }
-            Default {
-                $rtID = 'rt' + [string]($syncHash.settingRALabel.Content -replace ".[A-Z]* ")
-
-                if ($configHash.rtConfig.$rtID.Icon) {
-                    $syncHash.settingRTIcon.Source = ([Convert]::FromBase64String($configHash.rtConfig.$rtID.Icon))
-                }
-               
-                 $syncHash.settingRemoteListTypes.Items | Where-Object {$_.Name -in $configHash.rtConfig.$rtID.Types} | ForEach-Object { 
-                    $syncHash.settingRemoteListTypes.SelectedItems.Add(($_))
-                }
-
-                break
-            }
-        }
-    
-
-   
-
-  
-    })
-
-$syncHash.settingNetFlyoutExit.Add_Click( {
-    
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.Window.BorderBrush.Color).ToString()
-        $syncHash.settingChildWindow.Title = "Map Comp Login Logs"
-        $syncHash.settingChildWindow.ShowCloseButton = $true
-        $syncHash.settingLoggingCompFlyout.IsOpen = $true
-        $syncHash.settingNetFlyout.IsOpen = $false
-       
-        [Array]$configHash.netMapList | ForEach-Object {
-            if ($_.ValidMask -ne $true -and $_.ValidNetwork -ne $true) {
-               [Array]$configHash.netMapList.RemoveAt([Array]::IndexOf($configHash.netMapList.ID,$_.ID))
-            }
-        }
-
-        $configHash.Remove('NetMapListView')
-
-    
-
-
-    })
-
-$syncHash.settingRemoteFlyoutExit.Add_Click( {
-        $syncHash.settingRemoteFlyout.isOpen = $false
-    
-        $syncHash.settingRTIcon.Source = $null
-
-        switch ($syncHash.settingRALabel.Content) {
-            'MSTSC' { 
-                $configHash.rtConfig.MSTSC.Types = @()
-                $syncHash.settingRemoteListTypes.SelectedItems | ForEach-Object { $configHash.rtConfig.MSTSC.Types += $_.Name }
-                break 
-            }
-            'MSRA' {
-                $configHash.rtConfig.MSRA.Types = @()
-                $syncHash.settingRemoteListTypes.SelectedItems | ForEach-Object { $configHash.rtConfig.MSRA.Types += $_.Name }
-                break 
-            }
-            Default { 
-                $rtID = 'rt' + [string]($syncHash.settingRALabel.Content -replace ".[A-Z]* ")
-                $configHash.rtConfig.$rtID.Types = @()
-                $syncHash.settingRemoteListTypes.SelectedItems | ForEach-Object { $configHash.rtConfig.$rtID.Types += $_.Name }
-                break
-            }
-
-
-        }
-
-        $syncHash.settingRemoteListTypes.SelectedItems.Clear()   
-
-    })
-
-$syncHash.settingRtExeSelect.Add_Click( {
-    
-    $rtID = 'rt' + [string]($syncHash.settingRALabel.Content -replace ".[A-Z]* ")
-    $customSelection = New-Object System.Windows.Forms.OpenFileDialog
-    $customSelection.initialDirectory = [Environment]::GetFolderPath('ProgramFilesx86')
-    $customSelection.Title = "Select Custom RT Executable"
-    $customSelection.ShowDialog() | Out-Null
-
-    if (![string]::IsNullOrEmpty($customSelection.fileName)) {
-
-        if (Test-Path $customSelection.fileName) {
-            $configHash.rtConfig.$rtID.Path = $customSelection.fileName
-            $syncHash.settingRtPathSelect.Text = $customSelection.fileName
-
-            if ($customSelection.fileName -like "\\*") {
-                Copy-item $customSelection.fileName -Destination C:\tmp.exe
-                $configHash.rtConfig.$rtID.Icon = Get-Icon -Path C:\tmp.exe -ToBase64
-                Remove-Item c:\tmp.exe
-            }
-
-            else { $configHash.rtConfig.$rtID.Icon = Get-Icon -Path $customSelection.fileName -ToBase64 }
-
-            $syncHash.settingRTIcon.Source = ([Convert]::FromBase64String(($configHash.rtConfig.$rtID.Icon)))
-        }
-    }
-})
-
-
-$syncHash.userLogPopupButton.Add_Click( {
-     
-        if (!($configHash.userLogMapping)) { 
-
-            $testLog = Get-Content ((Get-ChildItem -Path $confighash.UserLogPath | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName) | Where-Object { $_ -notmatch ",.[(\W)]$" -and $_ -notmatch ",$" } | Select-Object -First 1
-            $fieldCount = ($testLog.ToCharArray() | Where-Object { $_ -eq ',' } | Measure-Object).Count + 1
-
-            $header = @()
-            $configHash.userLogMapping = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-
-            for ($i = 1; $i -le $fieldCount; $i++) {
-                $header += $i
-               
-            }
-
-            $csv = $testLog | ConvertFrom-Csv -Header $header
-            
-            for ($i = 1; $i -le $fieldCount; $i++) {
-                $configHash.userLogMapping.Add([PSCustomObject]@{
-                        ID              = $i
-                        Field           = $csv.$i
-                        FieldSelList    = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
-                        FieldSel        = $null
-                        CustomFieldName = $null
-                        Ignore          = $false
-                    }  
-                )                                                 
-               
-            }
-
-        }
-
-        else {
-
-            $testLog = Get-Content ((Get-ChildItem -Path $confighash.UserLogPath | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName) | Where-Object { $_ -notmatch ",.[(\W)]$" -and $_ -notmatch ",$"  -and $_.Trim() -ne ''} | Select-Object -Last 1
-            $fieldCount = ($testLog.ToCharArray() | Where-Object { $_ -eq ',' } | Measure-Object).Count + 1
-
-            $header = @()
-            $userLogTemp = $configHash.userLogMapping
-            $configHash.userLogMapping = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-
-            for ($i = 1; $i -le $fieldCount; $i++) {
-                $header += $i
-               
-            }
-
-            $csv = $testLog | ConvertFrom-Csv -Header $header
-            
-            for ($i = 1; $i -le $fieldCount; $i++) {
-                $configHash.userLogMapping.Add([PSCustomObject]@{
-                        ID              = $i
-                        Field           = $csv.$i
-                        FieldSelList    = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
-                        FieldSel        = $userLogTemp[$i - 1].FieldSel
-                        CustomFieldName = $userLogTemp[$i - 1].CustomFieldName
-                        Ignore          = $false
-                    }  
-                )                                                 
-               
-            }
-
-        }
-
-        $syncHash.userLogListView.ItemsSource = $configHash.userLogMapping
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingLoggingUserFlyout.Background.Color).ToString()
-        $syncHash.settingChildWindow.Title = "Map User Login Logs"
-        $syncHash.settingChildWindow.ShowCloseButton = $false
-        $syncHash.settingLoggingUserFlyout.IsOpen = $true
-    
-
-    
-    })
-
-$syncHash.compLogPopupButton.Add_Click( {
-   
-        if (!($configHash.compLogMapping)) { 
-
-            $testLog = Get-Content ((Get-ChildItem -Path $configHash.pcLogPath | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName) | Where-Object { $_ -notmatch ",.[(\W)]$" -and $_ -notmatch ",$" -and $_.Trim() -ne '' } | Select-Object -First 1
-            $fieldCount = ($testLog.ToCharArray() | Where-Object { $_ -eq ',' } | Measure-Object).Count + 1
-
-            $header = @()
-            $configHash.compLogMapping = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-
-            for ($i = 1; $i -le $fieldCount; $i++) {
-                $header += $i
-               
-            }
-
-            $csv = $testLog | ConvertFrom-Csv -Header $header
-            
-            for ($i = 1; $i -le $fieldCount; $i++) {
-                $configHash.compLogMapping.Add([PSCustomObject]@{
-                        ID              = $i
-                        Field           = $csv.$i
-                        FieldSelList    = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
-                        FieldSel        = $null
-                        CustomFieldName = $null
-                        Ignore          = $false
-                    }  
-                )                                                 
-               
-            }
-
-        }
-
-        else {
-
-            $testLog = Get-Content ((Get-ChildItem -Path $configHash.pcLogPath | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName) | Where-Object { $_ -notmatch ",.[(\W)]$" -and $_ -notmatch ",$" } | Select-Object -Last 1
-            $fieldCount = ($testLog.ToCharArray() | Where-Object { $_ -eq ',' } | Measure-Object).Count + 1
-
-            $header = @()
-            $compLogTemp = $configHash.compLogMapping
-            $configHash.compLogMapping = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-
-            for ($i = 1; $i -le $fieldCount; $i++) {
-                $header += $i
-               
-            }
-
-            $csv = $testLog | ConvertFrom-Csv -Header $header
-            
-            for ($i = 1; $i -le $fieldCount; $i++) {
-                $configHash.compLogMapping.Add([PSCustomObject]@{
-                        ID              = $i
-                        Field           = $csv.$i
-                        FieldSelList    = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
-                        FieldSel        = $compLogTemp[$i - 1].FieldSel
-                        CustomFieldName = $compLogTemp[$i - 1].CustomFieldName
-                        Ignore          = $false
-                    }  
-                )                                                 
-               
-            }
-
-        }
-
-        $syncHash.compLogListView.ItemsSource = $configHash.compLogMapping
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingLoggingCompFlyout.Background.Color).ToString()
-        $syncHash.settingChildWindow.Title = "Map Comp Login Logs"
-        $syncHash.settingChildWindow.ShowCloseButton = $false
-        $syncHash.settingLoggingCompFlyout.IsOpen = $true
-    
-
-    })
-
-$syncHash.settingLoggingCompFlyoutExit.Add_Click( {
-
-        $syncHash.settingLoggingCompFlyout.IsOpen = $false
-        $syncHash.settingChildWindow.ShowCloseButton = $true
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.Window.BorderBrush.Color).ToString()
-        $syncHash.settingChildWindow.Title = "Login Log Paths"
-
-    })
-
-$syncHash.settingLoggingUserFlyoutExit.Add_Click( {
-
-        $syncHash.settingLoggingUserFlyout.IsOpen = $false
-        $syncHash.settingChildWindow.ShowCloseButton = $true
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.Window.BorderBrush.Color).ToString()
-        $syncHash.settingChildWindow.Title = "Login Log Paths"
-
-    })
-
-$syncHash.settingObjectToolFlyoutExit.Add_Click( {
-
-        $syncHash.settingObjectToolDefFlyout.IsOpen = $false
-        $syncHash.settingChildWindow.ShowCloseButton = $true
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.Window.BorderBrush.Color).ToString()
-        $syncHash.settingChildWindow.Title = "Object Tools Mappings"
-
-    })
-
-
-
-
+#region Naming events
 $syncHash.settingNameMapClick.Add_Click( {
-    
     if ($configHash.nameMapList.GetType().Name -ne 'ListCollectionView') {
         $configHash.nameMapListView = [System.Windows.Data.ListCollectionView]$configHash.nameMapList 
         $configHash.nameMapListView.IsLiveSorting = $true
         
-        
         $syncHash.settingNameDataGrid.ItemsSource = $configHash.nameMapListView         
         $configHash.nameMapListView.Refresh()
     }
-        $configHash.nameMapListView.LiveSortingProperties.Add("Id")   
-        $configHash.nameMapListView.SortDescriptions.Add((New-Object System.ComponentModel.SortDescription("Id", "Descending")))
-        $syncHash.settingNameDataGrid.Visibility = "Visible"
-        
-        Set-ChildWindow -SyncHash $syncHash -Title "Computer Categorization Rules" -HideCloseButton -BackGround Flyout
 
-        $syncHash.settingNameFlyout.IsOpen = $true
-    })
+    $configHash.nameMapListView.LiveSortingProperties.Add("Id")   
+    $configHash.nameMapListView.SortDescriptions.Add((New-Object System.ComponentModel.SortDescription("Id", "Descending")))
+    $syncHash.settingNameDataGrid.Visibility = "Visible"
+        
+    Set-ChildWindow -SyncHash $syncHash -Title "Computer Categorization Rules" -HideCloseButton -BackGround Flyout
+
+    $syncHash.settingNameFlyout.IsOpen = $true
+})
 
 $syncHash.settingNameAddClick.Add_Click( {
     
-        if (($configHash.nameMapList | Measure-Object).Count -gt 1) {
-            ($configHash.nameMapList | Sort-Object -Property ID -Descending | Select-Object -First 1).TopPos = $false
-        }
+    if (($configHash.nameMapList | Measure-Object).Count -gt 1) {
+        ($configHash.nameMapList | Sort-Object -Property ID -Descending | Select-Object -First 1).TopPos = $false
+    }
 
-        $configHash.nameMapList.Add([PSCustomObject]@{
-                Id        = ($configHash.nameMapList.ID | Sort-Object -Descending | Select-Object -First 1) + 1
-                Name      = $null
-                Condition = $null
-                topPos    = $true
-            })    
+    $configHash.nameMapList.Add([PSCustomObject]@{
+        Id        = ($configHash.nameMapList.ID | Sort-Object -Descending | Select-Object -First 1) + 1
+        Name      = $null
+        Condition = $null
+        topPos    = $true
+    })    
 
-
-        $syncHash.settingNameDataGrid.Items.Refresh()                   
+    $syncHash.settingNameDataGrid.Items.Refresh()                   
 
 })
 
-$syncHash.settingNameFlyoutExit.Add_Click( {
-    Reset-ChildWindow -SyncHash $syncHash -Title "Computer Categorization" -SkipContentPaneReset    
-})
+#endregion
 
+#region ContextTools
+
+#endregion
+
+#region FlyOutExits
+$syncHash.settingLoggingCompFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Login Log Paths" -SkipContentPaneReset -SkipResize })
+
+$syncHash.settingLoggingUserFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Login Log Paths" -SkipContentPaneReset -SkipResize })
+
+$syncHash.settingObjectToolFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Object Tools Mappings" -SkipContentPaneReset -SkipResize -SkipDataGridReset })
+
+$syncHash.settingNameFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Computer Categorization" -SkipContentPaneReset -SkipResize })
 
 $syncHash.settingContextDefFlyout.Add_OpeningFinished({
     $syncHash.settingContextListTypes.ItemsSource = $configHash.nameMapList
-    $syncHash.settingContextListTypes.Items | Where-Object {$_.Name -in $configHash.contextConfig[$syncHash.settingContextPropGrid.SelectedItem.IDNUM - 1].Types} | ForEach-Object { 
-    $syncHash.settingContextListTypes.SelectedItems.Add(($_))
-    }
+    
+    $syncHash.settingContextListTypes.Items | Where-Object {$_.Name -in $configHash.contextConfig[$syncHash.settingContextPropGrid.SelectedItem.IDNUM - 1].Types} |
+        ForEach-Object { $syncHash.settingContextListTypes.SelectedItems.Add(($_)) }
         
 })
 
-$syncHash.settingContextFlyoutExit.Add_Click( {
-$configHash.contextConfig[$syncHash.settingContextPropGrid.SelectedItem.IDNUM - 1].Types = @()
-$syncHash.settingContextListTypes.SelectedItems | ForEach-Object { $configHash.contextConfig[$syncHash.settingContextPropGrid.SelectedItem.IDNUM - 1].Types += $_.Name } 
-
-        $syncHash.settingContextDefFlyout.IsOpen = $false
-        $syncHash.settingChildWindow.ShowCloseButton = $true
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.Window.BorderBrush.Color).ToString()
-        $syncHash.settingChildWindow.Title = "Contextual Action Buttons"
-        $syncHash.settingRemoteListTypes.SelectedItems.Clear()   
-
-
-    })
-
-
-     
-$syncHash.settingNetMapClick.Add_Click( {
-
-      
-        $syncHash.settingNetDataGrid.Visibility = "Visible"
-        $syncHash.settingNetDataGrid.ItemsSource = $configHash.netMapList 
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingNetFlyout.Background.Color).ToString()
-        $syncHash.settingChildWindow.Title = "Network Mappings"
-        $syncHash.settingChildWindow.ShowCloseButton = $false
-        $syncHash.settingNetFlyout.IsOpen = $true
-    })
-
-
-
-
-$syncHash.settingNetAddClick.Add_Click( {
+$syncHash.settingContextFlyoutExit.Add_Click({
+    $configHash.contextConfig[$syncHash.settingContextPropGrid.SelectedItem.IDNUM - 1].Types = @()
     
+    $syncHash.settingContextListTypes.SelectedItems | 
+        ForEach-Object { $configHash.contextConfig[$syncHash.settingContextPropGrid.SelectedItem.IDNUM - 1].Types += $_.Name } 
 
-        $configHash.netMapList.Add([PSCustomObject]@{
-                ID           = ($configHash.netMapList.ID | Sort-Object -Descending | Select-Object -First 1) + 1
-                Network      = $null
-                ValidNetwork = $false
-                Mask         = $null
-                ValidMask    = $false
-                Location     = "New"
-            })                       
+    Reset-ChildWindow -SyncHash $syncHash -Title "Contextual Action Buttons" -SkipContentPaneReset -SkipResize -SkipDataGridReset
+    $syncHash.settingRemoteListTypes.SelectedItems.Clear()   
 
-    })
+})
 
-$syncHash.settingNetImportClick.Add_Click( {
+$syncHash.settingFlyoutExit.Add_Click( {
+    if ($syncHash.settingUserPropContent.Visibility -eq 'Visible') { $type = 'User' }
+    else { $type = 'Computer' }
 
-        $configHash.netMapList = (New-Object System.Collections.ObjectModel.ObservableCollection[Object])
-        $subnets = Get-ADReplicationSubnet -Filter * -Properties * | Select-Object Name, Site, Location, Description
+    Reset-ChildWindow -SyncHash $syncHash -Title "$type Property Mappings" -SkipContentPaneReset -SkipResize -SkipDataGridReset
 
-        if (!($subnets)) {
-            $localAddress = ((Get-NetIPInterface -AddressFamily IPv4 | Get-NetIPAddress | Where-Object {$_.PrefixOrigin -ne 'WellKnown'}))
-            
-
-            $ip = [ipaddress]$localAddress.IPAddress
-            $subNet = [ipaddress]([ipaddress]([math]::pow(2, 32) -1 -bxor [math]::pow(2, (32 - $($localAddress.PrefixLength)))-1))
-            $netid = [ipaddress]($ip.address -band $subnet.address)
-
-           
-                
-            $configHash.netMapList.Add([PSCustomObject]@{
-                    Id           = 1
-                    Network      = $netid.IPAddressToString
-                    ValidNetwork = $true
-                    Mask         = $localAddress.PrefixLength
-                    ValidMask    = $true
-                    Location     = "Default"
-                    
-                    
-                })                                                               
-            
-        }
-
-        else {
-
-            for ($i = 1; $i -le (($subnets | Measure-Object).Count); $i++) {
-                
-                $configHash.netMapList.Add([PSCustomObject]@{
-                        Id           = $i
-                        Network      = ($subnets[$i - 1].Name -replace "//*.*", "")
-                        ValidNetwork = $true
-                        Mask         = ($subnets[$i - 1].Name -replace ".*/", "")
-                        ValidMask    = $true
-                        Location     = if ($subnets[$i - 1].Location -ne $null) { $subnets[$i - 1].Location }
-                        elseif ($subnets[$i - 1].Description -ne $null) { $subnets[$i - 1].Description }
-                    
-                })                                                               
-            }
-        }
-
-        $syncHash.settingNetDataGrid.ItemsSource = $configHash.netMapList
-    
-
-    })
+})
 
 
+#endregion
 
-$syncHash.settingUserPropMapClick.Add_Click( {
 
-        Start-RSJob -ArgumentList $syncHash, $configHash -ScriptBlock {
-            Param($syncHash, $configHash)
-
-            $syncHash.Window.Dispatcher.invoke([action] {
         
-                    if ($configHash.UserPropList -ne $null) {
-                        $syncHash.settingUserPropGrid.ItemsSource = $null
-                        $syncHash.settingUserPropGrid.ItemsSource = $configHash.UserPropList
-                    }
+$syncHash.settingLoggingPcPathClick.Add_Click({ Set-LoggingDirectory -SyncHash $syncHash -ConfigHash $configHash -Type Comp })
 
-                    if ($syncHash.settinguserPropGrid.Visibility -eq "Visible") {
-                        $syncHash.settingUserPropSaveClick.Visibility = "Hidden"
-                        $syncHash.settingUserPropGrid.Visibility = "Hidden"          
-                        $syncHash.settingUserPropImportClick.Visibility = "Hidden"
-                        $syncHash.settingUserAddItemClick.Visibility = "Hidden"
-                        $syncHash.settingChildHeight.Height = 225     
-                        $syncHash.settingChildHeight.Width = 390
-                        $syncHash.userPropGrid.HorizontalAlignment = "Left"
-                               
-                    }
-            
-                    else {
-                        $syncHash.settingUserPropGrid.Visibility = "Visible"
-                        $syncHash.settinguserPropSaveClick.Visibility = "Visible"
-                        $syncHash.settingUserPropImportClick.Visibility = "Visible"
-                        $syncHash.settingUserAddItemClick.Visibility = "Visible"
-                        $syncHash.settingChildHeight.Height = 365 #330
-                        $syncHash.settingChildHeight.Width = 600
-                        $syncHash.userPropGrid.HorizontalAlignment = "Stretch"
-                    }           
-                })  
-        }
-    })
-
-$syncHash.settingCompPropMapClick.Add_Click( {
-
-        Start-RSJob -ArgumentList $syncHash, $configHash -ScriptBlock {
-            Param($syncHash, $configHash)
-
-            $syncHash.Window.Dispatcher.invoke([action] {
-        
-                    if ($configHash.CompPropList -ne $null) {
-                        $syncHash.settingCompPropGrid.ItemsSource = $null
-                        $syncHash.settingCompPropGrid.ItemsSource = $configHash.CompPropList
-                    }
-
-                    if ($syncHash.settingCompPropGrid.Visibility -eq "Visible") {
-                        $syncHash.settingCompPropGrid.Visibility = "Hidden"          
-                        $syncHash.settingCompPropImportClick.Visibility = "Hidden"
-                        $syncHash.settingCompAddItemClick.Visibility = "Hidden"
-                        $syncHash.settingChildHeight.Height = 225     
-                        $syncHash.settingChildHeight.Width = 390
-                        $syncHash.CompPropGrid.HorizontalAlignment = "Left"
-                               
-                    }
-            
-                    else {
-                        $syncHash.settingCompPropGrid.Visibility = "Visible"
-                        $syncHash.settingCompPropImportClick.Visibility = "Visible"
-                        $syncHash.settingCompAddItemClick.Visibility = "Visible"
-                        $syncHash.settingChildHeight.Height = 365 #330
-                        $syncHash.settingChildHeight.Width = 600
-                        $syncHash.CompPropGrid.HorizontalAlignment = "Stretch"
-                    }           
-                })  
-        }
-    })
-
-$syncHash.settingObjectToolsMapClick.Add_Click( {
-
-        Start-RSJob -ArgumentList $syncHash, $configHash -ScriptBlock {
-            Param($syncHash, $configHash)
-
-            $syncHash.Window.Dispatcher.invoke([action] {
-        
-                    if ($configHash.objectToolConfig -ne $null) {
-                        $syncHash.settingObjectToolsPropGrid.ItemsSource = $null
-                        $syncHash.settingObjectToolsPropGrid.ItemsSource = $configHash.objectToolConfig
-                    }
-
-                    if ($syncHash.settingObjectToolsPropGrid.Visibility -eq "Visible") {
-                        $syncHash.settingObjectToolsPropGrid.Visibility = "Hidden"          
-                        $syncHash.settingObjectToolsAddItemClick.Visibility = "Hidden"
-                        $syncHash.settingChildHeight.Height = 225     
-                        $syncHash.settingChildHeight.Width = 390
-                        $syncHash.objectToolsPropGrid.HorizontalAlignment = "Left"
-                               
-                    }
-            
-                    else {
-                        $syncHash.settingObjectToolsPropGrid.Visibility = "Visible"
-                        $syncHash.settingObjectToolsAddItemClick.Visibility = "Visible"
-                        $syncHash.settingChildHeight.Height = 365 #330
-                        $syncHash.settingChildHeight.Width = 600
-                        $syncHash.objectToolsPropGrid.HorizontalAlignment = "Stretch"
-                    }           
-                })  
-        }
-    })
-
-$syncHash.settingContextPropMapClick.Add_Click( {
-
-        Start-RSJob -ArgumentList $syncHash, $configHash -ScriptBlock {
-            Param($syncHash, $configHash)
-
-            $syncHash.Window.Dispatcher.invoke([action] {
-        
-                    if ($configHash.contextConfig -ne $null) {
-                        $syncHash.settingContextPropGrid.ItemsSource = $null
-                        $syncHash.settingContextPropGrid.ItemsSource = $configHash.contextConfig
-                    }
-
-                    if ($syncHash.settingContextPropGrid.Visibility -eq "Visible") {
-                        $syncHash.settingContextPropGrid.Visibility = "Hidden"          
-                        $syncHash.settingContextPropImportClick.Visibility = "Hidden"
-                        $syncHash.settingContextAddItemClick.Visibility = "Hidden"
-                        $syncHash.settingChildHeight.Height = 225     
-                        $syncHash.settingChildHeight.Width = 390
-                        $syncHash.contextPropGrid.HorizontalAlignment = "Left"
-                               
-                    }
-            
-                    else {
-                        $syncHash.settingContextPropGrid.Visibility = "Visible"
-                        $syncHash.settingContextPropImportClick.Visibility = "Visible"
-                        $syncHash.settingContextAddItemClick.Visibility = "Visible"
-                        $syncHash.settingChildHeight.Height = 365 #330
-                        $syncHash.settingChildHeight.Width = 390
-                        $syncHash.contextPropGrid.HorizontalAlignment = "Stretch"
-                    }           
-                })  
-        }
-    })
-#$syncHash.settingUserPropSaveClick.Add_Click({
-
-#   $int = 0
-#   $configHash.UserPropListSelection = @()
-#   $configHash.UserPropList = [System.Collections.ArrayList]@()
-   
-    
-#   $syncHash.settingUserPropGrid.Items | ForEach-Object {
-
-#       $int++
-
-#       if ($null -notlike $_.fieldName -and $null -notlike $_.PropName) {
-#           $configHash.UserPropList.Add([PSCustomObject]@{Field = $int; FieldName = $_.FieldName; PropName = $_.PropName; ActionName = $_.ActionName})
-#       }
-#   }
-# })
-        
-$syncHash.settingLoggingPcPathClick.Add_Click( {
- 
-        $pcLogSelection = New-FolderSelection -Title "Select client logging directory"
-
-        if (![string]::IsNullOrEmpty($pcLogSelection)) {
-
-            if (Test-Path $pcLogSelection) {
-                $configHash.pcLogPath = $pcLogSelection
-                $configHash.pcLogInUse = $true
-                $syncHash.compLogPopupButton.IsEnabled = $true
-            }
-
-            else {
-                $syncHash.compLogPopupButton.IsEnabled = $false
-            }
-        }
-    })
-
-$syncHash.settingLoggingUserPathClick.Add_Click( {
- 
-        $UserLogSelection = New-FolderSelection -Title "Select user logging directory"
-
-        if (![string]::IsNullOrEmpty($UserLogSelection)) {
-
-            if (Test-Path $UserLogSelection) {
-                $configHash.UserLogPath = $UserLogSelection
-                $configHash.UserLogInUse = $true
-                $syncHash.userLogPopupButton.IsEnabled = $true
-
-            }
-
-            else {
-                $syncHash.userLogPopupButton.IsEnabled = $false
-            }
-        }
-    })
-
- 
+$syncHash.settingLoggingUserPathClick.Add_Click({ Set-LoggingDirectory -SyncHash $syncHash -ConfigHash $configHash -Type User })
     
 #endregion
 
-$syncHash.settingChildWindow.add_ClosingFinished( {
-    Reset-ChildWindow -SyncHash $syncHash    
-})
+$syncHash.settingChildWindow.add_ClosingFinished({ Reset-ChildWindow -SyncHash $syncHash })
 
 #region Category button events
-$syncHash.settingModClick.add_Click( {
-        $syncHash.settingModContent.Visibility = "Visible"
-        $syncHash.settingChildWindow.Title = "Required PS Modules"
-        $syncHash.settingChildWindow.IsOpen = $true
-    })
+$syncHash.settingModClick.add_Click({ Set-ChildWindow -SyncHash $syncHash -Panel settingModContent -Title "Required PS Modules"  })
 
+$syncHash.settingADClick.add_Click({ Set-ChildWindow -SyncHash $syncHash -Panel settingADContent -Title "ADDS" })
 
-$syncHash.settingADClick.add_Click( {
-        $syncHash.settingADContent.Visibility = "Visible"
-        $syncHash.settingChildWindow.Title = "ADDS Config"
-        $syncHash.settingChildWindow.IsOpen = $true
-    })
-
-$syncHash.settingPermClick.add_Click( {
-        $syncHash.settingAdminContent.Visibility = "Visible"
-        $syncHash.settingChildWindow.Title = "Admin Permissions"
-        $syncHash.settingChildWindow.IsOpen = $true
-    })
+$syncHash.settingPermClick.add_Click({ Set-ChildWindow -SyncHash $syncHash -Panel settingAdminContent -Title "Admin Permissions" }) 
 
 #endregion Category button events
 #region Action pane exit events
 
-$syncHash.settingCloseClick.add_Click( {
-        $syncHash.Window.Close()
-    })
+$syncHash.settingCloseClick.add_Click({ $syncHash.Window.Close() })
     
-$syncHash.settingConfigCancelClick.add_Click( {
-        $syncHash.Window.Close()
-    })
+$syncHash.settingConfigCancelClick.add_Click({ $syncHash.Window.Close()})
 
-$syncHash.settingImportClick.add_Click( {
-
-        $configSelection = New-Object System.Windows.Forms.OpenFileDialog
-        $configSelection.initialDirectory = [Environment]::GetFolderPath('MyComputer')
-        $configSelection.filter = "config|config.json"
-        $configSelection.Title = "Select config.json"
-        $configSelection.ShowDialog() | Out-Null
-
-        if (![string]::IsNullOrEmpty($configSelection.fileName)) {
-            Copy-Item -Path $configSelection.fileName -Destination $PSScriptRoot -Force
-            $syncHash.Window.Close()
-            Start-Process -WindowStyle Minimized -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $($PSCommandPath)"
-            exit
-       
-        }
-
-
-    }) 
+$syncHash.settingImportClick.add_Click({ Import-Config -SyncHash $syncHash })
 
 $syncHash.settingConfigClick.add_Click( {
-       
-        Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
-       
-
-        Start-Sleep -Seconds 1
-        $syncHash.Window.Close()
-        Start-Process -WindowStyle Hidden -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $($PSCommandPath)"
-        exit
-    })
+    Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
+    
+    Start-Sleep -Seconds 1
+    $syncHash.Window.Close()
+    Start-Process -WindowStyle Hidden -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $($PSCommandPath)"
+    exit
+})
 
 #endregion
 
 ###### MAIN WINDOW
 $syncHash.TabMenu.add_SelectionChanged( {
-        $syncHash.itemHeader.Content = $syncHash.tabMenu.SelectedItem.Tag
-        $syncHash.TabMenu.Items | ForEach-Object { $_.Background = "#FF444444" }
-        $syncHash.tabMenu.SelectedItem.Background = "#576573"
-        $syncHash.TabMenu.Items.Header | ForEach-Object { $_.Foreground = "Gray" }
-        $syncHash.tabMenu.SelectedItem.Header.Foreground = "AliceBlue"
+       $syncHash.TabMenu.Items | ForEach-Object { $_.Background = "#FF444444" }
+       $syncHash.tabMenu.SelectedItem.Background = "#576573"
+       $syncHash.TabMenu.Items.Header | ForEach-Object { $_.Foreground = "Gray" }
+       $syncHash.tabMenu.SelectedItem.Header.Foreground = "AliceBlue"
 
         if ($syncHash.tabMenu.SelectedItem.Tag -eq 'Query') {
             $syncHash.SearchBox.Focus()
@@ -1173,179 +469,140 @@ $syncHash.TabMenu.add_SelectionChanged( {
 
     })
 
-$syncHash.searchBoxHelp.add_MouseLeftButtonUp( {
-        $syncHash.childHelp.isOpen = $true       
-    })
+$syncHash.searchBoxHelp.add_MouseLeftButtonDown({$syncHash.searchBoxHelp.Background = "#576573" })
 
-$syncHash.searchBoxHelp.add_MouseLeftButtonDown( {
-        $syncHash.searchBoxHelp.Background = "#576573"
-        $syncHash.searchBoxHelp.Foreground = "Gray"
-    })
+$syncHash.searchBoxHelp.add_MouseLeftButtonUp({
+    $syncHash.childHelp.isOpen = $true  
+    $syncHash.searchBoxHelp.Background = "Transparent"
+})
 
-$syncHash.searchBoxHelp.add_MouseEnter( {
-        $syncHash.searchBoxHelp.Foreground = "#576573"
-        $syncHash.searchBoxHelp.Background = "#454545"
-    })
 
-$syncHash.searchBoxHelp.add_MouseLeave( {
-        $syncHash.searchBoxHelp.Foreground = "LightGray"
-        $syncHash.searchBoxHelp.Background = "Transparent"
-    })
 
 
 $syncHash.tabControl.ItemsSource = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
 
 $syncHash.tabMenu.add_Loaded( {
-        # Need an delay here, otherwise the default tabindex cannot be selected
-        if ($sysCheckHash.sysChecks.RSModule -eq $true) {
+    if ($sysCheckHash.sysChecks.RSModule -eq $true) {
+        Start-RSJob -Name menuLoad -ArgumentList $syncHash, $savedConfig, $sysCheckHash -ModulesToImport C:\TempData\internal\internal.psm1 -ScriptBlock {        
+            Param($syncHash, $savedConfig, $sysCheckHash)
 
-            Start-RSJob -Name menuLoad -ArgumentList $syncHash, $savedConfig, $sysCheckHash -ModulesToImport C:\TempData\internal\internal.psm1 -ScriptBlock {        
-                Param($syncHash, $savedConfig, $sysCheckHash)
-
-                do {} until ($sysCheckHash.checkComplete)
+            do {} until ($sysCheckHash.checkComplete)
            
-
-                if ($sysCheckHash.sysChecks.Admin -eq $false -or $sysCheckHash.sysChecks.ADDS -eq $false  -or $sysCheckHash.sysChecks.Modules -eq $false ) {
-                    Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck  
-                }
-
-                elseif (!(Test-Path $savedConfig)) {
-                    Suspend-FailedItems -SyncHash $syncHash -CheckedItems Config
-                }
-        
-                else {  
-                    $syncHash.Window.Dispatcher.invoke([action] {$syncHash.tabMenu.SelectedIndex = 0 })                  
-                }
+            if ($sysCheckHash.sysChecks.Admin -eq $false -or $sysCheckHash.sysChecks.ADDS -eq $false  -or $sysCheckHash.sysChecks.Modules -eq $false ) {
+                Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck  
             }
 
-            #userbox structure populate
-   
-            # if (!($configHash.($type + 'PropList')Selection)) {
-            #     $configHash.($type + 'PropList')Selection = @()
-            #     Remove-Variable skipAdd -ErrorAction SilentlyContinue
-            # }
-
+            elseif (!(Test-Path $savedConfig)) {
+                Suspend-FailedItems -SyncHash $syncHash -CheckedItems Config
+            }
+        
+            else {  
+                $syncHash.Window.Dispatcher.invoke([action] {$syncHash.tabMenu.SelectedIndex = 0 })                  
+            }
         }
+    }
 
-        if (Test-Path $savedConfig) {
-               
-            foreach ($type in @('User', 'Comp')) {  
-            
-                if (!($configHash.($type + 'PropListSelection'))) {
-                    $configHash.($type + 'PropListSelection') = @()
-                }
+    if (Test-Path $savedConfig) {              
+        foreach ($type in @('User', 'Comp')) {             
+            if (!($configHash.($type + 'PropListSelection'))) { $configHash.($type + 'PropListSelection') = @()}
 
-                for ($i = 1; $i -le $configHash.boxMax; $i++) {
+            for ($i = 1; $i -le $configHash.boxMax; $i++) {
             
-                    if ($i -le $configHash.($type + 'boxCount')) {
-                    
-                        Remove-Variable Selected -ErrorAction SilentlyContinue
-      
-                        $selected = $configHash.($type + 'PropList') | Where-Object { $_.Field -eq $i }
+                if ($i -le $configHash.($type + 'boxCount')) {
+                    Remove-Variable Selected -ErrorAction SilentlyContinue
+                    $selected = $configHash.($type + 'PropList') | Where-Object { $_.Field -eq $i }
        
-                        if ($null -ne $selected.FieldName) { 
-                
-                            $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Header').Content = $selected.FieldName
-                            $configHash.($type + 'PropListSelection') += $selected.PropName
+                    if ($null -ne $selected.FieldName) { 
+                        $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Header').Content = $selected.FieldName
+                        $configHash.($type + 'PropListSelection') += $selected.PropName
 
-                            if ($selected.ActionName -notlike "*editable*") {
+                        switch ($selected.ActionName) {
+
+                            {$selected.ActionName -notmatch "Editable"} {
                                 $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'TextBox').Tag = 'NoEdit'
                                 $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'EditClip').Visibility = "Collapsed"
-                                $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1').Visibility = "Collapsed"                    
+                                $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1').Visibility = "Collapsed"                                                   
                             }
 
-                            else {
-                                # define edit buttons
-                                $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1').Add_Click( {
-                                        param([Parameter(Mandatory)][Object]$sender)
-                       
-                                        if ($sender.Name -like "*ubox*") {
-                                            $id = $sender.Name -replace "ubox|box.*", "" 
-                                            $type = "User"
-                                        }
-
-                                        else {
-                                            $id = $sender.Name -replace "cbox|box.*", "" 
-                                            $type = "Comp"
-                                        }
-
-                                        if ($configHash.adPropertyMap) {
-                                            Remove-Variable ChangedValue, propType, ldapValue, user -ErrorAction SilentlyContinue
-                                            $changedValue = $syncHash.($type[0] + 'box' + $id + 'resources').($type[0] + 'box' + $id + 'TextBox').Text
-                                            $propType = $configHash.($type + 'PropList')[$id - 1].PropType
-                            
-                                            if ($changedValue -as $propType) {    
-                                                $changedValue = $changedValue -as $propType
-                                
-                                                try {
-                                            
-                                                    if ($type -eq 'User') {
-                                                        $editObject = ($queryHash[$syncHash.tabControl.SelectedItem.Name]).SamAccountName
-                                                        $ldapValue = $configHash.adPropertyMap[(($configHash.($type + 'PropList')[$id - 1].PropName))]
-                                                        Set-ADUser -Identity $editObject -Replace @{$ldapValue = $changedValue }
-                                                        
-                                                    
-                                                    }
-
-                                                    else {
-                                                        $editObject = ($queryHash[$syncHash.tabControl.SelectedItem.Name]).Name
-                                                        $ldapValue = $configHash.adPropertyMap[(($configHash.($type + 'PropList')[$id - 1].PropName))]
-                                                        Set-ADComputer -Identity $editObject -Replace @{$ldapValue = $changedValue }
-                                                        
-                                                    }
-
-                                                    $queryHash.($editObject).($configHash.($type + 'PropList')[$id - 1].PropName) = $changedValue
-                                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: SUCCESS on [$($($editObject).toLower())]")
-                                                }
-                                    
-                                                catch {
-                                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())]")
-                                                }
-                                            }
-
-                                            else {
-                                                if ([string]::IsNullOrEmpty($changedValue)) {
-                                                    $ldapValue = $configHash.adPropertyMap[(($configHash.($type + 'PropList')[$id - 1].PropName))]
-                                                    
-                                                    try {
-                                                        if ($type -eq 'User') {
-                                                            $editObject = ($queryHash[$syncHash.tabControl.SelectedItem.Name]).SamAccountName
-                                                            Set-ADUser -Identity $editObject -Clear $ldapValue
-                                                        }
-                                                        else {
-                                                            $editObject = ($queryHash[$syncHash.tabControl.SelectedItem.Name]).Name
-                                                            Set-ADComputer -Identity $editObject -Clear $ldapValue
-                                                        }
-
-                                                        $syncHash.SnackMsg.MessageQueue.Enqueue("[CLEAR]: SUCCESS on [$($($editObject).toLower())]")
-                                                    }
-
-                                                    catch {
-                                                        $syncHash.SnackMsg.MessageQueue.Enqueue("[CLEAR]: FAIL on [$($($editObject).toLower())]")
-                                                    }
-                                                }
-
-                                                else {     
-                                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())] - expected type  [$($($propType).toUpper())]")
-                                                }
-                                            }
-                                        }
-                        
-                                        else {
-                                            $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())] - ADEntity .dll missing; cannot edit")
-                                        }
-                                    })
-
-                            }
-
-                            if ($selected.ActionName -notmatch "Actionable") {
+                            {$selected.ActionName -notmatch "Actionable"} {
                                 $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1Action1').Visibility = "Collapsed"  
                                 $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1Action2').Visibility = "Collapsed"  
                             }
 
-                            else {
+                            {$selected.ActionName -match "Editable"} {
+                                
+                                $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1').Add_Click({
+                                param([Parameter(Mandatory)][Object]$sender)                       
+                                    if ($sender.Name -like "*ubox*") {
+                                        $id = $sender.Name -replace "ubox|box.*"
+                                        $type = "User"
+                                    }
+                                    else {
+                                        $id = $sender.Name -replace "cbox|box.*"
+                                        $type = "Comp"
+                                    }
+
+                                    if ($configHash.adPropertyMap) {
+                                        Remove-Variable ChangedValue, propType, ldapValue, user -ErrorAction SilentlyContinue
+                                        $changedValue = $syncHash.($type[0] + 'box' + $id + 'resources').($type[0] + 'box' + $id + 'TextBox').Text
+                                        $propType = $configHash.($type + 'PropList')[$id - 1].PropType
+                            
+                                        if ($changedValue -as $propType) {    
+                                            $changedValue = $changedValue -as $propType
+                                
+                                            try {
+                                            
+                                                if ($type -eq 'User') {
+                                                    $editObject = ($queryHash[$syncHash.tabControl.SelectedItem.Name]).SamAccountName
+                                                    $ldapValue = $configHash.adPropertyMap[(($configHash.($type + 'PropList')[$id - 1].PropName))]
+                                                    Set-ADUser -Identity $editObject -Replace @{$ldapValue = $changedValue }
+                                                }
+
+                                                else {
+                                                    $editObject = ($queryHash[$syncHash.tabControl.SelectedItem.Name]).Name
+                                                    $ldapValue = $configHash.adPropertyMap[(($configHash.($type + 'PropList')[$id - 1].PropName))]
+                                                    Set-ADComputer -Identity $editObject -Replace @{$ldapValue = $changedValue }
+                                                }
+
+                                                $queryHash.($editObject).($configHash.($type + 'PropList')[$id - 1].PropName) = $changedValue
+                                                $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: SUCCESS on [$($($editObject).toLower())]")
+                                            }
+                                    
+                                            catch { $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())]") }
+                                        }
+
+                                        else {
+                                            if ([string]::IsNullOrEmpty($changedValue)) {
+                                                $ldapValue = $configHash.adPropertyMap[(($configHash.($type + 'PropList')[$id - 1].PropName))]
+                                                    
+                                                try {
+                                                    if ($type -eq 'User') {
+                                                        $editObject = ($queryHash[$syncHash.tabControl.SelectedItem.Name]).SamAccountName
+                                                        Set-ADUser -Identity $editObject -Clear $ldapValue
+                                                    }
+                                                    else {
+                                                        $editObject = ($queryHash[$syncHash.tabControl.SelectedItem.Name]).Name
+                                                        Set-ADComputer -Identity $editObject -Clear $ldapValue
+                                                    }
+
+                                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[CLEAR]: SUCCESS on [$($($editObject).toLower())]")
+                                                }
+
+                                                catch { $syncHash.SnackMsg.MessageQueue.Enqueue("[CLEAR]: FAIL on [$($($editObject).toLower())]") }
+                                            }
+
+                                            else {     
+                                                $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())] - expected type  [$($($propType).toUpper())]")
+                                            }
+                                        }
+                                    }
+                        
+                                    else { $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())] - ADEntity .dll missing; cannot edit") }
+                                })
+                            }
+
+                            {$selected.ActionName -match "Actionable"} {
                                 for ($b = 1; $b -le 2; $b++) {
- 
                                     # Event assigment for panels in user expander
                                     if ($configHash.($type + 'PropList')[$i - 1].('validAction' + $b)) {
                                         $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1Action' + $b).Content = $configHash.($type + 'PropList')[$i - 1].('actionCmd' + $b + 'Icon')
@@ -1354,94 +611,89 @@ $syncHash.tabMenu.add_Loaded( {
                                         if (($configHash.($type + 'PropList')[$i - 1]).('actionCmd' + $b + 'Multi') -eq $true) {                       
                                             $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + ('Box1Action' + $b)).Add_Click( {
                             
-                                                    param([Parameter(Mandatory)][Object]$sender)
+                                            param([Parameter(Mandatory)][Object]$sender)
                                     
-                                                    if ($sender.Name -like "*ubox*") {
-                                                        $id = $sender.Name -replace "ubox|Box.*" 
-                                                        $type = "User"
-                                                    }
+                                            if ($sender.Name -like "*ubox*") {
+                                                $id = $sender.Name -replace "ubox|Box.*" 
+                                                $type = "User"
+                                            }
 
-                                                    else {
-                                                        $id = $sender.Name -replace "cbox|Box.*" 
-                                                        $type = "Comp"
-                                                    }
+                                            else {
+                                                $id = $sender.Name -replace "cbox|Box.*" 
+                                                $type = "Comp"
+                                            }
 
-                                                    $b = $sender.Name -replace ".*action"
-                                                    $rsCmd = @{
-                                                        id           = $id
-                                                        type         = $type
-                                                        propList     = $configHash.($type + 'PropList')[$id - 1]
-                                                        actionObject = if ($type -eq 'User') { ($queryHash[$syncHash.tabControl.SelectedItem.Name]).SamAccountName }
-                                                                       else { ($queryHash[$syncHash.tabControl.SelectedItem.Name]).Name }
-                                                        boxResources = $syncHash.($type[0] + 'box' + $id + 'resources')
-                                                        window       = $syncHash.Window
-                                                        snackMsg     = $syncHash.SnackMsg
-                                                    }
+                                            $b = $sender.Name -replace ".*action"
+
+                                            $rsCmd = @{
+                                                id           = $id
+                                                type         = $type
+                                                propList     = $configHash.($type + 'PropList')[$id - 1]
+                                                actionObject = if ($type -eq 'User') { ($queryHash[$syncHash.tabControl.SelectedItem.Name]).SamAccountName }
+                                                                else { ($queryHash[$syncHash.tabControl.SelectedItem.Name]).Name }
+                                                boxResources = $syncHash.($type[0] + 'box' + $id + 'resources')
+                                                window       = $syncHash.Window
+                                                snackMsg     = $syncHash.SnackMsg
+                                            }
     
                                
-                                                    Start-RSJob -Name threadedAction -ArgumentList $rsCmd, $queryHash, $b -ScriptBlock {
-                                                        Param($rsCmd, $queryHash, $b)
+                                            Start-RSJob -Name threadedAction -ArgumentList $rsCmd, $queryHash, $b -ScriptBlock {
+                                                Param($rsCmd, $queryHash, $b)
                                                         
-                                                        
-                                                        Start-Sleep -Milliseconds 500                   
-                                                        $actionNameString = "[$($($rsCmd.propList.('actionCmd' + $b + 'ToolTip')).toUpper())]"
-                                                        $actionObjectString = "[$($($rsCmd.actionObject).toLower())]"
-                                                        $cmd = $rsCmd.propList.('actionCmd' + $b)
-                                                        $type = $rsCmd.Type
-                                                        $propName = $rsCmd.propList.PropName
+                                                Start-Sleep -Milliseconds 500
+                                                           
+                                                $actionNameString = "[$($($rsCmd.propList.('actionCmd' + $b + 'ToolTip')).toUpper())]"
+                                                $actionObjectString = "[$($($rsCmd.actionObject).toLower())]"
+
+                                                $cmd = $rsCmd.propList.('actionCmd' + $b)
+                                                $type = $rsCmd.Type
+                                                $propName = $rsCmd.propList.PropName
                                             
-                                                        New-Variable -Name $type -Value $rsCmd.actionObject
-                                                        $prop = $queryHash.(Get-Variable -Name $type -ValueOnly).($propName)
+                                                New-Variable -Name $type -Value $rsCmd.actionObject
+                                                $prop = $queryHash.(Get-Variable -Name $type -ValueOnly).($propName)
 
-                                                        try {
-                                                            Invoke-Expression -Command $cmd
-                                                            $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString SUCCESS on $actionObjectString") })
+                                                try {
+                                                    Invoke-Expression -Command $cmd
+                                                    $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString SUCCESS on $actionObjectString") })
               
-                                                            if ($rsCmd.propList.('actionCmd' + $b + 'Refresh')) {
-                                                                if ($PropName -ne 'Non-Ad Property') {
-                                                                    if ($type -eq 'User') {                               
-                                                                        $result = (Get-ADUser -Identity $user -Properties $propName).$propName
-                                                                        $queryHash.($user).($propName) = $result
-
-                                                                        
-                                                                        #here##
-                                                                    }
-                                                                    else {
-                                                                        $result = (Get-AdComputerName -Identity $comp -Properties $propName).$propName
-                                                                        $queryHash.($comp).($propName) = $result
-                                                                    }
-                                                                }
-                                                        
-                                                                if ($queryHash.(Get-Variable -Name $type -ValueOnly).ActiveItem -eq $true) {  
-                                                                    if ($rsCmd.propList.ValidCmd) {
-                                                                        $tranCmd = $rsCmd.propList.translationCmd
-                                                                        $value = Invoke-Expression -Command $tranCmd
-                                                       
-                                                                        if ($resultColor) {
-                                                                            $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.boxResources.($type[0] + 'box' + $rsCmd.id + "TextBox").Foreground = $resultColor })
-                                                                        }
-
-                                                                        $updatedValue = $value
-
-                                                                    }
-
-                                                                    else {
-                                                                        $updatedValue = $result
-                                                                    }
-
-                                                                    $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.boxResources.($type[0] + 'box' + $rsCmd.id + "TextBox").Text = $updatedValue })
-                                        
-                                                                }
-
+                                                    if ($rsCmd.propList.('actionCmd' + $b + 'Refresh')) {
+                                                        if ($PropName -ne 'Non-Ad Property') {
+                                                            if ($type -eq 'User') {                               
+                                                                $result = (Get-ADUser -Identity $user -Properties $propName).$propName
+                                                                $queryHash.($user).($propName) = $result                                                                       
+                                                            }
+                                                            else {
+                                                                $result = (Get-AdComputerName -Identity $comp -Properties $propName).$propName
+                                                                $queryHash.($comp).($propName) = $result
                                                             }
                                                         }
-                          
-                                                        catch {
-                                                            $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString FAILURE on $actionObjectString") })
+                                                        
+                                                        if ($queryHash.(Get-Variable -Name $type -ValueOnly).ActiveItem -eq $true) {  
+                                                            if ($rsCmd.propList.ValidCmd) {
+                                                                $tranCmd = $rsCmd.propList.translationCmd
+                                                                $value = Invoke-Expression -Command $tranCmd
+                                                       
+                                                                if ($resultColor) {
+                                                                    $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.boxResources.($type[0] + 'box' + $rsCmd.id + "TextBox").Foreground = $resultColor })
+                                                                }
+
+                                                                $updatedValue = $value
+
+                                                            }
+
+                                                            else {  $updatedValue = $result }
+
+                                                            $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.boxResources.($type[0] + 'box' + $rsCmd.id + "TextBox").Text = $updatedValue })                                        
                                                         }
                                                     }
-                                                })                         
-                                        }
+                                                }
+                          
+                                                catch {
+                                                    $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString FAILURE on $actionObjectString") })
+                                                }
+                                            }
+                                        })                         
+                                    }
                           
                                         else {
                                             $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + ('Box1Action' + $b)).Add_Click( {
@@ -1501,394 +753,351 @@ $syncHash.tabMenu.add_Loaded( {
 
                                                             }
 
-                                                            else {
-                                                                $updatedValue = $result
-                                                            }
+                                                            else { $updatedValue = $result }
 
                                                             $syncHash.($type[0] + 'box' + $id + "resources").($type[0] + 'box' + $id + "TextBox").Text = $updatedValue
-                                                        }
-                        
+                                                        }                       
                                                     }
                           
                                                     catch {
                                                         $syncHash.SnackMsg.MessageQueue.Enqueue("[$($($actionName).toUpper())] FAILURE on [$($(Get-Variable -Name $type -ValueOnly).toLower())]")
-                                                    }
-                                                                
+                                                    }                                                               
                                                 })
                                         }
-
-
                                     }
                     
                                     else {
                                         $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + ('Box1Action' + $b)).Visibility = "Collapsed"  
                                     }
                                 }
-                                #  if ($configHash.($type + 'PropList')[$i - 1].validAction2) {
-                                #      $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1Action2').Content = $configHash.($type + 'PropList')[$i - 1].actionCmd2Icon 
-                                #  }
-
-                                #  else {
-                                #      $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1Action2').Visibility = "Collapsed" 
-                                #  }
                             }
-            
                         }
-
-                        else {
-                            $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Header').Visibility = "Collapsed"
-                            $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Border').Visibility = "Collapsed"
-                        }
-            
-                    
-            
-            
-            
                     }
+
+                    else {
+                        $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Header').Visibility = "Collapsed"
+                        $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Border').Visibility = "Collapsed"
+                    }          
                 }
-        
-                if ($configHash.($type + 'boxCount') -le 7) {
-                    $syncHash.Window.Dispatcher.Invoke([Action] {
-                            $syncHash.($type + 'detailGrid').Columns = 1
-                        })
-                }
-
-                elseif ($configHash.($type + 'boxCount') -gt 7 -and $configHash.($type + 'boxCount') -le 14) {
-                    $syncHash.Window.Dispatcher.Invoke([Action] {
-                            $syncHash.($type + 'detailGrid').Columns = 2
-                        })
-                }
-
-                else {
-                    $syncHash.Window.Dispatcher.Invoke([Action] {
-                            $syncHash.($type + 'detailGrid').Columns = 3
-                        })
-                }
-
-               
-
-                
-
             }
-            # populate compgrid connection button icons           
-            foreach ($buttonType in @('rbut', 'rcbut')) {
-                $syncHash.($buttonType + 1).Source = ([Convert]::FromBase64String($configHash.rtConfig.MSTSC.Icon))
-                $syncHash.($buttonType + 1).Parent.Tag = "MSTSC"
-                $syncHash.($buttonType + 1).Parent.ToolTip = $configHash.rtConfig.MSTSC.DisplayName
-                $syncHash.($buttonType + 1).Parent.Add_Click( {
-                        param([Parameter(Mandatory)][Object]$sender) 
-                        if ($sender.Name -match "rbut") {
-                            if ($syncHash.userCompFocusHostToggle.IsChecked) {
-                                $comp = $syncHash.UserCompGrid.SelectedItem.HostName
-                            }
-                            else {
-                                $comp = $syncHash.UserCompGrid.SelectedItem.ClientName
-                            }
+        
+            if ($configHash.($type + 'boxCount') -le 7) { $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.($type + 'detailGrid').Columns = 1 })}
 
-                            $user = $syncHash.UserCompGrid.SelectedItem.UserName
-                
-                        }
-
-                        else {
-                
-                            if ($syncHash.compUserFocusUserToggle.IsChecked) {
-                                $comp = $synchash.tabControl.SelectedItem.Name
-                            }
-                
-                            else {
-                                $comp = $syncHash.CompUserGrid.SelectedItem.ClientName
-                            }
-
-                            $user = $syncHash.CompUserGrid.SelectedItem.UserName
-
-                        }
+            elseif ($configHash.($type + 'boxCount') -gt 7 -and $configHash.($type + 'boxCount') -le 14) { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.($type + 'detailGrid').Columns = 2})}
             
-                        mstsc /v $comp /admin
-                    })
+            else { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.($type + 'detailGrid').Columns = 3 }) }
 
-                $syncHash.($buttonType + 2).Source = ([Convert]::FromBase64String($configHash.rtConfig.MSRA.Icon))
-                $syncHash.($buttonType + 2).Parent.Tag = "MSRA"
-                $syncHash.($buttonType + 2).Parent.ToolTip = $configHash.rtConfig.MSRA.DisplayName
-                $syncHash.($buttonType + 2).Parent.Add_Click( { 
-                        param([Parameter(Mandatory)][Object]$sender)
-                        if ($sender.Name -match "rbut") {
-                            if ($syncHash.userCompFocusHostToggle.IsChecked) {
-                                $comp = $syncHash.UserCompGrid.SelectedItem.HostName
-                            }
-                            else {
-                                $comp = $syncHash.UserCompGrid.SelectedItem.ClientName
-                            }
-
-                            $user = $syncHash.UserCompGrid.SelectedItem.UserName
-                
+        }
+        # populate compgrid connection button icons           
+        foreach ($buttonType in @('rbut', 'rcbut')) {
+            $syncHash.($buttonType + 1).Source = ([Convert]::FromBase64String($configHash.rtConfig.MSTSC.Icon))
+            $syncHash.($buttonType + 1).Parent.Tag = "MSTSC"
+            $syncHash.($buttonType + 1).Parent.ToolTip = $configHash.rtConfig.MSTSC.DisplayName
+            $syncHash.($buttonType + 1).Parent.Add_Click( {
+                    param([Parameter(Mandatory)][Object]$sender) 
+                    if ($sender.Name -match "rbut") {
+                        if ($syncHash.userCompFocusHostToggle.IsChecked) {
+                            $comp = $syncHash.UserCompGrid.SelectedItem.HostName
                         }
-
                         else {
-                
-                            if ($syncHash.compUserFocusUserToggle.IsChecked) {
-                                $comp = $synchash.tabControl.SelectedItem.Name
-                            }
-                
-                            else {
-                                $comp = $syncHash.CompUserGrid.SelectedItem.ClientName
-                            }
-
-                            $user = $syncHash.CompUserGrid.SelectedItem.UserName
-
+                            $comp = $syncHash.UserCompGrid.SelectedItem.ClientName
                         }
-                        msra /expert /offera $comp 
-                    })    
+
+                        $user = $syncHash.UserCompGrid.SelectedItem.UserName
+                
+                    }
+
+                    else {
+                
+                        if ($syncHash.compUserFocusUserToggle.IsChecked) {
+                            $comp = $synchash.tabControl.SelectedItem.Name
+                        }
+                
+                        else {
+                            $comp = $syncHash.CompUserGrid.SelectedItem.ClientName
+                        }
+
+                        $user = $syncHash.CompUserGrid.SelectedItem.UserName
+
+                    }
+            
+                    mstsc /v $comp /admin
+                })
+
+            $syncHash.($buttonType + 2).Source = ([Convert]::FromBase64String($configHash.rtConfig.MSRA.Icon))
+            $syncHash.($buttonType + 2).Parent.Tag = "MSRA"
+            $syncHash.($buttonType + 2).Parent.ToolTip = $configHash.rtConfig.MSRA.DisplayName
+            $syncHash.($buttonType + 2).Parent.Add_Click( { 
+                    param([Parameter(Mandatory)][Object]$sender)
+                    if ($sender.Name -match "rbut") {
+                        if ($syncHash.userCompFocusHostToggle.IsChecked) {
+                            $comp = $syncHash.UserCompGrid.SelectedItem.HostName
+                        }
+                        else {
+                            $comp = $syncHash.UserCompGrid.SelectedItem.ClientName
+                        }
+
+                        $user = $syncHash.UserCompGrid.SelectedItem.UserName
+                
+                    }
+
+                    else {
+                
+                        if ($syncHash.compUserFocusUserToggle.IsChecked) {
+                            $comp = $synchash.tabControl.SelectedItem.Name
+                        }
+                
+                        else {
+                            $comp = $syncHash.CompUserGrid.SelectedItem.ClientName
+                        }
+
+                        $user = $syncHash.CompUserGrid.SelectedItem.UserName
+
+                    }
+                    msra /expert /offera $comp 
+                })    
 
 
-                foreach ($rtID in $configHash.rtConfig.Keys.Where{$_ -like "RT*"}) {
+            foreach ($rtID in $configHash.rtConfig.Keys.Where{$_ -like "RT*"}) {
                                  
 
-                    $syncHash.customRT.$rtID.$buttonType = New-Object System.Windows.Controls.Button -Property @{
-                        Padding = "0"
-                        Tag     = $rtID
-                        ToolTip = $configHash.rtConfig.$rtID.DisplayName
-                        Style   = $syncHash.Window.FindResource('itemButton')
-                        Name    = $buttonType + ([int]($rtID -replace 'rt') + 2)
-                    }
+                $syncHash.customRT.$rtID.$buttonType = New-Object System.Windows.Controls.Button -Property @{
+                    Padding = "0"
+                    Tag     = $rtID
+                    ToolTip = $configHash.rtConfig.$rtID.DisplayName
+                    Style   = $syncHash.Window.FindResource('itemButton')
+                    Name    = $buttonType + ([int]($rtID -replace 'rt') + 2)
+                }
             
-                    $syncHash.customRT.$rtID.($buttonType + 'img') = New-Object System.Windows.Controls.Image -Property @{
-                        Width  = 15
-                        Height = 15
-                        Source = ([Convert]::FromBase64String($configHash.rtConfig.$rtID.Icon))
-                    }
+                $syncHash.customRT.$rtID.($buttonType + 'img') = New-Object System.Windows.Controls.Image -Property @{
+                    Width  = 15
+                    Height = 15
+                    Source = ([Convert]::FromBase64String($configHash.rtConfig.$rtID.Icon))
+                }
 
-                    $syncHash.customRT.$rtID.$buttonType.AddChild($syncHash.customRT.$rtID.($buttonType + 'img'))
+                $syncHash.customRT.$rtID.$buttonType.AddChild($syncHash.customRT.$rtID.($buttonType + 'img'))
 
-                    $syncHash.customRT.$rtID.($buttonType + 'img').Parent.Add_Click( { 
-                            param([Parameter(Mandatory)][Object]$sender) 
-                            $id = 'rt' + ([int]($sender.Name -replace ".*but") - 2)              
+                $syncHash.customRT.$rtID.($buttonType + 'img').Parent.Add_Click( { 
+                        param([Parameter(Mandatory)][Object]$sender) 
+                        $id = 'rt' + ([int]($sender.Name -replace ".*but") - 2)              
 
-                            if ($sender.Name -match "rbut") {
+                        if ($sender.Name -match "rbut") {
                                 
 
 
-                                if ($syncHash.userCompFocusHostToggle.IsChecked) {
-                                    $comp = $syncHash.UserCompGrid.SelectedItem.HostName
-                                }
-                                else {
-                                    $comp = $syncHash.UserCompGrid.SelectedItem.ClientName
-                                }
-
-                                $user = $syncHash.UserCompGrid.SelectedItem.UserName
-                
-                            }
-
-                            else {
-                
-                                if ($syncHash.compUserFocusUserToggle.IsChecked) {
-                                    $comp = $synchash.tabControl.SelectedItem.Name
-                                }
-                
-                                else {
-                                    $comp = $syncHash.CompUserGrid.SelectedItem.ClientName
-                                }
-
-                                $user = $syncHash.CompUserGrid.SelectedItem.UserName
-
-                            }
-
-                            Invoke-Expression -Command  ($configHash.rtConfig.$id.cmd)
-                        })
-
-                    $syncHash.($buttonType + 'Grid').AddChild($syncHash.customRT.$rtID.$buttonType)
-                }
-
-                #here#
-                foreach ($contextBut in $configHash.contextConfig.Where{$_.ValidAction -eq $true}) {
-                   
-                    if ($null -eq $syncHash.customContext.('cxt' + $contextBut.IDNum)) {
-                        $syncHash.customContext.('cxt' + $contextBut.IDNum) = @{}
-                    }
-                               
-                    $syncHash.customContext.('cxt' + $contextBut.IDNum).($buttonType + 'context' + $contextBut.IDNum) = New-Object System.Windows.Controls.Button -Property @{
-                        Padding = "0"
-                        Tag     = $buttonType + 'context' + $contextBut.IDNum
-                        ToolTip = $configHash.contextConfig[$contextBut.IDnum - 1].ActionName
-                        Style   = $syncHash.Window.FindResource('itemButton')
-                        Name    = $buttonType + 'context' + $contextBut.IDNum
-                        FontFamily = "Segoe MDL2 Assets"
-                        Content = $configHash.contextConfig[$contextBut.IDnum - 1].actionCmdIcon
-                    }
-            
-
-                    $syncHash.customContext.('cxt' + $contextBut.IDNum).($buttonType + 'context' + $contextBut.IDNum).Add_Click( { 
-                        param([Parameter(Mandatory)][Object]$sender) 
-                        $id = [int]($sender.Name -replace ".*context")
-                        if ($sender.Parent.Name -eq 'rbutContextGrid') {
-                            
-                            $user = $configHash.currentTabItem
-                            $sessionID = $syncHash.UserCompGrid.SelectedItem.SessionID
-
                             if ($syncHash.userCompFocusHostToggle.IsChecked) {
                                 $comp = $syncHash.UserCompGrid.SelectedItem.HostName
                             }
                             else {
                                 $comp = $syncHash.UserCompGrid.SelectedItem.ClientName
                             }
+
+                            $user = $syncHash.UserCompGrid.SelectedItem.UserName
+                
                         }
-                        
+
                         else {
-
-                            $user = $syncHash.CompUserGrid.SelectedItem.UserName
-                            $sessionID = $syncHash.CompUserGrid.SelectedItem.SessionID
-
+                
                             if ($syncHash.compUserFocusUserToggle.IsChecked) {
-                                $comp = $configHash.currentTabItem
+                                $comp = $synchash.tabControl.SelectedItem.Name
                             }
                 
                             else {
                                 $comp = $syncHash.CompUserGrid.SelectedItem.ClientName
-                            }     
-                        }
-                        
-                        
-
-
-                        if ($configHash.contextConfig[$id - 1].actionCmdMulti) {
-
-                            $rsCmd = @{
-                                comp           = $comp
-                                user           = $user
-                                buttonSettings = $configHash.contextConfig[$id - 1]
-                                sessionID      = $sessionID
                             }
 
-                            Start-RSJob -ArgumentList $rsCmd, $syncHash -ScriptBlock {
-                                Param($rsCmd, $syncHash)
-                            
-                                try {
-                                    Invoke-Expression -Command $rsCmd.buttonSettings.actionCmd
-                                    $syncHash.Window.Dispatcher.Invoke([Action]{
-                                        $syncHash.SnackMsg.MessageQueue.Enqueue("[$($rsCmd.buttonSettings.ActionName.ToUpper())]: SUCCESS on $($rsCmd.user.ToLower()) on $($rsCmd.comp.ToLower())")
-                                    })
-                                }
-                                catch {
-                                    $syncHash.Window.Dispatcher.Invoke([Action]{
-                                        $syncHash.SnackMsg.MessageQueue.Enqueue("[$($rsCmd.buttonSettings.ActionName.ToUpper())]: FAIL on $($rsCmd.user.ToLower()) on $($rsCmd.comp.ToLower())")  
-                                    })
-                                }
-                            }
-                        }
-
-                        else {
-
-                            try {
-                                Invoke-Expression -Command $configHash.contextConfig[$id - 1].actionCmd
-                                $syncHash.SnackMsg.MessageQueue.Enqueue("[$($configHash.contextConfig[$id - 1].ActionName.ToUpper())]: SUCCESS on $($user.ToLower()) on $($comp.ToLower())")
-                            }
-                            
-                            catch {
-                               $syncHash.SnackMsg.MessageQueue.Enqueue("[$($configHash.contextConfig[$id - 1].ActionName.ToUpper())]: FAIL on $($user.ToLower()) on $($comp.ToLower())")
-                            }
-                            
+                            $user = $syncHash.CompUserGrid.SelectedItem.UserName
 
                         }
 
+                        Invoke-Expression -Command  ($configHash.rtConfig.$id.cmd)
                     })
-                
-                    $syncHash.($buttonType + 'ContextGrid').AddChild($syncHash.customContext.('cxt' + $contextBut.IDNum).($buttonType + 'context' + $contextBut.IDNum))
 
+                $syncHash.($buttonType + 'Grid').AddChild($syncHash.customRT.$rtID.$buttonType)
+            }
 
+            #here#
+            foreach ($contextBut in $configHash.contextConfig.Where{$_.ValidAction -eq $true}) {
                    
+                if ($null -eq $syncHash.customContext.('cxt' + $contextBut.IDNum)) {
+                    $syncHash.customContext.('cxt' + $contextBut.IDNum) = @{}
                 }
+                               
+                $syncHash.customContext.('cxt' + $contextBut.IDNum).($buttonType + 'context' + $contextBut.IDNum) = New-Object System.Windows.Controls.Button -Property @{
+                    Padding = "0"
+                    Tag     = $buttonType + 'context' + $contextBut.IDNum
+                    ToolTip = $configHash.contextConfig[$contextBut.IDnum - 1].ActionName
+                    Style   = $syncHash.Window.FindResource('itemButton')
+                    Name    = $buttonType + 'context' + $contextBut.IDNum
+                    FontFamily = "Segoe MDL2 Assets"
+                    Content = $configHash.contextConfig[$contextBut.IDnum - 1].actionCmdIcon
+                }
+            
+
+                $syncHash.customContext.('cxt' + $contextBut.IDNum).($buttonType + 'context' + $contextBut.IDNum).Add_Click( { 
+                    param([Parameter(Mandatory)][Object]$sender) 
+                    $id = [int]($sender.Name -replace ".*context")
+                    if ($sender.Parent.Name -eq 'rbutContextGrid') {
+                            
+                        $user = $configHash.currentTabItem
+                        $sessionID = $syncHash.UserCompGrid.SelectedItem.SessionID
+
+                        if ($syncHash.userCompFocusHostToggle.IsChecked) {
+                            $comp = $syncHash.UserCompGrid.SelectedItem.HostName
+                        }
+                        else {
+                            $comp = $syncHash.UserCompGrid.SelectedItem.ClientName
+                        }
+                    }
+                        
+                    else {
+
+                        $user = $syncHash.CompUserGrid.SelectedItem.UserName
+                        $sessionID = $syncHash.CompUserGrid.SelectedItem.SessionID
+
+                        if ($syncHash.compUserFocusUserToggle.IsChecked) {
+                            $comp = $configHash.currentTabItem
+                        }
+                
+                        else {
+                            $comp = $syncHash.CompUserGrid.SelectedItem.ClientName
+                        }     
+                    }
+                        
+                        
 
 
+                    if ($configHash.contextConfig[$id - 1].actionCmdMulti) {
 
+                        $rsCmd = @{
+                            comp           = $comp
+                            user           = $user
+                            buttonSettings = $configHash.contextConfig[$id - 1]
+                            sessionID      = $sessionID
+                        }
+
+                        Start-RSJob -ArgumentList $rsCmd, $syncHash -ScriptBlock {
+                            Param($rsCmd, $syncHash)
+                            
+                            try {
+                                Invoke-Expression -Command $rsCmd.buttonSettings.actionCmd
+                                $syncHash.Window.Dispatcher.Invoke([Action]{
+                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[$($rsCmd.buttonSettings.ActionName.ToUpper())]: SUCCESS on $($rsCmd.user.ToLower()) on $($rsCmd.comp.ToLower())")
+                                })
+                            }
+                            catch {
+                                $syncHash.Window.Dispatcher.Invoke([Action]{
+                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[$($rsCmd.buttonSettings.ActionName.ToUpper())]: FAIL on $($rsCmd.user.ToLower()) on $($rsCmd.comp.ToLower())")  
+                                })
+                            }
+                        }
+                    }
+
+                    else {
+
+                        try {
+                            Invoke-Expression -Command $configHash.contextConfig[$id - 1].actionCmd
+                            $syncHash.SnackMsg.MessageQueue.Enqueue("[$($configHash.contextConfig[$id - 1].ActionName.ToUpper())]: SUCCESS on $($user.ToLower()) on $($comp.ToLower())")
+                        }
+                            
+                        catch {
+                            $syncHash.SnackMsg.MessageQueue.Enqueue("[$($configHash.contextConfig[$id - 1].ActionName.ToUpper())]: FAIL on $($user.ToLower()) on $($comp.ToLower())")
+                        }
+                            
+
+                    }
+
+                })
+                
+                $syncHash.($buttonType + 'ContextGrid').AddChild($syncHash.customContext.('cxt' + $contextBut.IDNum).($buttonType + 'context' + $contextBut.IDNum))
 
             }
+        }
 
-            $customField = 0
-            $configHash.userLogMapping | Where-Object { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } | ForEach-Object {
-                # populate custom dock items
-                $customField++
-                $syncHash.Window.Dispatcher.Invoke([Action] {
+        $customField = 0
+        $configHash.userLogMapping | Where-Object { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } | ForEach-Object {
+            # populate custom dock items
+            $customField++
+            $syncHash.Window.Dispatcher.Invoke([Action] {
 
-                        $syncHash.('customPropDock' + $customField) = New-Object System.Windows.Controls.StackPanel
-                        $syncHash.('customPropLabel' + $customField) = New-Object System.Windows.Controls.Label
-                        $syncHash.('customPropText' + $customField) = New-Object System.Windows.Controls.Textbox
-                        $syncHash.('customPropLabel' + $customField).Content = $_.Header
-                        $syncHash.('customPropDock' + $customField).VerticalAlignment = "Top"
-                        $syncHash.('customPropDock' + $customField).Margin = "0,-10,0,0"
+                    $syncHash.('customPropDock' + $customField) = New-Object System.Windows.Controls.StackPanel
+                    $syncHash.('customPropLabel' + $customField) = New-Object System.Windows.Controls.Label
+                    $syncHash.('customPropText' + $customField) = New-Object System.Windows.Controls.Textbox
+                    $syncHash.('customPropLabel' + $customField).Content = $_.Header
+                    $syncHash.('customPropDock' + $customField).VerticalAlignment = "Top"
+                    $syncHash.('customPropDock' + $customField).Margin = "0,-10,0,0"
                 
 
-                        $syncHash.('customPropDock' + $customField).AddChild(($syncHash.('customPropLabel' + $customField)))
-                        $syncHash.('customPropDock' + $customField).AddChild(($syncHash.('customPropText' + $customField)))
+                    $syncHash.('customPropDock' + $customField).AddChild(($syncHash.('customPropLabel' + $customField)))
+                    $syncHash.('customPropDock' + $customField).AddChild(($syncHash.('customPropText' + $customField)))
      
 
-                        $syncHash.('customPropLabel' + $customField).FontSize = "10"
-                        $syncHash.('customPropLabel' + $customField).Foreground = $syncHash.Window.FindResource('MahApps.Brushes.SystemControlBackgroundBaseMediumLow')
-                        $syncHash.('customPropText' + $customField).Style = $syncHash.Window.FindResource('compItemBox') 
-                        $syncHash.userLogExtraPropGrid.AddChild(($syncHash.('customPropDock' + $customField)))
+                    $syncHash.('customPropLabel' + $customField).FontSize = "10"
+                    $syncHash.('customPropLabel' + $customField).Foreground = $syncHash.Window.FindResource('MahApps.Brushes.SystemControlBackgroundBaseMediumLow')
+                    $syncHash.('customPropText' + $customField).Style = $syncHash.Window.FindResource('compItemBox') 
+                    $syncHash.userLogExtraPropGrid.AddChild(($syncHash.('customPropDock' + $customField)))
 
-                        # Create and set a binding on the textbox object
-                        $Binding = New-Object System.Windows.Data.Binding
-                        $Binding.UpdateSourceTrigger = "PropertyChanged"
-                        $binding.Source = $syncHash.userCompGrid
-                        $binding.Path = "SelectedItem.$($_.Header)"
-                        $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+                    # Create and set a binding on the textbox object
+                    $Binding = New-Object System.Windows.Data.Binding
+                    $Binding.UpdateSourceTrigger = "PropertyChanged"
+                    $binding.Source = $syncHash.userCompGrid
+                    $binding.Path = "SelectedItem.$($_.Header)"
+                    $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
      
 
-                        [void][System.Windows.Data.BindingOperations]::SetBinding(($syncHash.('customPropText' + $customField)), [System.Windows.Controls.TextBox]::TextProperty, $Binding)
-                    })
-            }
+                    [void][System.Windows.Data.BindingOperations]::SetBinding(($syncHash.('customPropText' + $customField)), [System.Windows.Controls.TextBox]::TextProperty, $Binding)
+                })
+        }
 
-            $customField = 0        
-            $configHash.compLogMapping | Where-Object { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } | ForEach-Object {
-                # populate custom dock items
-                $customField++
-                $syncHash.Window.Dispatcher.Invoke([Action] {
+        $customField = 0        
+        $configHash.compLogMapping | Where-Object { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } | ForEach-Object {
+            # populate custom dock items
+            $customField++
+            $syncHash.Window.Dispatcher.Invoke([Action] {
 
-                        $syncHash.('customCompPropDock' + $customField) = New-Object System.Windows.Controls.StackPanel
-                        $syncHash.('customCompPropLabel' + $customField) = New-Object System.Windows.Controls.Label
-                        $syncHash.('customCompPropText' + $customField) = New-Object System.Windows.Controls.Textbox
-                        $syncHash.('customCompPropLabel' + $customField).Content = $_.Header
-                        $syncHash.('customCompPropDock' + $customField).VerticalAlignment = "Top"
-                        $syncHash.('customCompPropDock' + $customField).Margin = "0,-10,0,0"
+                    $syncHash.('customCompPropDock' + $customField) = New-Object System.Windows.Controls.StackPanel
+                    $syncHash.('customCompPropLabel' + $customField) = New-Object System.Windows.Controls.Label
+                    $syncHash.('customCompPropText' + $customField) = New-Object System.Windows.Controls.Textbox
+                    $syncHash.('customCompPropLabel' + $customField).Content = $_.Header
+                    $syncHash.('customCompPropDock' + $customField).VerticalAlignment = "Top"
+                    $syncHash.('customCompPropDock' + $customField).Margin = "0,-10,0,0"
 
-                        $syncHash.('customCompPropDock' + $customField).AddChild(($syncHash.('customCompPropLabel' + $customField)))
-                        $syncHash.('customCompPropDock' + $customField).AddChild(($syncHash.('customCompPropText' + $customField)))
+                    $syncHash.('customCompPropDock' + $customField).AddChild(($syncHash.('customCompPropLabel' + $customField)))
+                    $syncHash.('customCompPropDock' + $customField).AddChild(($syncHash.('customCompPropText' + $customField)))
      
 
-                        $syncHash.('customCompPropLabel' + $customField).FontSize = "10"
-                        $syncHash.('customCompPropLabel' + $customField).Foreground = $syncHash.Window.FindResource('MahApps.Brushes.SystemControlBackgroundBaseMediumLow')
-                        $syncHash.('customCompPropText' + $customField).Style = $syncHash.Window.FindResource('compItemBox') 
-                        $syncHash.compLogExtraPropGrid.AddChild(($syncHash.('customCompPropDock' + $customField)))
+                    $syncHash.('customCompPropLabel' + $customField).FontSize = "10"
+                    $syncHash.('customCompPropLabel' + $customField).Foreground = $syncHash.Window.FindResource('MahApps.Brushes.SystemControlBackgroundBaseMediumLow')
+                    $syncHash.('customCompPropText' + $customField).Style = $syncHash.Window.FindResource('compItemBox') 
+                    $syncHash.compLogExtraPropGrid.AddChild(($syncHash.('customCompPropDock' + $customField)))
 
-                        # Create and set a binding on the textbox object
-                        $Binding = New-Object System.Windows.Data.Binding
-                        $Binding.UpdateSourceTrigger = "PropertyChanged"
-                        $binding.Source = $syncHash.compUserGrid
-                        $binding.Path = "SelectedItem.$($_.Header)"
-                        $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+                    # Create and set a binding on the textbox object
+                    $Binding = New-Object System.Windows.Data.Binding
+                    $Binding.UpdateSourceTrigger = "PropertyChanged"
+                    $binding.Source = $syncHash.compUserGrid
+                    $binding.Path = "SelectedItem.$($_.Header)"
+                    $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
      
 
-                        [void][System.Windows.Data.BindingOperations]::SetBinding(($syncHash.('customCompPropText' + $customField)), [System.Windows.Controls.TextBox]::TextProperty, $Binding)
-                    })
+                    [void][System.Windows.Data.BindingOperations]::SetBinding(($syncHash.('customCompPropText' + $customField)), [System.Windows.Controls.TextBox]::TextProperty, $Binding)
+                })
         
-            }
+        }
         
             
       
 
-        }
+    }
 
-        else { 
-            $syncHash.queryTab.IsEnabled = $false
-            $syncHash.toolTab.IsEnabled = $false
-            $syncHash.newTab.IsEnabled = $false
-        }
+    else { 
+        $syncHash.queryTab.IsEnabled = $false
+        $syncHash.toolTab.IsEnabled = $false
+        $syncHash.newTab.IsEnabled = $false
+    }
 
     })
                 
 $syncHash.tabControl.add_SelectionChanged( {
-
-
-
     if ($configHash.itemRefreshing -eq $true) {
         $configHash.itemRefreshing = $false 
         $syncHash.expanderDisplay.Content = $null
@@ -2087,152 +1296,17 @@ $syncHash.tabControl.add_SelectionChanged( {
     })
         
 $syncHash.tabControl.add_tabItemClosingEvent( {
+    $queryHash.Remove($configHash.currentTabItem)
 
-
-        $queryHash.Remove($configHash.currentTabItem)
-
-        if ($syncHash.tabControl.Items.Count -le 1) {
-            $syncHash.userExpander.IsExpanded = $false
-            $syncHash.compExpander.IsExpanded = $false
-            $syncHash.compExpanderProgressBar.Visibility = "Hidden"
-            $syncHash.expanderProgressBar.Visibility = "Hidden"
-            
-        }
+    if ($syncHash.tabControl.Items.Count -le 1) {
+        Set-ItemExpanders -SyncHash $syncHash -ConfigHash $configHash -IsActive Disable
+    }
        
-    })
+})
 
-$syncHash.userCompGrid.Add_SelectionChanged( {
+$syncHash.userCompGrid.Add_SelectionChanged({ Set-GridButtons -SyncHash $syncHash -ConfigHash $configHash -Type User })
 
-        if ($null -like $syncHash.userCompGrid.SelectedItem) {
-            $syncHash.userCompControlPanel.IsEnabled = $false
-        }
-
-        else {
-            $syncHash.userCompControlPanel.IsEnabled = $true
-        }
-
-        if ([string]::IsNullOrEmpty($syncHash.userCompGrid.SelectedItem.ClientName)) {          
-            $syncHash.userCompFocusClientToggle.Visibility = "Hidden"
-            $syncHash.userLogClientPropGrid.Visibility = "Hidden"
-
-        }
-
-        else {       
-            $syncHash.userCompFocusClientToggle.Visibility = "Visible"
-            $syncHash.userLogClientPropGrid.Visibility = "Visible"
-        }
-
-        if ($syncHash.userCompFocusClientToggle.IsChecked) {
-            $syncHash.userCompFocusHostToggle.IsChecked = $true
-        }
-
-        else {
-
-            foreach ($button in $syncHash.Keys.Where({$_ -like "*rbutbut*"})) {
-                if (($syncHash.userCompGrid.SelectedItem.Type -in $configHash.rtConfig.($syncHash[$button].Tag).Types) -and
-                   (!($configHash.rtConfig.($syncHash[$button].Tag).RequireOnline -and $syncHash.userCompGrid.SelectedItem.Connectivity -eq $false)) -and 
-                   (!($configHash.rtConfig.($syncHash[$button].Tag).RequireUser -and $syncHash.userCompGrid.SelectedItem.userOnline -eq $false))) {                
-                
-                        $syncHash[$button].IsEnabled = $true
-            
-                }
-                else {
-                    $syncHash[$button].IsEnabled = $false
-                }            
-            }
-
-            foreach ($button in $synchash.customRT.Keys) {
-                if (($syncHash.userCompGrid.SelectedItem.Type -in $configHash.rtConfig.$button.Types) -and
-                   (!($configHash.rtConfig.$button.RequireOnline -and $syncHash.userCompGrid.SelectedItem.Connectivity -eq $false)) -and 
-                   (!($configHash.rtConfig.$button.RequireUser -and $syncHash.userCompGrid.SelectedItem.userOnline -eq $false))) {
-                    $synchash.customRT.$button.rbut.IsEnabled = $true
-                }
-                else {
-                    $synchash.customRT.$button.rbut.IsEnabled = $false
-                }            
-            }
-
-            foreach ($button in $syncHash.customContext.Keys) {
-                if (($syncHash.userCompGrid.SelectedItem.Type -in $configHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
-                   (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $syncHash.userCompGrid.SelectedItem.Connectivity -eq $false)) -and 
-                   (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -and $syncHash.userCompGrid.SelectedItem.userOnline -eq $false))) {
-                    $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $true
-                }
-                else {
-                    $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $false
-                }            
-            }
-
-        }
-    })
-
-$syncHash.compUserGrid.Add_SelectionChanged( {
-
-        if ($null -like $syncHash.compUserGrid.SelectedItem) {
-            $syncHash.compUserControlPanel.IsEnabled = $false
-        }
-
-        else {
-            $syncHash.compUserControlPanel.IsEnabled = $true
-        }
-
-        if ([string]::IsNullOrEmpty($syncHash.compUserGrid.SelectedItem.ClientName)) {
-            $syncHash.compUserFocusClientToggle.Visibility = "Hidden"
-            $syncHash.compLogClientPropGrid.Visibility = "Hidden"
-
-        }
-
-        else {
-        
-            $syncHash.compUserFocusClientToggle.Visibility = "Visible"
-            $syncHash.compLogClientPropGrid.Visibility = "Visible"
-        }
-
-        
-        if ($syncHash.compUserFocusClientToggle.IsChecked) {
-            $syncHash.compUserFocusUserToggle.IsChecked = $true
-        }
-
-        else {
-
-            foreach ($button in $syncHash.Keys.Where({$_ -like "*rcbutbut*"})) {
-                if (($syncHash.compUserGrid.SelectedItem.Type -in $configHash.rtConfig.($syncHash[$button].Tag).Types) -and
-                   (!($configHash.rtConfig.($syncHash[$button].Tag).RequireOnline -and $syncHash.compUserGrid.SelectedItem.Connectivity -eq $false)) -and 
-                   (!($configHash.rtConfig.($syncHash[$button].Tag).RequireUser -and $syncHash.compUserGrid.SelectedItem.userOnline -eq $false))) {                
-                
-                    $syncHash[$button].IsEnabled = $true
-            
-                }
-                else {
-                    $syncHash[$button].IsEnabled = $false
-                }
-            }
-
-            foreach ($button in $synchash.customRT.Keys) {
-                if (($syncHash.compUserGrid.SelectedItem.Type -in $configHash.rtConfig.$button.Types) -and
-                (!($configHash.rtConfig.$button.RequireOnline -and $syncHash.compUserGrid.SelectedItem.Connectivity -eq $false)) -and 
-                (!($configHash.rtConfig.$button.RequireUser -and $syncHash.compUserGrid.SelectedItem.userOnline -eq $false))) {
-                    $synchash.customRT.$button.rcbut.IsEnabled = $true
-                }
-                else {
-                    $synchash.customRT.$button.rcbut.IsEnabled = $false
-                }            
-            }
-       
-            foreach ($button in $syncHash.customContext.Keys) {
-                if (($syncHash.compUserGrid.SelectedItem.Type -in $configHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
-                   (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $syncHash.compUserGrid.SelectedItem.Connectivity -eq $false)) -and 
-                   (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -and $syncHash.compUserGrid.SelectedItem.userOnline -eq $false))) {
-                    $syncHash.customContext.$button.('rcbutcontext' +  ($button -replace 'cxt')).IsEnabled = $true
-                }
-                else {
-                    $syncHash.customContext.$button.('rcbutcontext' +  ($button -replace 'cxt')).IsEnabled = $false
-                }            
-            }
-        }
-        
-
-    })
+$syncHash.compUserGrid.Add_SelectionChanged({ Set-GridButtons -SyncHash $syncHash -ConfigHash $configHash -Type Comp })
 
 $syncHash.userCompFocusHostToggle.Add_Checked( {
 
@@ -2285,138 +1359,27 @@ $syncHash.userCompFocusHostToggle.Add_Unchecked( {
         } 
     })
 
-$syncHash.userCompFocusClientToggle.Add_Checked( {
-        $syncHash.userCompFocusHostToggle.IsChecked = $false   
-        
-        foreach ($button in $syncHash.Keys.Where({$_ -like "*rbutbut*"})) {
-            if (($syncHash.userCompGrid.SelectedItem.ClientType -in $configHash.rtConfig.($syncHash[$button].Tag).Types) -and
-               (!($configHash.rtConfig.($syncHash[$button].Tag).RequireOnline -and $syncHash.userCompGrid.SelectedItem.ClientOnline -eq $false)) -and 
-               (!($configHash.rtConfig.($syncHash[$button].Tag).RequireUser -eq $true))) {                
-                
-                    $syncHash[$button].IsEnabled = $true
-            
-            }
-            else {
-                $syncHash[$button].IsEnabled = $false
-            }            
-        }
+$syncHash.userCompFocusClientToggle.Add_Checked({
+    $syncHash.userCompFocusHostToggle.IsChecked = $false   
+    Set-ClientGridButtons -SyncHash $syncHash -ConfigHash $configHash -Type User
+})
 
-         foreach ($button in $synchash.customRT.Keys) {
-            if (($syncHash.userCompGrid.SelectedItem.ClientType -in $configHash.rtConfig.$button.Types) -and
-               (!($configHash.rtConfig.$button.RequireOnline -and $syncHash.userCompGrid.SelectedItem.ClientOnline -eq $false)) -and 
-               (!($configHash.rtConfig.$button.RequireUser -ne $true))) {
-                $synchash.customRT.$button.rbut.IsEnabled = $true
-            }
-            else {
-                $synchash.customRT.$button.rbut.IsEnabled = $false
-            }            
-        }
-
-         foreach ($button in $syncHash.customContext.Keys) {
-                if (($syncHash.userCompGrid.SelectedItem.ClientType -in $configHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
-                   (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $syncHash.userCompGrid.SelectedItem.ClientOnline -eq $false)) -and 
-                   (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireUser  -ne $true))) {
-                    $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $true
-                }
-                else {
-                    $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $false
-                }            
-            }
-           
-    })
-
-$syncHash.userCompFocusClientToggle.Add_Unchecked( {
-        $syncHash.userCompFocusHostToggle.IsChecked = $true      
-    })
+$syncHash.userCompFocusClientToggle.Add_Unchecked({ $syncHash.userCompFocusHostToggle.IsChecked = $true })
 
 $syncHash.compUserFocusUserToggle.Add_Checked( {
-
-        $syncHash.compUserFocusClientToggle.IsChecked = $false 
-        
-        foreach ($button in $syncHash.Keys.Where({$_ -like "*rcbutbut*"})) {
-            if (($syncHash.compUserGrid.SelectedItem.Type -in $configHash.rtConfig.($syncHash[$button].Tag).Types) -and
-               (!($configHash.rtConfig.($syncHash[$button].Tag).RequireOnline -and $syncHash.compUserGrid.SelectedItem.Connectivity -eq $false)) -and 
-               (!($configHash.rtConfig.($syncHash[$button].Tag).RequireUser -and $syncHash.compUserGrid.SelectedItem.userOnline -eq $false))) {                
-                
-                $syncHash[$button].IsEnabled = $true
-            
-            }
-            else {
-                $syncHash[$button].IsEnabled = $false
-            }
-        }
-
-        foreach ($button in $synchash.customRT.Keys) {
-            if (($syncHash.compUserGrid.SelectedItem.Type -in $configHash.rtConfig.$button.Types) -and
-            (!($configHash.rtConfig.$button.RequireOnline -and $syncHash.compUserGrid.SelectedItem.Connectivity -eq $false)) -and 
-            (!($configHash.rtConfig.$button.RequireUser -and $syncHash.compUserGrid.SelectedItem.userOnline -eq $false))) {
-                $synchash.customRT.$button.rcbut.IsEnabled = $true
-            }
-            else {
-                $synchash.customRT.$button.rcbut.IsEnabled = $false
-            }            
-        }
-
-        foreach ($button in $syncHash.customContext.Keys) {
-            if (($syncHash.compUserGrid.SelectedItem.Type -in $configHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
-                (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $syncHash.compUserGrid.SelectedItem.Connectivity -eq $false)) -and 
-                (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -and $syncHash.compUserGrid.SelectedItem.userOnline -eq $false))) {
-                $syncHash.customContext.$button.('rcbutcontext' +  ($button -replace 'cxt')).IsEnabled = $true
-            }
-            else {
-                $syncHash.customContext.$button.('rcbutcontext' +  ($button -replace 'cxt')).IsEnabled = $false
-            }            
-        }
-    })
+    $syncHash.compUserFocusClientToggle.IsChecked = $false 
+    Set-GridButtons -SyncHash $syncHash -ConfigHash $configHash -Type Comp -SkipSelectionChange
+})
 
 $syncHash.compUserFocusUserToggle.Add_Unchecked( {
-        if ([string]::IsNullOrEmpty($syncHash.compUserGrid.SelectedItem.ClientName)) {
-            $syncHash.compUserFocusUserToggle.IsChecked = $true
-        }
-        else {
-            $syncHash.compUserFocusClientToggle.IsChecked = $true     
-        } 
-    })
+    if ([string]::IsNullOrEmpty($syncHash.compUserGrid.SelectedItem.ClientName)) { $syncHash.compUserFocusUserToggle.IsChecked = $true }
+    else { $syncHash.compUserFocusClientToggle.IsChecked = $true } 
+})
 
 $syncHash.compUserFocusClientToggle.Add_Checked( {
-        $syncHash.compUserFocusUserToggle.IsChecked = $false  
-        
-        foreach ($button in $syncHash.Keys.Where({$_ -like "*rcbutbut*"})) {
-            if (($syncHash.compUserGrid.SelectedItem.ClientType -in $configHash.rtConfig.($syncHash[$button].Tag).Types) -and
-               (!($configHash.rtConfig.($syncHash[$button].Tag).RequireOnline -and $syncHash.compUserGrid.SelectedItem.ClientOnline -eq $false)) -and 
-               (!($configHash.rtConfig.($syncHash[$button].Tag).RequireUser -ne $true))) {                
-                
-                $syncHash[$button].IsEnabled = $true
-            
-            }
-            else {
-                $syncHash[$button].IsEnabled = $false
-            }
-        }
-
-        foreach ($button in $synchash.customRT.Keys) {
-            if (($syncHash.compUserGrid.SelectedItem.ClientType -in $configHash.rtConfig.$button.Types) -and
-            (!($configHash.rtConfig.$button.RequireOnline -and $syncHash.compUserGrid.SelectedItem.ClientOnline -eq $false)) -and 
-            (!($configHash.rtConfig.$button.RequireUser -ne $true))) {
-                $synchash.customRT.$button.rcbut.IsEnabled = $true
-            }
-            else {
-                $synchash.customRT.$button.rcbut.IsEnabled = $false
-            }            
-        }
-
-        foreach ($button in $syncHash.customContext.Keys) {
-            if (($syncHash.compUserGrid.SelectedItem.ClientType -in $configHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
-                (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $syncHash.compUserGrid.SelectedItem.ClientOnline -eq $false)) -and 
-                (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -ne $true))) {
-                $syncHash.customContext.$button.('rcbutcontext' +  ($button -replace 'cxt')).IsEnabled = $true
-            }
-            else {
-                $syncHash.customContext.$button.('rcbutcontext' +  ($button -replace 'cxt')).IsEnabled = $false
-            }            
-        }
-            
-    })
+    $syncHash.compUserFocusUserToggle.IsChecked = $false  
+    Set-ClientGridButtons -ConfigHash $configHash -SyncHash $syncHash -Type $Comp
+})
 
 $syncHash.compUserFocusClientToggle.Add_Unchecked( {
         $syncHash.compUserFocusUserToggle.IsChecked = $true      
@@ -2425,471 +1388,14 @@ $syncHash.compUserFocusClientToggle.Add_Unchecked( {
 
 
 $syncHash.SearchBox.add_KeyDown( {
-
-   
-        if ($_.Key -eq "Enter" -or $_.Key -eq 'Escape') {
-            if ($null -like $syncHash.SearchBox.Text -and $_.Key -ne 'Escape') {
-                $syncHash.SnackMsg.MessageQueue.Enqueue("Empty!")
-            }
+    if ($_.Key -eq "Enter" -or $_.Key -eq 'Escape') {
+        if ($null -like $syncHash.SearchBox.Text -and $_.Key -ne 'Escape') { $syncHash.SnackMsg.MessageQueue.Enqueue("Empty!") }
            
-            elseif ($syncHash.SearchBox.Text.Length -gt 3 -or $_.Key -eq 'Escape') {
+        elseif ($syncHash.SearchBox.Text.Length -gt 3 -or $_.Key -eq 'Escape') { Start-ObjectSearch -SyncHash $syncHash -ConfigHash $configHash -QueryHash $queryHash -Key $_.Key }
 
-                $rsCmd = [PSObject]@{
-                    key        = $($_.Key)
-                    searchTag  = $syncHash.SearchBox.Tag
-                    searchText = $syncHash.SearchBox.Text
-                    queue      = $syncHash.snackMsg.MessageQueue
-                }
-
-                
-                Start-RSJob -Name Search -ArgumentList $queryHash, $configHash, $match, $syncHash, $rsCmd -ThreadOptions UseNewThread  -FunctionsToImport Test-OnlineFast, Resolve-Location, Get-RDSession -ScriptBlock {
-                param($queryHash, $configHash, $match, $syncHash, $rsCmd) 
-               
-                if ($rsCmd.key -eq 'Escape') {
-                    $match = (Get-ADObject -Filter "(SamAccountName -eq '$($rsCmd.searchTag)'  -and ObjectClass -eq 'User') -or 
-                        (Name -eq '$($rsCmd.searchTag)' -and ObjectClass -eq 'Computer')" -Properties SamAccountName) 
-                    
-                }
-                else {           
-                    $match = (Get-ADObject -Filter "(SamAccountName -like '*$($rsCmd.searchText)*' -and ObjectClass -eq 'User') -or 
-                        (Name -like '*$($rsCmd.searchText)*' -and ObjectClass -eq 'Computer')" -Properties SamAccountName)
-                }
-
-                if (($match | Measure-Object).Count -eq 1) {
-                    $syncHash.Window.Dispatcher.Invoke([Action]{                 
-                        $syncHash.compExpander.IsExpanded = $false
-                        $syncHash.compExpanderProgressBar.Visibility = "Visible"                    
-                        $syncHash.userExpander.IsExpanded = $false 
-                        $syncHash.expanderProgressBar.Visibility = "Visible"
-                    })
-                        
-                    if ($match.ObjectClass -eq 'User') {
-                        $match = (Get-ADUser -Identity $match.SamAccountName -Properties @($configHash.UserPropList.PropName.Where( { $_ -ne 'Non-AD Property' }) | Sort-Object -Unique))                 
-                    }
-
-                    elseif ($match.ObjectClass -eq 'Computer') {                       
-                        $match = (Get-ADComputer -Identity $match.SamAccountName -Properties @($configHash.CompPropList.PropName.Where( { $_ -ne 'Non-AD Property' }) | Sort-Object -Unique))
-
-                    }
-                    if ($match.SamAccountName -notin $syncHash.tabControl.Items.Name -and $match.Name -notin $syncHash.tabControl.Items.Name) {
-                                           
-                        if ($match.ObjectClass -eq 'User') {
-            
-                            $queryHash.($match.SamAccountName) = @{}
-                            $match.PSObject.Properties | ForEach-Object { 
-                                $queryHash.($match.SamAccountName)[$_.Name] = $_.Value }
-
-                             $addItem = ($match | Select-Object @{Label = 'Name'; Expression = { $_.SamAccountName } })
-                            $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.tabControl.ItemsSource.Add($addItem)})
-                            $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.tabControl.SelectedIndex = $syncHash.tabControl.Items.Count - 1})
-
-
-                            Start-RSJob -Name userLogPull -ArgumentList $queryHash, $configHash, $match, $syncHash -ThreadOptions UseCurrentThread -FunctionsToImport Test-OnlineFast, Resolve-Location, Get-RDSession -ScriptBlock {
-                                param($queryHash, $configHash, $match, $syncHash) 
-                            
-                               
-
-                                $syncHash.userCompGrid.Dispatcher.Invoke([Action] { $syncHash.userCompGrid.ItemsSource = $null })
-
-                                if ($configHash.UserLogPath) {
-                                    $queryHash.$($match.SamAccountName).LoginLog = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-                                }
-                                  
-                                Start-Sleep -Milliseconds 1250
-                                  
-
-                                if ($confighash.UserLogPath -and (Test-Path (Join-Path -Path $confighash.UserLogPath -ChildPath "$($match.SamAccountName).txt"))) {
-                                        
-                                            
-
-                                    $queryHash.$($match.SamAccountName).LoginLogRaw = Get-Content (Join-Path -Path $confighash.UserLogPath -ChildPath "$($match.SamAccountName).txt") | Select-Object -Last 100 | 
-                                        ConvertFrom-Csv -Header $configHash.userLogMapping.Header |
-                                            Select-Object *, @{Label = 'DateTime'; Expression = { $_.DateRaw -as [datetime] } } -ExcludeProperty DateRaw |
-                                                Where-Object { $_.DateTime -gt (Get-Date).AddDays(-60) } |
-                                                    Sort-Object DateTime -Descending 
-                                    
-                                    if ($queryHash.$($match.SamAccountName).LoginLogRaw) {
-                                        $loginCounts = $queryHash.$($match.SamAccountName).LoginLogRaw | Group-Object -Property ComputerName | Select-Object Name, Count
-                                        $queryHash.$($match.SamAccountName).LoginLogListView = [System.Windows.Data.ListCollectionView]($queryHash.$($match.SamAccountName).LoginLog)  
-                                        $queryHash.$($match.SamAccountName).LoginLogListView.GroupDescriptions.Add((New-Object System.Windows.Data.PropertyGroupDescription "compLogon"))
-                                        $syncHash.userCompGrid.Dispatcher.Invoke([Action] { $syncHash.userCompGrid.ItemsSource = $queryHash.$($match.SamAccountName).LoginLogListView })
-                                        
-                                       
-                                        $queryHash.$($match.SamAccountName).LoginLogRaw | Sort-Object -Unique -Property ComputerName | Sort-Object DateTime -Descending | ForEach-Object {
-                                            
-                                            Remove-Variable sessionInfo, clientLocation, hostLocation -ErrorAction SilentlyContinue
-                                                
-                                            $rawLogEntry = $_
-                                            $comp = $_.ComputerName
-                                            $ruleCount = ($configHash.nameMapList | Measure-Object).Count
-                                            $configHash.nameMapList = $configHash.nameMapList | Sort-Object -Property ID
-                                            
-                                            $hostConnectivity = Test-OnlineFast -ComputerName $_.ComputerName
-                                            if ($_.ClientName) {$clientOnline = Test-OnlineFast -ComputerName $_.ClientName}
-                                            
-                                            if ($hostConnectivity.Online) {
-                                                $sessionInfo = Get-RDSession -ComputerName $_.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue
-                                                $hostLocation = (Resolve-Location -computerName $_.ComputerName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location
-                                            }
-
-                                            if ($clientOnline.Online) {
-                                                $clientLocation = (Resolve-Location -computerName $_.ClientName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location
-                                            }
-                                            
-                                            
-                                            $queryHash.$($match.SamAccountName).LoginLog.Add((
-                                                    New-Object PSCustomObject -Property @{
-                          
-                                                        logonTime      = Get-Date($_.DateTime) -Format MM/dd/yyyy
-                                                        HostName       = $_.ComputerName
-                                                        LoginDC        = $_.LoginDC -replace '\\'
-                                                        UserName       = $match.SamAccountName
-                                                        Connectivity   = ($hostConnectivity.Online).toString()
-                                                        CompType       = "VM"
-                                                        IPAddress      = $hostConnectivity.IPV4Address
-                                                        userOnline     = if ($sessionInfo) {
-                                                                            $true
-                                                                        }
-                                                                        else {
-                                                                            $false
-                                                                         }
-                                                        sessionID = if ($sessionInfo) {
-                                                                        $sessionInfo.sessionID
-                                                                    }
-                                                                    else {
-                                                                        $null
-                                                                    }
-                                                        IdleTime = if ($sessionInfo) {
-                                                                            if ("{0:dd\:hh\:mm}" -f $($sessionInfo.IdleTime) -eq '00:00:00') {
-                                                                                "Active"
-                                                                            }
-                                                                            else {
-                                                                             "{0:dd\:hh\:mm}" -f $($sessionInfo.IdleTime)
-                                                                            }   
-                                                                        }
-                                                                        else {$null}
-                                                        ClientName     = $_.ClientName 
-                                                        ClientLocation = $clientLocation
-                                                        compLogon      = if (($queryHash.$($match.SamAccountName).LoginLog | Measure-Object).Count -eq 0) {
-                                                            "Last"
-                                                        }
-                                                        else {
-                                                            "Past"
-                                                        }
-                                                        loginCount     = ($loginCounts | Where-Object { $_.Name -eq $comp }).Count
-                                                        DeviceLocation = $hostLocation
-                                                        Type           = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
-    
-                                                            if ($r -le 0) {
-                                                                "Computer"
-                                                            }
-
-                                                            else {
-
-                                                                if (($configHash.nameMapList | Sort-Object -Descending -Property ID)[$r].Condition) {
-                                                                    try {
-                                                                        if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
-                                                                            $configHash.nameMapList[$r].Name
-                                                                            break
-                                                                        }
-                                                                    }
-
-                                                                    catch {}
-            
-                                                                   
-                                                                }
-                                                            }
-                                                        }
-                                                        ClientOnline = if ($clientOnline) { ($clientOnline.Online).toString()};
-                                                        ClientIPAddress = if ($clientOnline) {$clientOnline.IPV4Address};
-                                                        ClientType           = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
-                                                                
-                                                            $comp = $_.ClientName
-
-                                                            if ($r -eq 0) {
-                                                                "Computer"
-                                                            }
-
-                                                            else {
-
-                                                                if ($configHash.nameMapList[$r].Condition) {
-                                                                    try {
-                                                                        if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
-                                                                            $configHash.nameMapList[$r].Name
-                                                                            break
-                                                                        }
-                                                                    }
-
-                                                                    catch {}
-            
-                                                                   
-                                                                }
-                                                            }
-                                                        }
-
-                                                    }))
-                                               
-                                            if ($configHash.userLogMapping.FieldSel -contains 'Custom') {
-                                                foreach ($customHeader in ($configHash.userLogMapping | Where-Object { $_.FieldSel -eq 'Custom' })) {
-                                                    foreach ($item in ($queryHash.$($match.SamAccountName).LoginLog)) {
-                                                        $item | Add-Member -Force -MemberType NoteProperty -Name $customHeader.Header -Value $rawLogEntry.($customHeader.Header)
-                                                    }
-                                                }
-                                            }
-
-                                        
-                                           $syncHash.Window.Dispatcher.Invoke([Action]{$queryHash.$($match.SamAccountName).LoginLogListView.Refresh()})
-                                           # $syncHash.userCompGrid.Dispatcher.InvokeAsync([Action] { $syncHash.userCompGrid.ItemsSource.Refresh() })
-
-                                            if (($syncHash.userCompGrid.Items | Measure-Object).Count -eq 1) {
-                                            
-                                                $syncHash.Window.Dispatcher.Invoke([Action] { 
-                                                    $syncHash.UserCompGrid.SelectedItem = $syncHash.UserCompGrid.Items[0]
-                                                })
-
-                                                $queryHash[$match.SamAccountName].logsSearched = $true
-                                            }
-
-                                        }                                  
-                                            
-                                    }
-                                    else {
-                                        $queryHash[$match.SamAccountName].logsSearched = $true
-                                    }
-                                }
-                                    
-                                else {
-                                    $queryHash[$match.SamAccountName].logsSearched = $true
-                                }
-                            }      
-                        }
-                    
-                        elseif ($match.ObjectClass -eq 'Computer') {
-                                             
-                            $queryHash.($match.Name) = @{}
-                            $match.PSObject.Properties | ForEach-Object { 
-                                $queryHash.($match.Name)[$_.Name] = $_.Value }
-
-                            if ($configHash.pcLogPath) {
-                                $queryHash.$($match.Name).LoginLog = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-                            }
-
-                            $addItem = ($match | Select-Object @{Label = 'Name'; Expression = { $_.Name } })
-                            $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.tabControl.ItemsSource.Add($addItem)})  
-                            $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.tabControl.SelectedIndex = $syncHash.tabControl.Items.Count - 1})
-
-                            Start-RSJob -Name compLogPull -ArgumentList $queryHash, $configHash, $match, $syncHash -FunctionsToImport Resolve-Location, Get-RDSession, Test-OnlineFast -ScriptBlock {
-                                param($queryHash, $configHash, $match, $syncHash) 
-                            
-                                $syncHash.userCompGrid.Dispatcher.Invoke([Action] { $syncHash.compUserGrid.ItemsSource = $null })
-                                  
-                                Start-Sleep -Milliseconds 1250                               
-
-                                if ($configHash.pcLogPath -and (Test-Path (Join-Path -Path $configHash.pcLogPath -ChildPath "$($match.Name).txt"))) {
-                                        
-                                            
-                                    $queryHash.$($match.Name).LoginLogRaw = Get-Content (Join-Path -Path $confighash.pcLogPath -ChildPath "$($match.Name).txt") | Select-Object -Last 100 | 
-                                        ConvertFrom-Csv -Header $configHash.compLogMapping.Header |
-                                            Select-Object *, @{Label = 'DateTime'; Expression = { $_.DateRaw -as [datetime] } } -ExcludeProperty DateRaw |
-                                                Where-Object { $_.DateTime -gt (Get-Date).AddDays(-60) } |
-                                                    Sort-Object DateTime -Descending 
-                                        
-                                    if ($queryHash.$($match.Name).LoginLogRaw) {
-
-
-
-                                        $loginCounts = $queryHash.$($match.Name).LoginLogRaw | Group-Object -Property User | select Name, Count
-                                        $queryHash.$($match.Name).LoginLogListView = [System.Windows.Data.ListCollectionView]($queryHash.$($match.Name).LoginLog)  
-                                        $queryHash.$($match.Name).LoginLogListView.GroupDescriptions.Add((New-Object System.Windows.Data.PropertyGroupDescription "compLogon"))
-                                        $syncHash.compUserGrid.Dispatcher.Invoke([Action] { $syncHash.compUserGrid.ItemsSource = $queryHash.$($match.Name).LoginLogListView })
-                                        $ruleCount = ($configHash.nameMapList | Measure-Object).Count
-                                        $configHash.nameMapList = $configHash.nameMapList | Sort-Object -Property ID
-
-                                       
-                                            
-
-                                        $compType = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
-                                                            $comp = $match.Name
-                                                            if ($r -eq 0) {
-                                                                "Computer"
-                                                            }
-
-                                                            else {
-
-                                                                if ($configHash.nameMapList[$r].Condition) {
-                                                                    try {
-                                                                        if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
-                                                                            $configHash.nameMapList[$r].Name
-                                                                            break
-                                                                        }
-                                                                    }
-
-                                                                    catch {}
-            
-                                                                   
-                                                                }
-                                                            }
-                                                        }
-
-
-                                        if ((Test-OnlineFast $match.Name).Online) {
-                                            $sessionInfo = Get-RDSession -ComputerName $match.Name -ErrorAction SilentlyContinue
-                                        }
-
-                                        $queryHash.$($match.Name).LoginLogRaw | Sort-Object -Unique -Property User | Sort-Object DateTime -Descending | ForEach-Object {
-                                                                                                         
-                                            $rawLogEntry = $_
-                                            $tempCN = $_.User                                           
-                                            if ($_.ClientName) {$clientOnline = Test-OnlineFast -ComputerName $_.ClientName}
-                                            $userSession = $sessionInfo.Where{$_.UserName -eq $tempCN}                                           
-                                            
-                                            Remove-Variable clientLocation -ErrorAction SilentlyContinue
-                                            if ($clientOnline.Online) {
-                                                $clientLocation = (Resolve-Location -computerName $_.ClientName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location
-                                            }
-                                            
-
-
-                                            $queryHash.$($match.Name).LoginLog.Add((
-                                                    New-Object PSCustomObject -Property @{
-                                                        logonTime  = Get-Date($_.DateTime) -Format MM/dd/yyyy
-                                                        UserName   = ($_.User).ToLower()
-                                                        LoginDC    = $_.LoginDC -replace '\\'
-                                                        Name       = (Get-ADUser -Identity $_.User).Name
-                                                        loginCount     = ($loginCounts | Where-Object { $_.Name -eq $tempCN }).Count
-                                                        userOnline     = if ($userSession) {
-                                                                            $true
-                                                                        }
-                                                                        else {
-                                                                            $false
-                                                                         }
-                                                        sessionID = if ($userSession) {
-                                                                        $userSession.SessionId
-                                                                    }
-                                                                    else {
-                                                                        $null
-                                                                    }
-                                                        IdleTime = if ($userSession) {
-                                                                            if ("{0:dd\:hh\:mm}" -f $($userSession.IdleTime) -eq '00:00:00') {
-                                                                                "Active"
-                                                                            }
-                                                                            else {
-                                                                             "{0:dd\:hh\:mm}" -f $($userSession.IdleTime)
-                                                                            }   
-                                                                        }
-                                                                        else {$null}
-                                                        ClientName = $_.ClientName 
-                                                        Type = $compType
-                                                        compLogon  = if (($queryHash.$($match.Name).LoginLog | Measure-Object).Count -eq 0) {
-                                                                        "Last"
-                                                                     }
-                                                                     else {
-                                                                        "Past"
-                                                                     }
-                                                      
-                                                        
-                                                        ClientType = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
-                                                                
-                                                            $comp = $_.ClientName
-
-                                                            if ($comp) {
-
-                                                                if ($r -eq 0) {
-                                                                    "Computer"
-                                                                }
-
-                                                                else {
-
-                                                                    if ($configHash.nameMapList[$r].Condition) {
-                                                                        try {
-                                                                            if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
-                                                                                $configHash.nameMapList[$r].Name
-                                                                                break
-                                                                            }
-                                                                        }
-
-                                                                        catch {}
-            
-                                                                   
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }))
-                                        
-                                            if ($configHash.compLogMapping.FieldSel -contains 'Custom') {
-                                                foreach ($customHeader in ($configHash.compLogMapping | Where-Object { $_.FieldSel -eq 'Custom' })) {
-                                                    foreach ($item in ($queryHash.$($match.Name).LoginLog)) {
-                                                        $item | Add-Member -Force -MemberType NoteProperty -Name $customHeader.Header -Value $rawLogEntry.($customHeader.Header)
-                                                    }
-                                                }
-                                            }
-                                            $syncHash.Window.Dispatcher.Invoke([Action]{$queryHash.$($match.Name).LoginLogListView.Refresh()})
-                                            #$syncHash.compUserGrid.Dispatcher.Invoke([Action] { $syncHash.compUserGrid.ItemsSource.Refresh() })
-
-                                            if (($syncHash.compUserGrid.Items | Measure-Object).Count -eq 1) {
-                                            
-                                                $syncHash.Window.Dispatcher.Invoke([Action] { 
-                                                    $syncHash.compUserGrid.SelectedItem = $syncHash.compUserGrid.Items[0]
-                                                })
-
-                                                $queryHash[$match.Name].logsSearched = $true
-                                            }
-
-                                        }                                    
-                                            
-                                    }
-                                            
-                                    else {
-                                        $queryHash[$match.Name].logsSearched = $true
-                                    }
-                                
-                                }
-                                    
-                                else {
-                                   $queryHash[$match.Name].logsSearched = $true       
-                                }
-                            }
-                        }
-
-                         
-                    }
-
-                    else {
-                        if ($match.ObjectClass -eq 'User') {
-                            $match.PSObject.Properties | ForEach-Object { $queryHash.($match.SamAccountName)[$_.Name] = $_.Value }
-                            $itemIndex = [Array]::IndexOf($syncHash.tabControl.Items.Name,$($match.SamAccountName))     
-                            $syncHash.Window.Dispatcher.Invoke([Action]{ $syncHash.tabControl.SelectedIndex = $itemIndex  })
-                        }
-                        else {
-                            $match.PSObject.Properties | ForEach-Object { $queryHash.($match.Name)[$_.Name] = $_.Value }
-                            $itemIndex = [Array]::IndexOf($syncHash.tabControl.Items.Name,$($match.Name))     
-                            $syncHash.Window.Dispatcher.Invoke([Action]{ $syncHash.tabControl.SelectedIndex = $itemIndex  })
-                        }   
-                    }                    
-                }
-
-                elseif (($match | Measure-Object).Count -gt 1) {
-                    $rsCmd.queue.Enqueue("Too many matches!")
-                    $syncHash.Window.Dispatcher.Invoke([Action]{
-                        $syncHash.resultsSidePane.IsOpen = $true
-                        $syncHash.resultsSidePaneGrid.ItemsSource = $match
-                    })
-                }
-
-                else {
-                     $rsCmd.queue.Enqueue("No match!")
-                }
-
-                }
-            }
-
-            else {
-                $syncHash.SnackMsg.MessageQueue.Enqueue("Query must be at least 3 characters long!")
-            }
-        }
-   
-    })
+        else { $syncHash.SnackMsg.MessageQueue.Enqueue("Query must be at least 3 characters long!") }
+    } 
+})
 
 $syncHash.itemToolDialogConfirmButton.Add_Click({
 
@@ -2911,11 +1417,7 @@ $syncHash.itemToolDialogConfirmButton.Add_Click({
     $syncHash.itemToolDialog.IsOpen = $false
 })
 
-$syncHash.itemToolDialogConfirmCancel.Add_Click({
-
-    $syncHash.itemToolDialog.IsOpen = $false
-   
-})
+$syncHash.itemToolDialogConfirmCancel.Add_Click({ $syncHash.itemToolDialog.IsOpen = $false })
 
 $syncHash.itemToolDialog.Add_ClosingFinished({
     $syncHash.itemToolDialogConfirm.Visibility = "Collapsed"
@@ -3210,24 +1712,7 @@ $syncHash.settingNameDialog.Add_DialogClosing( {
     }
 }
 
-$syncHash.settingFlyoutExit.Add_Click( {
 
-
-        if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') {
-            $type = 'User'
-        }
-
-        else {
-            $type = 'Computer'
-        }
-
-        $syncHash.settingUserPropDefFlyout.IsOpen = $false
-        $syncHash.settingChildWindow.ShowCloseButton = $true
-        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.Window.BorderBrush.Color).ToString()
-        $syncHash.settingChildWindow.Title = "$type Property Mappings"
-        $syncHash.settingResultBox.Foreground = "White"
-
-    })
 
 
 
@@ -3592,81 +2077,7 @@ $syncHash.settingInfoDialogOpen.Add_Click({
     else { $syncHash.settingInfoDialog.IsOpen = $true }
 })
 
-$syncHash.settingRtAddClick.Add_Click( {
 
-        if (!($syncHash.customRt)) {
-            $syncHash.customRt = @{}
-        }
-
-        if (!$configHash.rtConfig) {
-            $configHash.rtConfig = @{}
-        }
-
-        $rtID = "rt" + [string]([int](((($configHash.rtConfig.Keys | Where-Object {$_ -like "RT*"}) -replace 'rt') | Sort-Object -Descending | Select-Object -First 1)) + 1) 
-       
-        $syncHash.customRt.$rtID = @{
-            parentDock      = New-Object System.Windows.Controls.DockPanel -Property @{
-                Margin              = "0,0,15,0" 
-                HorizontalAlignment = "Stretch" 
-            }
-            childStack      = New-Object System.Windows.Controls.StackPanel
-            InfoHeader      = New-Object System.Windows.Controls.Label -Property @{
-                Content = "Custom Tool $($rtID -replace 'rt')"
-                Style   = $syncHash.Window.FindResource('rtHeader')
-            }
-            InfoSubheader   = New-Object System.Windows.Controls.TextBlock -Property @{
-                Text  = "Custom remote tool $($rtID -replace 'rt')"
-                Style = $syncHash.Window.FindResource('rtSubHeader')
-            }
-            ConfigureButton = New-Object System.Windows.Controls.Button -Property  @{
-                Style = $syncHash.Window.FindResource('rtClick')
-            }
-            DelButton = New-Object System.Windows.Controls.Button -Property  @{
-                Style = $syncHash.Window.FindResource('rtClickDel')
-            }
-        }
-
-        $syncHash.customRt.$rtID.ConfigureButton.Name = $rtID
-        $syncHash.customRt.$rtID.DelButton.Name = $rtID + 'del'
-        $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.childStack)
-        $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.ConfigureButton)
-        $syncHash.customRt.$rtID.parentDock.AddChild($syncHash.customRt.$rtID.DelButton)
-        $syncHash.customRt.$rtID.childStack.AddChild($syncHash.customRt.$rtID.InfoHeader)
-        $syncHash.customRt.$rtID.childStack.AddChild($syncHash.customRt.$rtID.InfoSubheader)
-  
-        $syncHash.settingRTPanel.AddChild($syncHash.customRt.$rtID.parentDock)
-
-        $configHash.rtConfig.$rtID = [PSCustomObject]@{
-            Name  = "Custom Tool $($rtID -replace 'rt')"
-            Path  = $null
-            Icon  = $null
-            Cmd   = " "
-            Types = @()
-            RequireOnline = $true
-            RequireUser = $false
-            DisplayName = 'Tool'
-        }
- 
-        $syncHash.customRt.$rtID.DelButton.Add_Click( {
-            param([Parameter(Mandatory)][Object]$sender)
-            $rtID = $sender.Name -replace 'del'
-            $syncHash.customRt.$rtID.parentDock.Visibility = "Collapsed"
-            $syncHash.customRt.$rtID.Clear()
-            $configHash.rtConfig.Remove($rtID)
-        })    
-
-        $syncHash.customRt.$rtID.ConfigureButton.Add_Click( {
-                param([Parameter(Mandatory)][Object]$sender)
-                $rtID = $sender.Name
-                $syncHash.settingRtExeSelect.Visibility = "Visible"
-                $syncHash.settingRtPathSelect.Visibility = "Visible"
-                $syncHash.rtSettingRequiresOnline.Visibility = "Visible"
-                $syncHash.rtSettingRequiresUser.Visibility = "Visible"
-                $syncHash.rtDock.DataContext = $configHash.rtConfig.$rtID
-                $syncHash.settingRemoteFlyout.isOpen = $true
-            })
-
-    })
 
 $syncHash.SearchBoxButton.Add_Click({
 
