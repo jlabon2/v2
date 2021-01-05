@@ -14,7 +14,8 @@ function New-HashTables {
     # Stores WPF controls
     $global:syncHash = [hashtable]::Synchronized(@{ })
 
-    # Stores WPF Help controls
+     # Stores config'd vars
+    $global:varHash = [hashtable]::Synchronized(@{ })
 
     # Stores data related to queried objects
     $global:queryHash = [hashtable]::Synchronized(@{ })
@@ -258,13 +259,15 @@ function Set-LoggingStructure {
 
     Process {
 
+        $addList = @()
+
         if ($configHash.$type) {
 
             $duplicate = 0
             $configHash.$type | Add-Member -MemberType NoteProperty -Name 'Header' -Value $null -ErrorAction SilentlyContinue
 
             $configHash.$type | ForEach-Object {
-                $_.FieldSelList = $BuiltInList
+                $_.FieldSelList = $DefaultList
         
                 if ($_.FieldSel -notin $addList) {
                     if ($_.FieldSel -eq 'Custom') { $_.Header = $_.CustomFieldName; $addList += $_.CustomFieldName }
@@ -310,8 +313,6 @@ function Set-RTDefaults {
         }
     }
 }
-
-
 
 function Add-CustomItemBoxControls {
     [CmdletBinding()]
@@ -778,6 +779,101 @@ function Start-PropBoxPopulate {
     }
 }
 
+function Set-QueryVarsToUpdate {
+    param ($configHash,[Parameter(Mandatory)][ValidateSet('User', 'Comp')]$Type)
+
+    
+    switch ($type) {
+        'User' { if ($configHash.varListConfig.UpdateFrequency -match "User Queries|All Queries")  {$configHash.varData.UpdateUser = $true } }
+
+        'Comp' { if ($configHash.varListConfig.UpdateFrequency -match "Comp Queries|All Queries")  {$configHash.varData.UpdateComp = $true } }
+    }
+}
+
+function Set-DurationVarsToUpdate {
+    param ($configHash, $startTime)
+
+    $currentTime = Get-Date
+
+    switch ($startTime) {
+        {($configHash.varListConfig.UpdateFrequency -contains 'Daily') -and ($startTime.AddDays($configHash.VarData.UpdateDayCount) -le $currentTime)} {
+            $configHash.varData.UpdateDay = $true
+            $configHash.VarData.UpdateDayCount = $configHash.VarData.UpdateDayCount + 1
+        }
+
+        {($configHash.varListConfig.UpdateFrequency -contains 'Hourly') -and ($startTime.AddHours($configHash.VarData.UpdateHourCount) -le $currentTime)} {
+            $configHash.varData.UpdateHour = $true
+            $configHash.VarData.UpdateHourCount = $configHash.VarData.UpdateHourCount + 1
+        }
+        
+        {($configHash.varListConfig.UpdateFrequency -contains 'Every 15 mins') -and ($startTime.AddMinutes($configHash.varData.UpdateMinCount) -le $currentTime)} {
+            $configHash.varData.UpdateMinute = $true
+            $configHash.varData.UpdateMinCount = $configHash.varData.UpdateMinCount + 15
+        }
+    
+    }
+}
+
+function New-VarUpdater {
+    param ($configHash)
+       
+    $configHash.varData = @{
+        UpdateDayCount = 1   
+        UpdateMinCount = 15
+        UpdateHourCount = 1
+    }  
+}
+
+function Start-VarUpdater {
+    [CmdletBinding()]
+    param ($configHash, $varHash)
+
+    Start-RSJob -Name VarUpdater -ArgumentList $configHash, $varHash -ModulesToImport C:\TempData\internal\internal.psm1 {
+        param($configHash, $varHash)
+
+        $startTime = Get-Date
+
+        do {
+            
+            Set-DurationVarsToUpdate -ConfigHash $configHash -StartTime $startTime
+
+            if ($configHash.varData.ContainsValue($true)) {
+                foreach ($varInfo in ($configHash.varData.Keys)) {
+                    if ($configHash.varData.$varInfo -eq $true) {
+                        switch ($varInfo) {
+                            'UpdateMinute'   {
+                                 $configHash.varListConfig | Where-Object {$_.UpdateFrequency -eq "Every 15 mins"} | ForEach-Object {
+                                    $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
+                                    $configHash.varData.$varInfo = $false
+                                }
+                            'UpdateHour' {
+                                $configHash.varListConfig | Where-Object {$_.UpdateFrequency -eq "Hourly"} | ForEach-Object {
+                                    $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
+                                    $configHash.varData.$varInfo = $false
+                                }                                       
+                            'UpdateDay'  {
+                                $configHash.varListConfig | Where-Object {$_.UpdateFrequency -eq "Daily"} | ForEach-Object {
+                                    $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
+                                    $configHash.varData.$varInfo = $false
+                                    }
+                            'UpdateUser' { 
+                                $configHash.varListConfig | Where-Object {$_.UpdateFrequency -match "User Queries|All Queries"} | ForEach-Object {
+                                    $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
+                                    $configHash.varData.$varInfo = $false
+                                }
+                            'UpdateComp' {
+                                $configHash.varListConfig | Where-Object {$_.UpdateFrequency -match "Comp Queries|All Queries"} | ForEach-Object {
+                                    $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
+                                    $configHash.varData.$varInfo = $false
+                                }
+                            }
+                        }
+                    }
+                }
+    
+        } until ($configHash.IsClosed -eq $true) 
+    }
+}
 
 #endregion
 
@@ -821,7 +917,12 @@ Function Set-ChildWindow {
                 if ($configHash.contextConfig -ne $null) { $syncHash.settingContextPropGrid.ItemsSource = $configHash.contextConfig }
                 $syncHash.settingContextPropGrid.Visibility = "Visible"
             }
-        
+
+            'settingVarContent' {            
+                if ($configHash.varListConfig -ne $null) { $syncHash.settingVarDataGrid.ItemsSource = $configHash.varListConfig }
+                $syncHash.settingVarDataGrid.Visibility = "Visible"
+            
+            }       
         }
     }
 
@@ -1285,7 +1386,7 @@ function Set-LogMapGrid {
     if (!$testLog) { 
         $testLog = Get-Content ((Get-ChildItem -Path $confighash.($type + 'LogPath') | 
                 Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName) |
-        Where-Object { $_.Trim() -ne '' } | Select-Object -First 1
+        Where-Object { $_.Trim() -ne '' } | Select-Object -Last 1
     }
 
     $fieldCount = ($testLog.ToCharArray() | Where-Object { $_ -eq ',' } | Measure-Object).Count + 1
@@ -1411,10 +1512,12 @@ function Start-ObjectSearch {
                         
             if ($match.ObjectClass -eq 'User') {
                 $match = (Get-ADUser -Identity $match.SamAccountName -Properties @($configHash.UserPropList.PropName.Where( { $_ -ne 'Non-AD Property' }) | Sort-Object -Unique))                 
+                Set-QueryVarsToUpdate -ConfigHash $configHash -Type User
             }
 
             elseif ($match.ObjectClass -eq 'Computer') {                       
                 $match = (Get-ADComputer -Identity $match.SamAccountName -Properties @($configHash.CompPropList.PropName.Where( { $_ -ne 'Non-AD Property' }) | Sort-Object -Unique))
+                Set-QueryVarsToUpdate -ConfigHash $configHash -Type Comp
             }
                 
             if ($match.SamAccountName -notin $syncHash.tabControl.Items.Name -and $match.Name -notin $syncHash.tabControl.Items.Name) {
@@ -1684,7 +1787,7 @@ function Find-ObjectLogs {
         
                             Name          = (Get-ADUser -Identity $log.User).Name
         
-                            loginCount    = ($loginCounts | Where-Object { $log.Name -eq $log.User }).Count
+                            loginCount    = ($loginCounts | Where-Object { $_.Name -eq $log.User }).Count
         
                             userOnline    = if ($userSession) { $true }
                                             else { $false }
