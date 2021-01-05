@@ -37,8 +37,8 @@
 
 Remove-Variable * -ErrorAction SilentlyContinue
 $ConfirmPreference = "None"
+#Copy-Item -Path  C:\TempData\v3\MainWindow.xaml -Destination C:\TempData\MainWindow.xaml -Force
 Copy-Item -Path "\\labtop\TempData\v3\v3\MainWindow.xaml"  -Destination C:\TempData\MainWindow.xaml -Force
-#Copy-Item -Path "\\labtop\TempData\v3\v3\Window1.xaml"  -Destination C:\TempData\HelpContent.xaml -Force
 $xamlPath = "C:\TempData\MainWindow.xaml"
 $helpXAMLPath = "C:\TempData\HelpContent.xaml"
 $glyphList = 'C:\TempData\segoeGlyphs.txt'
@@ -58,7 +58,7 @@ New-HashTables
 Set-Config -ConfigPath $savedConfig -Type Import -ConfigHash $configHash
 
 # process loaded data or creates initial item templates for various config datagrids
-@('userPropList','compPropList','contextConfig','objectToolConfig','nameMapList', 'netMapList') | Set-InitialValues -ConfigHash $configHash -PullDefaults
+@('userPropList','compPropList','contextConfig','objectToolConfig','nameMapList', 'netMapList', 'varListConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
 @('userLogMapping','compLogMapping') | Set-InitialValues -ConfigHash $configHash
 
 # matches config'd user/comp logins with default headers, creates new headers from custom values
@@ -169,9 +169,9 @@ $syncHash.settingNetworkClick.add_Click({
     Set-ChildWindow -Panel settingNetContent -Title "Networking Mappings" -SyncHash $syncHash -Height 275
 })
 
-$syncHash.settingNamingClick.add_Click({
-    Set-ChildWindow -Panel settingNameContent -Title "Device Categorization" -SyncHash $syncHash -Height 275
-})
+$syncHash.settingNamingClick.add_Click({ Set-ChildWindow -Panel settingNameContent -Title "Device Categorization" -SyncHash $syncHash -Height 275 })
+
+$synchash.settingVarClick.add_Click({ Set-ChildWindow -Panel settingVarContent -Title "Resources and Variables" -SyncHash $syncHash -Height 275 -Width 530 })
 
 $syncHash.settingUserPropClick.add_Click({ Set-ChildWindow -Panel settingUserPropContent -Title "User Property Mappings" -SyncHash $syncHash -Height 365 -Width 600 })
 
@@ -365,14 +365,45 @@ $syncHash.settingNameAddClick.Add_Click( {
 
 })
 
+
+
+$syncHash.settingVarAddClick.Add_Click( {
+    
+    $configHash.varListConfig.Add([PSCustomObject]@{
+        VarNum              = ($configHash.varListConfig.VarNum | Sort-Object -Descending | Select-Object -First 1) + 1
+        VarName             = $null
+        VarCmd              = $null
+        UpdateFrequencyList = @('All Queries','User Queries','Comp Queries','Daily','Hourly','Every 15 mins','Program Start')
+        UpdateFrequency     = 'Program Start'
+    })    
+
+    $syncHash.settingVarDataGrid.Items.Refresh()                   
+
+})
+
+$syncHash.settingVarDialogClose.Add_Click({
+    $syncHash.settingVarDialog.IsOpen = $false 
+    $synchash.settingVarDataGrid.Items.Refresh()
+})
+
 #endregion
 
 #region ContextTools
 
 #endregion
 
+#region VarConfig
+$syncHash.settingVarMapClick.Add_Click({ 
+    Set-ChildWindow -SyncHash $syncHash -Title "Variable Definitions" -Panel settingVarContent -HideCloseButton -Background Flyout
+    $syncHash.settingVarFlyout.IsOpen = $true
+})
+
+#endregion
+
 #region FlyOutExits
 $syncHash.settingLoggingCompFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Login Log Paths" -SkipContentPaneReset -SkipResize })
+
+$syncHash.settingVarFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Resources and Variables" -SkipContentPaneReset -SkipResize })
 
 $syncHash.settingLoggingUserFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Login Log Paths" -SkipContentPaneReset -SkipResize })
 
@@ -500,6 +531,9 @@ $syncHash.tabMenu.add_Loaded( {
                 $syncHash.Window.Dispatcher.invoke([action] {$syncHash.tabMenu.SelectedIndex = 0 })                  
             }
         }
+        New-VarUpdater -ConfigHash $configHash
+        Start-VarUpdater -ConfigHash $configHash -VarHash $varHash
+    
     }
 
     if (Test-Path $savedConfig) {              
@@ -1095,6 +1129,8 @@ $syncHash.tabMenu.add_Loaded( {
         $syncHash.newTab.IsEnabled = $false
     }
 
+
+
     })
                 
 $syncHash.tabControl.add_SelectionChanged( {
@@ -1378,7 +1414,7 @@ $syncHash.compUserFocusUserToggle.Add_Unchecked( {
 
 $syncHash.compUserFocusClientToggle.Add_Checked( {
     $syncHash.compUserFocusUserToggle.IsChecked = $false  
-    Set-ClientGridButtons -ConfigHash $configHash -SyncHash $syncHash -Type $Comp
+    Set-ClientGridButtons -ConfigHash $configHash -SyncHash $syncHash -Type Comp
 })
 
 $syncHash.compUserFocusClientToggle.Add_Unchecked( {
@@ -1539,10 +1575,36 @@ $syncHash.itemToolDialog.Add_ClosingFinished({
 
 }
 
+[System.Windows.RoutedEventHandler]$eventonVarDataGrid = {
+    $button = $_.OriginalSource
+
+    if ($button.Name -match "settingVarClearItem") { 
+        $id = $syncHash.settingVarDataGrid.SelectedItem.VarNum 
+        $configHash.varListConfig.RemoveAt($syncHash.settingVarDataGrid.SelectedItem.VarNum - 1)
+        $configHash.varListConfig | Where-Object { $_.VarNum -gt $id } | ForEach-Object { $_.VarNum = $_.VarNum - 1 }
+        $syncHash.settingVarDataGrid.Items.Refresh()
+       
+
+    }
+
+  
+
+    elseif ($button.Name -match "settingVarBox") {
+
+        $syncHash.settingVarDialog.IsOpen = $true
+          
+
+    }
+
+
+}
+
 $syncHash.settingNameDialog.Add_DialogClosing( {
-        $synchash.settingNameDataGrid.Items.Refresh()
-        $configHash.nameMapListView.Refresh()
-    })
+    $synchash.settingNameDataGrid.Items.Refresh()
+    $configHash.nameMapListView.Refresh()
+})
+
+
 
 [System.Windows.RoutedEventHandler]$EventonDataGrid = {
 
@@ -2061,6 +2123,11 @@ $syncHash.settingObjectToolsAddItemClick.AddHandler([System.Windows.Controls.But
 $syncHash.settingContextAddItemClick.AddHandler([System.Windows.Controls.Button]::ClickEvent, $addContextItemClick)
 $syncHash.settingNameDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonNameDataGrid)
 $syncHash.settingNameDataGrid.AddHandler([System.Windows.Controls.TextBox]::PreviewMouseLeftButtonUpEvent, $eventonNameDataGrid)
+$syncHash.settingVarDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonVarDataGrid)
+$syncHash.settingVarDataGrid.AddHandler([System.Windows.Controls.TextBox]::PreviewMouseLeftButtonUpEvent, $eventonVarDataGrid)
+
+
+
 
 $syncHash.settingNameDialogClose.Add_Click( {
         $syncHash.settingNameDialog.IsOpen = $false
@@ -2165,4 +2232,5 @@ $syncHash.resultsSidePane.Add_ClosingFinished({
  
 
 $syncHash.Window.ShowDialog() | Out-Null
+$configHash.IsClosed = $true
 

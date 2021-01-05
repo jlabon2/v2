@@ -348,6 +348,7 @@
                 BasedOn="{StaticResource MahApps.Styles.TextBox}"
                 TargetType="TextBox">
                 <Setter Property="IsEnabled" Value="False" />
+
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding FieldSel}" Value="Custom">
                         <Setter Property="IsEnabled" Value="True" />
@@ -2352,7 +2353,7 @@
                                         Margin="5,0,0,0"
                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                         Foreground="LightGray"
-                                        Text="Enables connections to clients using RDP" />
+                                        Text="Set rules to define computer types" />
                                 </DockPanel>
 
                                 <Grid Grid.Column="2" ShowGridLines="False">
@@ -2636,6 +2637,350 @@
                             </ScrollViewer>
                         </Grid>
                     </Canvas>
+
+
+                    <Canvas
+                        x:Name="settingVarContent"
+                        Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
+                        Visibility="Collapsed">
+                        <Controls:Flyout
+                            Name="settingVarFlyout"
+                            Width="{Binding ElementName=settingVarContent, Path=ActualWidth}"
+                            Height="{Binding ElementName=settingVarContent, Path=ActualHeight}"
+                            Margin="0,0,12.5,-20"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Panel.ZIndex="15"
+                            AnimateOnPositionChange="True"
+                            AnimateOpacity="True"
+                            AreAnimationsEnabled="True"
+                            Background="#FF363333"
+                            CloseButtonVisibility="Collapsed"
+                            Position="Right">
+
+                            <Grid Margin="0,-35,0,0" Panel.ZIndex="14">
+                                <Grid.ColumnDefinitions>
+
+                                    <ColumnDefinition Width="*" />
+
+                                    <ColumnDefinition Width="45" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+
+
+                                    <RowDefinition Height="25" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="30" />
+
+                                </Grid.RowDefinitions>
+                                <md:DialogHost
+                                    Name="settingVarDialog"
+                                    Grid.RowSpan="3"
+                                    Grid.ColumnSpan="3"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch"
+                                    VerticalContentAlignment="Stretch"
+                                    Panel.ZIndex="500"
+                                    DataContext="{Binding Mode=TwoWay, ElementName=settingVarDataGrid, Path=SelectedItem, UpdateSourceTrigger=PropertyChanged}"
+                                    DialogMargin="8"
+                                    Style="{StaticResource MaterialDesignEmbeddedDialogHost}">
+                                    <md:DialogHost.DialogContent>
+
+
+                                        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="15" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+                                            <Button
+                                                Name="settingVarDialogClose"
+                                                Grid.RowSpan="2"
+                                                Width="15"
+                                                Height="15"
+                                                Margin="0,3.5,3.5,0"
+                                                Padding="0"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Top"
+                                                md:RippleAssist.IsCentered="True"
+                                                md:RippleAssist.RippleOnTop="True"
+                                                md:RippleAssist.RippleSizeMultiplier="5"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="10"
+                                                Foreground="Silver"
+                                                IsTabStop="False"
+                                                Style="{StaticResource MaterialDesignIconButton}" />
+                                            <TextBox
+                                                Name="varPopupText"
+                                                Grid.Row="1"
+                                                Margin="7.5"
+                                                Padding="-10,0,0,-10"
+                                                md:HintAssist.Foreground="White"
+                                                md:HintAssist.Hint="Scriptblock"
+                                                AcceptsReturn="True"
+                                                AcceptsTab="True"
+                                                Background="MidnightBlue"
+                                                CaretBrush="WhiteSmoke"
+                                                FontFamily="Consolas"
+                                                Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
+                                                Text="{Binding VarCmd, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                TextWrapping="NoWrap"
+                                                VerticalScrollBarVisibility="Auto" />
+                                        </Grid>
+                                    </md:DialogHost.DialogContent>
+                                </md:DialogHost>
+                                <Button
+                                    Name="settingVarFlyoutExit"
+                                    Grid.Row="0"
+                                    Grid.RowSpan="2"
+                                    Grid.Column="1"
+                                    Grid.ColumnSpan="2"
+                                    Width="35"
+                                    Height="35"
+                                    Margin="5"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Panel.ZIndex="20"
+                                    Content=""
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="20"
+                                    Style="{DynamicResource MahApps.Styles.Button.Circle}" />
+
+                                <StackPanel
+                                    Grid.Row="1"
+                                    Grid.RowSpan="5"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="5"
+                                    Margin="10,-20,0,0">
+
+                                    <DockPanel
+                                        Margin="0,3,47.5,-2.5"
+                                        HorizontalAlignment="Right"
+                                        Panel.ZIndex="25">
+
+
+
+                                        <Button
+                                            Name="settingVarAddClick"
+                                            Width="25"
+                                            Height="25"
+                                            Padding="0"
+                                            HorizontalAlignment="Right"
+                                            Content=""
+                                            DockPanel.Dock="Right"
+                                            FontFamily="Segoe MDL2 Assets"
+                                            FontSize="12"
+                                            ToolTip="Add variable"
+                                            Visibility="Visible" />
+
+
+
+                                    </DockPanel>
+
+                                    <DataGrid
+                                        Name="settingVarDataGrid"
+                                        Height="260"
+                                        Margin="0,-22.5,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Top"
+                                        HorizontalContentAlignment="Stretch"
+                                        Panel.ZIndex="0"
+                                        md:ListViewAssist.ListViewItemPadding="1"
+                                        AutoGenerateColumns="False"
+                                        Background="#FF363333"
+                                        BorderBrush="Transparent"
+                                        BorderThickness="0"
+                                        CanUserAddRows="False"
+                                        CanUserDeleteRows="False"
+                                        CanUserResizeColumns="False"
+                                        CanUserResizeRows="False"
+                                        CanUserSortColumns="True"
+                                        CellStyle="{StaticResource dataGridCellLog}"
+                                        Focusable="True"
+                                        KeyboardNavigation.TabNavigation="Contained"
+                                        RowHeaderWidth="0"
+                                        RowHeight="40"
+                                        RowStyle="{StaticResource dataGridRowStyleLog}"
+                                        ScrollViewer.CanContentScroll="False"
+                                        SelectionMode="Single"
+                                        Style="{StaticResource MahApps.Styles.DataGrid}"
+                                        VerticalScrollBarVisibility="Auto">
+
+                                        <DataGrid.Columns>
+                                            <DataGridTemplateColumn Header="  ID" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+
+                                                        <Label
+                                                            Margin="-8,-12,-8,-12"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalContentAlignment="Center"
+                                                            Background="Transparent"
+                                                            Content="{Binding VarNum}" />
+
+
+
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Header="  NAME" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+                                                        <TextBox
+                                                            x:Name="settingVarName"
+                                                            Width="80"
+                                                            Height="20"
+                                                            Margin="-8,-12,-8,-12"
+                                                            Background="Transparent"
+                                                            BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}"
+                                                            BorderThickness=".5"
+                                                            IsEnabled="True"
+                                                            Style="{StaticResource customHeaderField}"
+                                                            Text="{Binding VarName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn
+                                                Width="130"
+                                                Header="  UPDATE FREQUENCY"
+                                                HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <ComboBox
+                                                            x:Name="userLogCombo"
+                                                            Width="130"
+                                                            Height="20"
+                                                            Margin="-8,-12,-8,-12"
+                                                            md:ComboBoxAssist.ClassicMode="True"
+                                                            Background="Transparent"
+                                                            BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}"
+                                                            BorderThickness=".5"
+                                                            IsTextSearchEnabled="True"
+                                                            ItemsSource="{Binding UpdateFrequencyList}"
+                                                            SelectedItem="{Binding UpdateFrequency, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Header="  DEF" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+
+                                                        <TextBox
+                                                            Name="settingVarBox"
+                                                            Width="200"
+                                                            Height="20"
+                                                            Margin="-8,-12,-8,-12"
+                                                            Background="MidnightBlue"
+                                                            BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}"
+                                                            BorderThickness="1"
+                                                            CaretBrush="WhiteSmoke"
+                                                            FontFamily="Consolas"
+                                                            IsEnabled="True"
+                                                            Style="{StaticResource customHeaderField}"
+                                                            Text="{Binding VarCmd, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+
+
+                                            <DataGridTemplateColumn Header="" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+                                                        <Button
+                                                            x:Name="settingVarClearItem"
+                                                            Width="15"
+                                                            Height="15"
+                                                            Margin="-6,-7,0,-7"
+                                                            Padding="0"
+                                                            md:RippleAssist.IsCentered="True"
+                                                            md:RippleAssist.RippleOnTop="True"
+                                                            md:RippleAssist.RippleSizeMultiplier="5"
+                                                            Content=""
+                                                            FontFamily="Segoe MDL2 Assets"
+                                                            FontSize="14"
+                                                            Foreground="Silver"
+                                                            IsTabStop="False"
+                                                            Style="{StaticResource nameClear}" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                        </DataGrid.Columns>
+
+                                    </DataGrid>
+                                </StackPanel>
+                            </Grid>
+
+                        </Controls:Flyout>
+                        <Grid ShowGridLines="False">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="50" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid
+                                Grid.Row="0"
+                                MinHeight="300"
+                                ShowGridLines="False">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="350" />
+                                    <ColumnDefinition Width="160" />
+
+                                    <ColumnDefinition Width="40" />
+                                    <ColumnDefinition Width="10" />
+                                </Grid.ColumnDefinitions>
+                                <DockPanel Grid.Column="1">
+                                    <Label
+                                        Content="Resources and Variables"
+                                        DockPanel.Dock="Top"
+                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                        FontSize="16" />
+                                    <TextBlock
+                                        Margin="5,0,0,0"
+                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                        Foreground="LightGray"
+                                        Text="Configure resources and vars to resource internally" />
+                                </DockPanel>
+
+                                <Grid Grid.Column="2" ShowGridLines="False">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="40" />
+                                        <ColumnDefinition Width="25" />
+
+                                    </Grid.ColumnDefinitions>
+                                    <Button
+                                        x:Name="settingVarMapClick"
+                                        Grid.Column="1"
+                                        Margin="5,10,5,6"
+                                        VerticalAlignment="Top"
+                                        Content=""
+                                        FontFamily="Segoe MDL2 Assets"
+                                        FontSize="16"
+                                        Visibility="Visible" />
+
+                                </Grid>
+
+                            </Grid>
+
+
+
+
+                        </Grid>
+
+                    </Canvas>
+
+
+
+
+
+
                     <Canvas
                         x:Name="settingLoggingContent"
                         Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
