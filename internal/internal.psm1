@@ -108,6 +108,16 @@ function Set-Config {
             }
         }
         'Export' {
+            @('User','Comp') | ForEach-Object {
+                $configHash.($_ + 'PropList') | ForEach-Object {$_.PropList = $null}
+                $configHash.($_ + 'PropListSelection') = $null
+                $configHash.($_ + 'PropPullListNames') = $null
+                $configHash.($_ + 'PropPullList') = $null
+            }
+
+            $configHash.buttonGlyphs = $null
+            $configHash.adPropertyMap = $null
+
             $configHash | ConvertTo-Json -Depth 8 | Out-File $($configPath + '.bak') -Force
 
             if ((Get-ChildItem -LiteralPath $($configPath + '.bak')).Length -gt 0) {
@@ -223,6 +233,10 @@ function Set-InitialValues {
         [Parameter(Mandatory)][Hashtable]$ConfigHash,
         [switch]$PullDefaults     
     )
+
+    Begin { 
+        Set-ADGenericQueryNames -ConfigHash $ConfigHash
+    }
 
     Process {
        
@@ -662,6 +676,23 @@ function Set-RSDataContext {
     }
 }
 
+function Get-AdObjectPropertyList {
+    param ($configHash) 
+
+    $configHash.rawADValues = [System.Collections.ArrayList]@()
+    $configHash.QueryADValues = @{}         
+      
+    (Get-ADObject -Filter "(SamAccountName -eq '$($env:USERNAME)') -or (SamAccountName -eq '$($env:ComputerName)$')" -Properties *) | 
+        ForEach-Object { $_.PSObject.Properties | 
+            ForEach-Object {$configHash.rawADValues.Add($_.Name) | Out-Null}}
+
+    foreach ($ldapValue in ($configHash.rawADValues | Sort-Object -Unique)) {
+        $configHash.QueryADValues.(($configHash.adPropertyMap.GetEnumerator() | Where-Object { $_.Value -eq $ldapValue}).Key) = $ldapValue
+    }
+
+    $configHash.QueryADValues = ($configHash.QueryADValues.GetEnumerator().Where({$_.Key}))
+}
+
 function Get-PropertyLists {
     param ($ConfigHash) 
  
@@ -672,13 +703,26 @@ function Get-PropertyLists {
         }
         else {
             $configHash.compPropPullList = (Get-ADComputer -Identity $env:COMPUTERNAME -Properties *).PSObject.Properties | Select-Object Name, TypeNameofValue
-        }        
+        }
+        
+        Get-AdObjectPropertyList -ConfigHash $configHash        
                 
         $configHash.($type + 'PropPullListNames') = [System.Collections.ArrayList]@()
         $configHash.($type + 'PropPullListNames').Add("Non-AD Property") 
         $configHash.($type + 'PropPullList').Name | ForEach-Object { $configHash.($type + 'PropPullListNames').Add($_) }
     }
 }
+
+function Set-ADGenericQueryNames {
+    param($ConfigHash) 
+
+    foreach ($id in ($configHash.queryDefConfig.ID)) {
+            $configHash.queryDefConfig[$id - 1].QueryDefTypeList = $configHash.QueryADValues.Key
+        }
+
+}
+
+
 
 function Start-PropBoxPopulate {
     param ($configHash)
@@ -921,8 +965,20 @@ Function Set-ChildWindow {
             'settingVarContent' {            
                 if ($configHash.varListConfig -ne $null) { $syncHash.settingVarDataGrid.ItemsSource = $configHash.varListConfig }
                 $syncHash.settingVarDataGrid.Visibility = "Visible"
+
+            }
+
+            'settingOUDataGrid' {
+                if ($configHash.searchbaseConfig -ne $null) { $syncHash.settingOUDataGrid.ItemsSource = $configHash.searchbaseConfig }
+                $syncHash.settingOUDataGrid.Visibility = "Visible" 
+                $syncHash.settingGeneralAddClick.Tag = "OU"           
+            }    
             
-            }       
+            'settingQueryDefDataGrid' { 
+                if ($configHash.queryDefConfig -ne $null) { $syncHash.settingQueryDefDataGrid.ItemsSource = $configHash.queryDefConfig }
+                $syncHash.settingQueryDefDataGrid.Visibility = "Visible" 
+                $syncHash.settingGeneralAddClick.Tag = "Query"   
+            } 
         }
     }
 
@@ -958,7 +1014,7 @@ function Reset-ChildWindow {
 
     if (!($SkipDataGridReset)) {
         foreach ($dataGrid in ($syncHash.Keys.Where( { $_ -like "setting*Grid" }))) {
-            $syncHash.$dataGrid.Visibility = "Hidden"
+            $syncHash.$dataGrid.Visibility = "Collapsed"
         }
     }
 
@@ -1451,6 +1507,15 @@ function Set-LoggingDirectory {
     }
 }
 
+function Get-LDAPSearchNames {
+    param ($ConfigHash) 
+
+    ($configHash.queryDefConfig.QueryDefType |
+        ForEach-Object {$configHash.QueryADValues[([Array]::IndexOf($configHash.QueryADValues.Key, $_))]}).Value
+
+}
+
+
 #endregion
 
 #region Querying
@@ -1501,9 +1566,18 @@ function Start-ObjectSearch {
                 (Name -eq '$($rsCmd.searchTag)' -and ObjectClass -eq 'Computer')" -Properties SamAccountName) 
         }
         
-        else {           
-            $match = (Get-ADObject -Filter "(SamAccountName -like '*$($rsCmd.searchText)*' -and ObjectClass -eq 'User') -or 
-                (Name -like '*$($rsCmd.searchText)*' -and ObjectClass -eq 'Computer')" -Properties SamAccountName)
+        else {
+            if (!($configHash.searchBaseConfig.OU)) {         
+                $match = Get-ADObject -Filter (Get-FilterString -PropertyList $configHash.queryProps -Query $rsCmd.searchText) -Properties SamAccountName, Name
+            }
+            else {
+                $match = [System.Collections.ArrayList]@()
+                $filter = Get-FilterString -PropertyList $configHash.queryProps -Query $rsCmd.searchText
+                foreach ($searchBase in $configHash.searchBaseConfig.OU) {
+                    $result = (Get-ADObject -Filter $filter -SearchBase $searchBase -Properties SamAccountName, Name) | Where-Object { $_.ObjectClass -match "user|computer"}
+                    if ($result) { $result | ForEach-Object {$match.Add($_) | Out-Null} }
+                }
+            }
         }
 
         if (($match | Measure-Object).Count -eq 1) { 
@@ -1606,7 +1680,7 @@ function Find-ObjectLogs {
                         Remove-Variable sessionInfo, clientLocation, hostLocation -ErrorAction SilentlyContinue
                                               
                         $ruleCount = ($configHash.nameMapList | Measure-Object).Count
-                        $configHash.nameMapList = $configHash.nameMapList | Sort-Object -Property ID
+                      
                                             
                         $hostConnectivity = Test-OnlineFast -ComputerName $log.ComputerName
                     
@@ -1633,8 +1707,6 @@ function Find-ObjectLogs {
                                     UserName          = $match.SamAccountName
                             
                                     Connectivity      = ($hostConnectivity.Online).toString()
-                            
-                                    CompType          = "VM"
                             
                                     IPAddress         = $hostConnectivity.IPV4Address
                             
@@ -1664,7 +1736,7 @@ function Find-ObjectLogs {
                                     Type              = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
                                                         if ($r -le 0) { "Computer" }
                                                         else {
-                                                            if (($configHash.nameMapList | Sort-Object -Descending -Property ID)[$r].Condition) {
+                                                            if (($configHash.nameMapList | Sort-Object -Property ID -Descending)[$r].Condition) {
                                                                 try {
                                                                     if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
                                                                         $configHash.nameMapList[$r].Name
@@ -1747,7 +1819,7 @@ function Find-ObjectLogs {
                     $queryHash.$($match.Name).LoginLogListView.GroupDescriptions.Add((New-Object System.Windows.Data.PropertyGroupDescription "compLogon"))
                     $syncHash.compUserGrid.Dispatcher.Invoke([Action] { $syncHash.compUserGrid.ItemsSource = $queryHash.$($match.Name).LoginLogListView })
                     $ruleCount = ($configHash.nameMapList | Measure-Object).Count
-                    $configHash.nameMapList = $configHash.nameMapList | Sort-Object -Property ID
+                   
 
                     $compType = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
                         $comp = $match.Name
@@ -1814,7 +1886,7 @@ function Find-ObjectLogs {
                                                 if ($comp) {
                                                     if ($r -eq 0) { "Computer" }
                                                     else {
-                                                        if ($configHash.nameMapList[$r].Condition) {
+                                                        if (($configHash.nameMapList | Sort-Object -Property ID -Descending)[$r].Condition) {
                                                             try {
                                                                 if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
                                                                     $configHash.nameMapList[$r].Name
@@ -1976,6 +2048,8 @@ function Set-ClientGridButtons {
         }            
     }
 }
+
+
 
 #endregion
 

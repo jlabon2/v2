@@ -58,7 +58,7 @@ New-HashTables
 Set-Config -ConfigPath $savedConfig -Type Import -ConfigHash $configHash
 
 # process loaded data or creates initial item templates for various config datagrids
-@('userPropList','compPropList','contextConfig','objectToolConfig','nameMapList', 'netMapList', 'varListConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
+@('userPropList','compPropList','contextConfig','objectToolConfig','nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
 @('userLogMapping','compLogMapping') | Set-InitialValues -ConfigHash $configHash
 
 # matches config'd user/comp logins with default headers, creates new headers from custom values
@@ -173,6 +173,8 @@ $syncHash.settingNamingClick.add_Click({ Set-ChildWindow -Panel settingNameConte
 
 $synchash.settingVarClick.add_Click({ Set-ChildWindow -Panel settingVarContent -Title "Resources and Variables" -SyncHash $syncHash -Height 275 -Width 530 })
 
+$synchash.settingGeneralClick.add_Click({ Set-ChildWindow -Panel settingGeneralContent -Title "General Settings" -SyncHash $syncHash -Height 275 -Width 530 })
+
 $syncHash.settingUserPropClick.add_Click({ Set-ChildWindow -Panel settingUserPropContent -Title "User Property Mappings" -SyncHash $syncHash -Height 365 -Width 600 })
 
 $syncHash.settingCompPropClick.add_Click({ Set-ChildWindow -Panel settingCompPropContent -Title "Computer Property Mappings" -SyncHash $syncHash -Height 365 -Width 600 })
@@ -245,7 +247,11 @@ $syncHash.settingLogo.add_Loaded( {
                 Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck
             }
                 
-            else { Start-PropBoxPopulate -ConfigHash $configHash }  
+            else { 
+                Start-PropBoxPopulate -ConfigHash $configHash 
+                Set-ADGenericQueryNames -ConfigHash $configHash
+                $configHash.queryProps = Get-LDAPSearchNames -ConfigHash $configHash
+            }  
                 
             Show-WPFWindow -SyncHash $syncHash     
         }
@@ -381,6 +387,35 @@ $syncHash.settingVarAddClick.Add_Click( {
 
 })
 
+
+$syncHash.settingGeneralAddClick.Add_Click( {
+    
+    if ($syncHash.settingGeneralAddClick.Tag -eq 'OU') {
+        $configHash.searchBaseConfig.Add([PSCustomObject]@{
+            OUNum          = ($configHash.searchBaseConfig.OUNum | Sort-Object -Descending | Select-Object -First 1) + 1
+            OU             = $null
+            VarCmd         = $null
+            QueryBaseList  = @('All Queries','User Queries','Comp Queries')
+            QueryBase      = $null
+        })    
+
+        $syncHash.settingOUDataGrid.Items.Refresh()
+    }
+    
+    else {
+   
+        $configHash.queryDefConfig.Add([PSCustomObject]@{
+            ID                = ($configHash.queryDefConfig.ID | Sort-Object -Descending | Select-Object -First 1) + 1
+            Name              = $null
+            QueryDefTypeList  = $configHash.QueryADValues.Key
+            QueryDefType      = $null
+        })    
+
+        $syncHash.settingQueryDefDataGrid.Items.Refresh()
+    }                   
+
+})
+
 $syncHash.settingVarDialogClose.Add_Click({
     $syncHash.settingVarDialog.IsOpen = $false 
     $synchash.settingVarDataGrid.Items.Refresh()
@@ -398,6 +433,17 @@ $syncHash.settingVarMapClick.Add_Click({
     $syncHash.settingVarFlyout.IsOpen = $true
 })
 
+$syncHash.settingOUMapClick.Add_Click({ 
+    Set-ChildWindow -SyncHash $syncHash -Title "Search Base Definitions" -Panel settingOUDataGrid -HideCloseButton -Background Flyout
+    $syncHash.settingGeneralFlyout.IsOpen = $true
+})
+
+
+$syncHash.settingQueryMapClick.Add_Click({ 
+    Set-ChildWindow -SyncHash $syncHash -Title "Query Definitions" -Panel settingQueryDefDataGrid -HideCloseButton -Background Flyout
+    $syncHash.settingGeneralFlyout.IsOpen = $true
+})
+
 #endregion
 
 #region FlyOutExits
@@ -410,6 +456,8 @@ $syncHash.settingLoggingUserFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $
 $syncHash.settingObjectToolFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Object Tools Mappings" -SkipContentPaneReset -SkipResize -SkipDataGridReset })
 
 $syncHash.settingNameFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Computer Categorization" -SkipContentPaneReset -SkipResize })
+
+$syncHash.settingGeneralFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "General Settings" -SkipContentPaneReset -SkipResize })
 
 $syncHash.settingContextDefFlyout.Add_OpeningFinished({
     $syncHash.settingContextListTypes.ItemsSource = $configHash.nameMapList
@@ -1427,7 +1475,7 @@ $syncHash.SearchBox.add_KeyDown( {
     if ($_.Key -eq "Enter" -or $_.Key -eq 'Escape') {
         if ($null -like $syncHash.SearchBox.Text -and $_.Key -ne 'Escape') { $syncHash.SnackMsg.MessageQueue.Enqueue("Empty!") }
            
-        elseif ($syncHash.SearchBox.Text.Length -gt 3 -or $_.Key -eq 'Escape') { Start-ObjectSearch -SyncHash $syncHash -ConfigHash $configHash -QueryHash $queryHash -Key $_.Key }
+        elseif ($syncHash.SearchBox.Text.Length -ge 3 -or $_.Key -eq 'Escape') { Start-ObjectSearch -SyncHash $syncHash -ConfigHash $configHash -QueryHash $queryHash -Key $_.Key }
 
         else { $syncHash.SnackMsg.MessageQueue.Enqueue("Query must be at least 3 characters long!") }
     } 
@@ -1593,6 +1641,31 @@ $syncHash.itemToolDialog.Add_ClosingFinished({
 
         $syncHash.settingVarDialog.IsOpen = $true
           
+
+    }
+
+
+}
+
+[System.Windows.RoutedEventHandler]$eventonOUDataGrid = {
+    $button = $_.OriginalSource
+
+    if ($button.Name -match "settingOUClearItem") { 
+        $id = $syncHash.settingOUDataGrid.SelectedItem.OUNum 
+        $configHash.searchBaseConfig.RemoveAt($syncHash.settingOUDataGrid.SelectedItem.OUNum - 1)
+        $configHash.searchBaseConfig | Where-Object { $_.OUNum -gt $id } | ForEach-Object { $_.OUNum = $_.OUNum - 1 }
+        $syncHash.settingOUDataGrid.Items.Refresh()
+       
+       
+
+    }
+
+  
+
+    elseif ($button.Name -match "settingOUSelect") {
+
+         $syncHash.settingOUDataGrid.SelectedItem.OU = (Choose-ADOrganizationalUnit -HideNewOUFeature).DistinguishedName
+          $syncHash.settingOUDataGrid.Items.Refresh()
 
     }
 
@@ -2125,6 +2198,7 @@ $syncHash.settingNameDataGrid.AddHandler([System.Windows.Controls.Button]::Click
 $syncHash.settingNameDataGrid.AddHandler([System.Windows.Controls.TextBox]::PreviewMouseLeftButtonUpEvent, $eventonNameDataGrid)
 $syncHash.settingVarDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonVarDataGrid)
 $syncHash.settingVarDataGrid.AddHandler([System.Windows.Controls.TextBox]::PreviewMouseLeftButtonUpEvent, $eventonVarDataGrid)
+$syncHash.settingOUDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonOUDataGrid)
 
 
 
