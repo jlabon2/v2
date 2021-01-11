@@ -1917,7 +1917,7 @@ function Find-ObjectLogs {
 
                            
 
-                            ClientOnline   = if ($clientOnline.Online) { ($clientOnline.Online).toString() };
+                            ClientOnline   = if ($clientOnline) { ($clientOnline.Online).toString() };
                             
                             ClientIPAddress = if ($clientOnline.IPV4Address) { $clientOnline.IPV4Address };
         
