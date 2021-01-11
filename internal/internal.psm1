@@ -117,6 +117,7 @@ function Set-Config {
 
             $configHash.buttonGlyphs = $null
             $configHash.adPropertyMap = $null
+            $configHash.queryProps = $null
 
             $configHash | ConvertTo-Json -Depth 8 | Out-File $($configPath + '.bak') -Force
 
@@ -296,6 +297,16 @@ function Set-LoggingStructure {
         }
     }
 }
+
+function Set-QueryPropertyList {
+   Param ($SyncHash, $ConfigHash)
+
+    $syncHash.Window.Dispatcher.Invoke([Action]{
+        $syncHash.searchPropSelection.ItemsSource = $configHash.queryDefConfig.Name
+    })
+
+    $syncHash.searchPropSelection.Items | ForEach-Object {$syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.searchPropSelection.SelectedItems.Add(($_))})}
+}
    
 function Set-RTDefaults {
     [CmdletBinding()]
@@ -469,10 +480,24 @@ function Add-CustomToolControls {
 
                     $syncHash.userToolControlPanel.AddChild($syncHash.objectTools.('utool' + $tool.ToolID).ToolButton)
            
+                }
+                { $_ -eq "Standalone" } { 
+        
+                $syncHash.objectTools.('tool' + $tool.ToolID) = @{
+                        ToolButton = New-Object System.Windows.Controls.Button -Property  @{
+                            Style   = $syncHash.Window.FindResource('standAloneButton')
+                            Name    = ('tool' + $tool.ToolID)
+                            Content = $tool.toolActionIcon
+                            ToolTip = $tool.toolActionToolTip
+                        }
+                    }
+
+                    $syncHash.standaloneControlPanel.AddChild($syncHash.objectTools.('tool' + $tool.ToolID).ToolButton)
+           
                 }           
             }
 
-            foreach ($toolButton in (($syncHash.objectTools.Keys).Where{ ($_ -replace ".tool") -eq $tool.ToolID })) {
+            foreach ($toolButton in (($syncHash.objectTools.Keys).Where{ ($_ -replace ".*tool") -eq $tool.ToolID })) {
 
                 $syncHash.objectTools.$toolButton.ToolButton.Add_Click( {
                         param([Parameter(Mandatory)][Object]$sender)
@@ -502,10 +527,21 @@ function Add-CustomToolControls {
 
                                         try {                     
                                             Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
-                                            $queue.Enqueue("[$toolName]: Success on [$item] - tool action complete")
+                                            if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
+                                               $queue.Enqueue("[$toolName]: Success - Standalone tool complete") 
+                                            }
+
+                                            else {
+                                                $queue.Enqueue("[$toolName]: Success on [$item] - tool complete")
+                                            }
                                         }
                                         catch {
-                                            $queue.Enqueue("[$toolName]: Fail on [$item] - tool action incomplete")
+                                            if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
+                                               $queue.Enqueue("[$toolName]: Fail - Standalone tool incomplete") 
+                                            }
+                                            else {
+                                                $queue.Enqueue("[$toolName]: Fail on [$item] - tool incomplete")
+                                            }
                                         }
                                     }
                                 }
@@ -959,6 +995,7 @@ Function Set-ChildWindow {
         
             'settingContextPropContent' {
                 if ($configHash.contextConfig -ne $null) { $syncHash.settingContextPropGrid.ItemsSource = $configHash.contextConfig }
+                $syncHash.settingContextGrid.Visibility = "Visible"
                 $syncHash.settingContextPropGrid.Visibility = "Visible"
             }
 
@@ -1508,9 +1545,11 @@ function Set-LoggingDirectory {
 }
 
 function Get-LDAPSearchNames {
-    param ($ConfigHash) 
+    param (
+    $ConfigHash,
+    $SyncHash) 
 
-    ($configHash.queryDefConfig.QueryDefType |
+    (($configHash.queryDefConfig | Where-Object {$_.Name -in $syncHash.searchPropSelection.SelectedItems}).QueryDefType |
         ForEach-Object {$configHash.QueryADValues[([Array]::IndexOf($configHash.QueryADValues.Key, $_))]}).Value
 
 }
@@ -1559,7 +1598,7 @@ function Start-ObjectSearch {
 
 
     Start-RSJob @rsJob -ScriptBlock {
-        param($queryHash, $configHash, $syncHash, $rsCmd) 
+        param($queryHash, $configHash, $syncHash, $rsCmd)        
                
         if ($rsCmd.key -eq 'Escape') {
             $match = (Get-ADObject -Filter "(SamAccountName -eq '$($rsCmd.searchTag)'  -and ObjectClass -eq 'User') -or 
@@ -1568,13 +1607,13 @@ function Start-ObjectSearch {
         
         else {
             if (!($configHash.searchBaseConfig.OU)) {         
-                $match = Get-ADObject -Filter (Get-FilterString -PropertyList $configHash.queryProps -Query $rsCmd.searchText) -Properties SamAccountName, Name
+                $match = Get-ADObject -Filter (Get-FilterString -PropertyList $configHash.queryProps -SyncHash $syncHash -Query $rsCmd.searchText) -Properties SamAccountName, Name
             }
             else {
                 $match = [System.Collections.ArrayList]@()
-                $filter = Get-FilterString -PropertyList $configHash.queryProps -Query $rsCmd.searchText
-                foreach ($searchBase in $configHash.searchBaseConfig.OU) {
-                    $result = (Get-ADObject -Filter $filter -SearchBase $searchBase -Properties SamAccountName, Name) | Where-Object { $_.ObjectClass -match "user|computer"}
+                $filter = Get-FilterString -PropertyList $configHash.queryProps -SyncHash $syncHash -Query $rsCmd.searchText
+                foreach ($searchBase in ($configHash.searchBaseConfig | Where-Object {$null -ne $_.OU})) {
+                    $result = (Get-ADObject -Filter $filter -SearchBase $searchBase.OU -SearchScope $searchBase.QueryScope -Properties SamAccountName, Name) | Where-Object { $_.ObjectClass -match "user|computer"}
                     if ($result) { $result | ForEach-Object {$match.Add($_) | Out-Null} }
                 }
             }
@@ -1683,14 +1722,11 @@ function Find-ObjectLogs {
                       
                                             
                         $hostConnectivity = Test-OnlineFast -ComputerName $log.ComputerName
-                    
-                        if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName $log.ClientName }
-                                            
-                        if ($hostConnectivity.Online) {
-                            $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue
-                            $hostLocation = (Resolve-Location -computerName $log.ComputerName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location
-                        }
-
+                                                                              
+                        if ($hostConnectivity.Online) {  $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue}
+                        if ($hostConnectivity.IPV4Address) { $hostLocation = (Resolve-Location -computerName $log.ComputerName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location}
+                        
+                        if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName $log.ClientName }      
                         if ($clientOnline.Online) {
                             $clientLocation = (Resolve-Location -computerName $log.ClientName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location
                         }
@@ -1837,18 +1873,22 @@ function Find-ObjectLogs {
                         }
                     }
 
+                    $compPing = Test-OnlineFast $match.Name
 
-                    if ((Test-OnlineFast $match.Name).Online) { $sessionInfo = Get-RDSession -ComputerName $match.Name -ErrorAction SilentlyContinue }
+                    if ($compPing.Online) {  $sessionInfo = Get-RDSession -ComputerName $match.Name -ErrorAction SilentlyContinue }
+                    if ($compPing.IPV4Address) {  $hostLocation = (Resolve-Location -computerName $match.Name -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location }
 
                     foreach ($log in ($queryHash.$($match.Name).LoginLogRaw | Sort-Object -Unique -Property User | Sort-Object DateTime -Descending)) {
                         Remove-Variable clientLocation -ErrorAction SilentlyContinue
 
                         if ($log.ClientName) {$clientOnline = Test-OnlineFast -ComputerName $log.ClientName}
     
-                        $userSession = $sessionInfo.Where{$_.UserName -eq $log.User}                                           
-                                              
-                        if ($clientOnline.Online) { $clientLocation = (Resolve-Location -ComputerName $log.ClientName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location }
+                        $userSession = $sessionInfo | Where-Object {$_.UserName -eq $log.User}                                                                                                              
         
+                        if ($clientOnline.IPV4Address) {
+                            $clientLocation = (Resolve-Location -computerName $log.ClientName -IPList $configHash.netMapList -ErrorAction SilentlyContinue).Location
+                        }
+
                         $queryHash.$($match.Name).LoginLog.Add(( New-Object PSCustomObject -Property @{
         
                             logonTime     = Get-Date($log.DateTime) -Format MM/dd/yyyy
@@ -1873,16 +1913,26 @@ function Find-ObjectLogs {
                                             }
                                             else {$null}
 
-                            ClientName    = $log.ClientName 
+                            ClientName     = $log.ClientName 
+
+                           
+
+                            ClientOnline   = if ($clientOnline.Online) { ($clientOnline.Online).toString() };
+                            
+                            ClientIPAddress = if ($clientOnline.IPV4Address) { $clientOnline.IPV4Address };
         
-                            Type = $compType
+                            ClientLocation =  $clientLocation
+
+                            DeviceLocation =  $hostLocation
+
+                            Type           = $compType
             
-                            CompLogon     = if (($queryHash.$($match.Name).LoginLog | Measure-Object).Count -eq 0) {  "Last" }
-                                            else { "Past" }
+                            CompLogon      = if (($queryHash.$($match.Name).LoginLog | Measure-Object).Count -eq 0) {  "Last" }
+                                             else { "Past" }
                                                       
                                                         
-                            ClientType    = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
-                                                $comp = $_.ClientName
+                            ClientType     = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
+                                                $comp = $log.ClientName
                                                 if ($comp) {
                                                     if ($r -eq 0) { "Computer" }
                                                     else {
@@ -2049,7 +2099,46 @@ function Set-ClientGridButtons {
     }
 }
 
+function Write-LogMessage {
+    param (
+        $Path,
+        [ValidateSet('Fail', 'Succeed', 'Query')]$Message,
+        $ActionName,
+        $SubjectName,
+        $SubjectType,
+        $ArrayList)
 
+    $logMsg = ([PSCustomObject]@{
+        ActionName  = $actionName
+        SubjectName = $SubjectName
+        SubjectType = $SubjectType
+        Date        = (Get-Date -format d)
+        Time        = (Get-Date -format t)
+        DateFull    = Get-Date
+    } | ConvertTo-CSV -NoTypeInformation)[1]
+
+    $ArrayList.Add($logMsg) | Out-Null 
+    if ($path) { $logMsg | Out-File -Append -FilePath $path }
+
+}
+
+function Get-FilterString {
+    param ($PropertyList, $Query, $SyncHash)
+
+    if ($syncHash.searchExactToggle.IsChecked) {$compareOp = '-eq'}
+    else {$compareOp = '-like'}
+
+    for ($i = 0; $i -lt $PropertyList.Count; $i++) {
+        
+        $searchString = $searchString + "$($PropertyList[$i]) $compareOp `"*$query*`""
+
+        if ($i -lt ($PropertyList.Count -1)) {
+            $searchString = $searchString + ' -or '
+        }
+    }
+
+    $searchString
+}
 
 #endregion
 

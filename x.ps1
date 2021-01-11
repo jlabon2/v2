@@ -47,7 +47,7 @@ $glyphList = 'C:\TempData\segoeGlyphs.txt'
 
 $savedConfig = "C:\TempData\config.json"
 
-Import-Module C:\TempData\func\func.psm1
+Import-Module C:\TempData\func\func.psm1 -DisableNameChecking
 Remove-Module internal
 Import-Module C:\TempData\internal\internal.psm1
 
@@ -249,8 +249,9 @@ $syncHash.settingLogo.add_Loaded( {
                 
             else { 
                 Start-PropBoxPopulate -ConfigHash $configHash 
-                Set-ADGenericQueryNames -ConfigHash $configHash
-                $configHash.queryProps = Get-LDAPSearchNames -ConfigHash $configHash
+                Set-ADGenericQueryNames -ConfigHash $configHash               
+                Set-QueryPropertyList -SyncHash $syncHash -ConfigHash $configHash
+                
             }  
                 
             Show-WPFWindow -SyncHash $syncHash     
@@ -387,16 +388,14 @@ $syncHash.settingVarAddClick.Add_Click( {
 
 })
 
-
 $syncHash.settingGeneralAddClick.Add_Click( {
     
     if ($syncHash.settingGeneralAddClick.Tag -eq 'OU') {
         $configHash.searchBaseConfig.Add([PSCustomObject]@{
             OUNum          = ($configHash.searchBaseConfig.OUNum | Sort-Object -Descending | Select-Object -First 1) + 1
             OU             = $null
-            VarCmd         = $null
-            QueryBaseList  = @('All Queries','User Queries','Comp Queries')
-            QueryBase      = $null
+            QueryScopeList  = @('Base','OneLevel','Subtree')
+            QueryScope      = 'Subtree'
         })    
 
         $syncHash.settingOUDataGrid.Items.Refresh()
@@ -579,6 +578,7 @@ $syncHash.tabMenu.add_Loaded( {
                 $syncHash.Window.Dispatcher.invoke([action] {$syncHash.tabMenu.SelectedIndex = 0 })                  
             }
         }
+       
         New-VarUpdater -ConfigHash $configHash
         Start-VarUpdater -ConfigHash $configHash -VarHash $varHash
     
@@ -1061,6 +1061,9 @@ $syncHash.tabMenu.add_Loaded( {
                         Start-RSJob -ArgumentList $rsCmd, $syncHash -ScriptBlock {
                             Param($rsCmd, $syncHash)
                             
+                            $user = $rsCmd.user
+                            $comp = $rsCmd.comp
+
                             try {
                                 Invoke-Expression -Command $rsCmd.buttonSettings.actionCmd
                                 $syncHash.Window.Dispatcher.Invoke([Action]{
@@ -1097,6 +1100,8 @@ $syncHash.tabMenu.add_Loaded( {
         }
 
         $customField = 0
+        $sizeToExpand = ([math]::Ceiling(($configHash.userLogMapping | Where-Object {$_.Ignore -eq $false }).Count/5) - 1) * 55 + $syncHash.userCompControlRow.Height.Value
+        $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.userCompControlRow.Height = $sizeToExpand})
         $configHash.userLogMapping | Where-Object { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } | ForEach-Object {
             # populate custom dock items
             $customField++
@@ -1131,7 +1136,9 @@ $syncHash.tabMenu.add_Loaded( {
                 })
         }
 
-        $customField = 0        
+        $customField = 0
+        $sizeToExpand = ([math]::Ceiling(($configHash.compLogMapping | Where-Object {$_.Ignore -eq $false }).Count/5) - 1) * 55 + $syncHash.compUserControlRow.Height.Value
+        $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.compUserControlRow.Height = $sizeToExpand}) 
         $configHash.compLogMapping | Where-Object { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } | ForEach-Object {
             # populate custom dock items
             $customField++
@@ -1448,6 +1455,11 @@ $syncHash.userCompFocusClientToggle.Add_Checked({
     Set-ClientGridButtons -SyncHash $syncHash -ConfigHash $configHash -Type User
 })
 
+$syncHash.searchSettingsPopUp.Add_Closed({
+
+   $configHash.queryProps = Get-LDAPSearchNames -ConfigHash $configHash -SyncHash $syncHash
+})
+
 $syncHash.userCompFocusClientToggle.Add_Unchecked({ $syncHash.userCompFocusHostToggle.IsChecked = $true })
 
 $syncHash.compUserFocusUserToggle.Add_Checked( {
@@ -1472,10 +1484,14 @@ $syncHash.compUserFocusClientToggle.Add_Unchecked( {
 
 
 $syncHash.SearchBox.add_KeyDown( {
+ 
+
     if ($_.Key -eq "Enter" -or $_.Key -eq 'Escape') {
         if ($null -like $syncHash.SearchBox.Text -and $_.Key -ne 'Escape') { $syncHash.SnackMsg.MessageQueue.Enqueue("Empty!") }
            
-        elseif ($syncHash.SearchBox.Text.Length -ge 3 -or $_.Key -eq 'Escape') { Start-ObjectSearch -SyncHash $syncHash -ConfigHash $configHash -QueryHash $queryHash -Key $_.Key }
+        elseif ($syncHash.SearchBox.Text.Length -ge 3 -or $_.Key -eq 'Escape') { 
+            if (!($configHash.queryProps)) { $configHash.queryProps = Get-LDAPSearchNames -ConfigHash $configHash -SyncHash $syncHash }
+            Start-ObjectSearch -SyncHash $syncHash -ConfigHash $configHash -QueryHash $queryHash -Key $_.Key }
 
         else { $syncHash.SnackMsg.MessageQueue.Enqueue("Query must be at least 3 characters long!") }
     } 
@@ -1491,10 +1507,21 @@ $syncHash.itemToolDialogConfirmButton.Add_Click({
 
         try {                     
             Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
-            $queue.Enqueue("[$toolName]: Success on [$item] - tool action complete")
+            if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
+                $queue.Enqueue("[$toolName]: Success - Standalone tool complete") 
+            }
+
+            else {
+                $queue.Enqueue("[$toolName]: Success on [$item] - tool complete")
+            }
         }
         catch {
-            $queue.Enqueue("[$toolName]: Fail on [$item] - tool action incomplete")
+            if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
+                $queue.Enqueue("[$toolName]: Fail - Standalone tool incomplete") 
+            }
+            else {
+                $queue.Enqueue("[$toolName]: Fail on [$item] - tool incomplete")
+            }
         }
     }
 
@@ -2123,7 +2150,7 @@ $syncHash.settingObjectToolExecute.Add_Click({
             ToolName              = $null
             toolTypeList          = @("Execute","Select","Grid","List")
             toolType              = 'null'
-            objectList            = @("Comp","User","Both")
+            objectList            = @("Comp","User","Both","Standalone")
             objectType            = $null
             toolAction            = 'Do-Something -UserName $user'
             toolActionValid       = $false

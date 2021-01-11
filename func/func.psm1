@@ -34,19 +34,7 @@ function Resolve-Location {
         $ipMap
     }
 }
-function Get-FilterString {
-    param ($PropertyList, $Query)
 
-    for ($i = 0; $i -lt $PropertyList.Count; $i++) {
-        $searchString = $searchString + "$($PropertyList[$i]) -like `"*$query*`""
-
-        if ($i -lt ($PropertyList.Count -1)) {
-            $searchString = $searchString + ' -or '
-        }
-    }
-
-    $searchString
-}
 function Test-OnlineFast {
     param
     (

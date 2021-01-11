@@ -34,6 +34,7 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Steel.xaml" />
+
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="StatusLabel" TargetType="Label">
@@ -575,6 +576,15 @@
                 <Setter Property="Width" Value="63" />
                 <Setter Property="Height" Value="63" />
                 <Setter Property="FontSize" Value="24" />
+            </Style>
+
+            <Style
+                x:Key="standAloneButton"
+                BasedOn="{StaticResource itemToolButton}"
+                TargetType="{x:Type Button}">
+                <Setter Property="Width" Value="100" />
+                <Setter Property="Height" Value="100" />
+                <Setter Property="FontSize" Value="32" />
             </Style>
 
             <Style
@@ -2994,12 +3004,12 @@
                                             </DataGridTemplateColumn>
                                             <DataGridTemplateColumn
                                                 Width="130"
-                                                Header="      QUERY"
+                                                Header="      SCOPE"
                                                 HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
                                                         <ComboBox
-                                                            x:Name="userOUCombo"
+                                                            x:Name="userScopeCombo"
                                                             Width="100"
                                                             Height="20"
                                                             Margin="-8,-12,-8,-12"
@@ -3008,8 +3018,8 @@
                                                             BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}"
                                                             BorderThickness=".5"
                                                             IsTextSearchEnabled="True"
-                                                            ItemsSource="{Binding QueryBaseList}"
-                                                            SelectedItem="{Binding QueryBase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                            ItemsSource="{Binding QueryScopeList}"
+                                                            SelectedItem="{Binding QueryScope, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
@@ -6460,12 +6470,16 @@
                                                                         DockPanel.Dock="Top"
                                                                         FontSize="10"
                                                                         Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                    <TextBox
-                                                                        Width="145"
-                                                                        Padding="0"
+                                                                    <Viewbox
+                                                                        HorizontalAlignment="Left"
                                                                         DockPanel.Dock="Bottom"
-                                                                        Style="{DynamicResource compItemBox}"
-                                                                        Text="{Binding Name}" />
+                                                                        Stretch="UniformToFill"
+                                                                        StretchDirection="DownOnly">
+                                                                        <TextBox
+                                                                            Padding="0"
+                                                                            Style="{DynamicResource compItemBox}"
+                                                                            Text="{Binding Name}" />
+                                                                    </Viewbox>
                                                                 </DockPanel>
                                                                 <DockPanel HorizontalAlignment="Left" VerticalAlignment="Top">
 
@@ -6483,7 +6497,7 @@
                                                                 </DockPanel>
                                                                 <DockPanel HorizontalAlignment="Left" VerticalAlignment="Top">
                                                                     <Label
-                                                                        Content="LoginCount"
+                                                                        Content="CompType"
                                                                         DockPanel.Dock="Top"
                                                                         FontSize="10"
                                                                         Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
@@ -6491,7 +6505,7 @@
                                                                         Width="80"
                                                                         DockPanel.Dock="Bottom"
                                                                         Style="{DynamicResource compItemBox}"
-                                                                        Text="{Binding LoginCount}" />
+                                                                        Text="{Binding Type}" />
                                                                 </DockPanel>
                                                                 <DockPanel HorizontalAlignment="Left" VerticalAlignment="Top">
 
@@ -6794,6 +6808,74 @@
                                         FontSize="16"
                                         Foreground="{StaticResource MahApps.Brushes.Button.Border.MouseOver}"
                                         Style="{StaticResource MaterialDesignTextBoxBase}" />
+                                    <!--  searchdialog  -->
+                                    <md:PopupBox
+                                        Name="searchSettingsPopup"
+                                        Width="25"
+                                        Height="25"
+                                        Margin="0,0,-25,6"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Bottom"
+                                        PlacementMode="RightAndAlignMiddles"
+                                        PopupMode="Click"
+                                        StaysOpen="True"
+                                        Style="{StaticResource MaterialDesignPopupBox}"
+                                        ToolTip="Manage items"
+                                        UnfurlOrientation="Horizontal">
+                                        <DockPanel Width="80" Margin="10,5,10,5">
+
+                                            <ToggleButton
+                                                Name="searchExactToggle"
+                                                Style="{StaticResource MaterialDesignSwitchToggleButton}"
+                                                ToolTip="Search for exact matches">
+                                                <md:PackIcon Kind="Search" RenderTransformOrigin=".5,.5">
+                                                    <md:PackIcon.RenderTransform>
+                                                        <RotateTransform Angle="45" />
+                                                    </md:PackIcon.RenderTransform>
+                                                </md:PackIcon>
+                                                <md:ToggleButtonAssist.OnContent>
+                                                    <md:PackIcon Kind="SearchAdd" />
+                                                </md:ToggleButtonAssist.OnContent>
+                                            </ToggleButton>
+
+                                            <md:PopupBox
+                                                Width="25"
+                                                Height="25"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Bottom"
+                                                DockPanel.Dock="Left"
+                                                PlacementMode="TopAndAlignCentres"
+                                                PopupMode="Click"
+                                                StaysOpen="True"
+                                                Style="{StaticResource MaterialDesignMultiFloatingActionDarkPopupBox}"
+                                                UnfurlOrientation="Vertical">
+                                                <md:PopupBox.ToggleContent>
+                                                    <Label Content="" FontFamily="Segoe MDL2 Assets" />
+                                                </md:PopupBox.ToggleContent>
+                                                <md:PopupBox.ToolTip>
+                                                    <ToolTip Style="{StaticResource MahApps.Styles.ToolTip}">Select properties to search</ToolTip>
+                                                </md:PopupBox.ToolTip>
+                                                <DockPanel Margin="0,0,0,12.5">
+                                                    <ListBox
+                                                        Name="searchPropSelection"
+                                                        MaxWidth="125"
+                                                        MaxHeight="200"
+                                                        md:ListBoxAssist.IsToggle="True"
+                                                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                        SelectionMode="Multiple"
+                                                        Style="{StaticResource MaterialDesignFilterChipListBox}" />
+                                                </DockPanel>
+                                            </md:PopupBox>
+
+
+
+
+
+
+                                        </DockPanel>
+                                    </md:PopupBox>
+
                                     <Button
                                         Name="SearchBoxButton"
                                         Width="30"
@@ -6825,6 +6907,7 @@
                                         </Button.Style>
                                     </Button>
                                 </Grid>
+
                                 <md:Snackbar
                                     Name="snackMsg"
                                     Grid.Row="2"
@@ -6846,63 +6929,90 @@
                         <Controls:MetroTabItem.Header>
                             <Label Content="" Style="{StaticResource customTabLabel}" />
                         </Controls:MetroTabItem.Header>
-                        <Grid>
-                            <Label
-                                Margin="25,0,0,0"
-                                Content="Logging Tools"
-                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}" />
-                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top">
+                                <Label
+                                    Margin="25,0,0,0"
+                                    Content="Logging Tools"
+                                    DockPanel.Dock="Top" />
+                                <ScrollViewer
+                                    DockPanel.Dock="Top"
+                                    HorizontalScrollBarVisibility="Disabled"
+                                    VerticalScrollBarVisibility="Auto">
 
-                                <WrapPanel Margin="25">
+                                    <WrapPanel Margin="25,0,25,0">
 
-                                    <Controls:Tile
-                                        Title="Tool1"
-                                        Width="100"
-                                        Height="100"
-                                        Padding="10"
-                                        Background="#FF444444"
-                                        HorizontalTitleAlignment="Center">
-                                        <StackPanel Margin="0,0,0,20">
-                                            <Image Source="{iconPacks:ModernImage Kind=Question, Brush=GhostWhite}" />
-                                        </StackPanel>
-                                    </Controls:Tile>
+                                        <Button FontSize="12" Style="{StaticResource standAloneButton}">
+                                            <StackPanel
+                                                Margin="0,0,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                                <Image
+                                                    Width="45"
+                                                    Height="45"
+                                                    Source="{iconPacks:ModernImage Kind=Question,
+                                                                                   Brush=GhostWhite}" />
+                                                <Label Content="Temp" FontFamily="Segoe UI" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button FontSize="12" Style="{StaticResource standAloneButton}">
+                                            <StackPanel
+                                                Margin="0,0,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                                <Image
+                                                    Width="45"
+                                                    Height="45"
+                                                    Source="{iconPacks:ModernImage Kind=Question,
+                                                                                   Brush=GhostWhite}" />
+                                                <Label Content="Temp" FontFamily="Segoe UI" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button FontSize="12" Style="{StaticResource standAloneButton}">
+                                            <StackPanel
+                                                Margin="0,0,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                                <Image
+                                                    Width="45"
+                                                    Height="45"
+                                                    Source="{iconPacks:ModernImage Kind=Question,
+                                                                                   Brush=GhostWhite}" />
+                                                <Label Content="Temp" FontFamily="Segoe UI" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button FontSize="12" Style="{StaticResource standAloneButton}">
+                                            <StackPanel
+                                                Margin="0,0,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                                <Image
+                                                    Width="45"
+                                                    Height="45"
+                                                    Source="{iconPacks:ModernImage Kind=Question,
+                                                                                   Brush=GhostWhite}" />
+                                                <Label Content="Temp" FontFamily="Segoe UI" />
+                                            </StackPanel>
+                                        </Button>
 
-                                    <Controls:Tile
-                                        Title="Tool1"
-                                        Width="100"
-                                        Height="100"
-                                        Padding="10"
-                                        Background="#FF444444"
-                                        HorizontalTitleAlignment="Center">
-                                        <StackPanel Margin="0,0,0,20">
-                                            <Image Source="{iconPacks:ModernImage Kind=Question, Brush=GhostWhite}" />
-                                        </StackPanel>
-                                    </Controls:Tile>
-                                    <Controls:Tile
-                                        Title="Tool1"
-                                        Width="100"
-                                        Height="100"
-                                        Padding="10"
-                                        Background="#FF444444"
-                                        HorizontalTitleAlignment="Center">
-                                        <StackPanel Margin="0,0,0,20">
-                                            <Image Source="{iconPacks:ModernImage Kind=Question, Brush=GhostWhite}" />
-                                        </StackPanel>
-                                    </Controls:Tile>
-                                    <Controls:Tile
-                                        Title="Tool1"
-                                        Width="100"
-                                        Height="100"
-                                        Padding="10"
-                                        Background="#FF444444"
-                                        HorizontalTitleAlignment="Center">
-                                        <StackPanel Margin="0,0,0,20">
-                                            <Image Source="{iconPacks:ModernImage Kind=Question, Brush=GhostWhite}" />
-                                        </StackPanel>
-                                    </Controls:Tile>
-                                </WrapPanel>
-                            </ScrollViewer>
-                        </Grid>
+
+                                    </WrapPanel>
+                                </ScrollViewer>
+                            </DockPanel>
+                            <DockPanel DockPanel.Dock="Top">
+                                <Label
+                                    Margin="25,0,0,0"
+                                    Content="Standalone Tools"
+                                    DockPanel.Dock="Top" />
+                                <ScrollViewer
+                                    DockPanel.Dock="Top"
+                                    HorizontalScrollBarVisibility="Disabled"
+                                    VerticalScrollBarVisibility="Auto">
+
+                                    <WrapPanel Name="standaloneControlPanel" Margin="25,0,25,0" />
+                                </ScrollViewer>
+                            </DockPanel>
+                        </DockPanel>
                     </Controls:MetroTabItem>
                     <Controls:MetroTabItem
                         Name="newTab"
