@@ -118,6 +118,7 @@ function Set-Config {
             $configHash.buttonGlyphs = $null
             $configHash.adPropertyMap = $null
             $configHash.queryProps = $null
+            $configHash.actionLog = $null
 
             $configHash | ConvertTo-Json -Depth 8 | Out-File $($configPath + '.bak') -Force
 
@@ -243,8 +244,11 @@ function Set-InitialValues {
        
         # check if values already exist
         if ($configHash.$type) { $tempList = $configHash.$type }
+        
         # pull from base templates if not
         elseif ($PullDefaults) { $tempList = Get-InitialValues -GroupName $type }
+
+        else { $tempList = $null }
         
 
         # create observable collection and add values
@@ -301,11 +305,14 @@ function Set-LoggingStructure {
 function Set-QueryPropertyList {
    Param ($SyncHash, $ConfigHash)
 
-    $syncHash.Window.Dispatcher.Invoke([Action]{
-        $syncHash.searchPropSelection.ItemsSource = $configHash.queryDefConfig.Name
-    })
+    if (($configHash.queryDefConfig.Name | Measure-Object).Count -eq 1) { 
+        $syncHash.Window.Dispatcher.Invoke([Action]{ $syncHash.searchPropSelection.ItemsSource = @($configHash.queryDefConfig.Name) })
+    }
+    elseif (($configHash.queryDefConfig.Name | Measure-Object).Count -gt 1) { 
+        $syncHash.Window.Dispatcher.Invoke([Action]{ $syncHash.searchPropSelection.ItemsSource = $configHash.queryDefConfig.Name }) 
+    }
 
-    $syncHash.searchPropSelection.Items | ForEach-Object {$syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.searchPropSelection.SelectedItems.Add(($_))})}
+     $syncHash.searchPropSelection.Items | ForEach-Object {$syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.searchPropSelection.SelectedItems.Add(($_))})}
 }
    
 function Set-RTDefaults {
@@ -519,7 +526,7 @@ function Add-CustomToolControls {
                                 }
 
                                 else {
-                                    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $toolID, $configHash, $queryHash -ScriptBlock {
+                                    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $toolID, $configHash, $queryHash  -ScriptBlock {
                                         Param($queue, $toolID, $configHash, $queryHash)
 
                                         $item = ($configHash.currentTabItem).toLower()
@@ -528,19 +535,24 @@ function Add-CustomToolControls {
                                         try {                     
                                             Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
                                             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
-                                               $queue.Enqueue("[$toolName]: Success - Standalone tool complete") 
+                                               $queue.Enqueue("[$toolName]: Success - Standalone tool complete")
+                                               Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -ArrayList $configHash.actionLog 
                                             }
 
                                             else {
                                                 $queue.Enqueue("[$toolName]: Success on [$item] - tool complete")
+                                                 Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog 
                                             }
+                                           
                                         }
                                         catch {
                                             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                                                $queue.Enqueue("[$toolName]: Fail - Standalone tool incomplete") 
+                                                Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
                                             }
                                             else {
                                                 $queue.Enqueue("[$toolName]: Fail on [$item] - tool incomplete")
+                                                Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
                                             }
                                         }
                                     }
@@ -1016,6 +1028,12 @@ Function Set-ChildWindow {
                 $syncHash.settingQueryDefDataGrid.Visibility = "Visible" 
                 $syncHash.settingGeneralAddClick.Tag = "Query"   
             } 
+            
+            'settingMiscGrid' { 
+            $syncHash.settingGeneralAddClick.Tag = 'null'
+            $syncHash.settingMiscGrid.Visibility = "Visible" 
+                  
+            } 
         }
     }
 
@@ -1151,10 +1169,14 @@ function Start-ItemToolAction {
             }
 
             $queue.Enqueue("[$toolName]: SUCCESS: tool ran on $target")
+             Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $Target -ActionName $toolName -ArrayList $configHash.actionLog 
 
         }
         
-        catch { $queue.Enqueue("[$toolName]: FAIL: tool incomplete on $target") }
+        catch {
+            $queue.Enqueue("[$toolName]: FAIL: tool incomplete on $target") 
+            Write-LogMessage -Path $configHash.actionlogPath -Message Fail -SubjectName $Target -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+        }
     }
 
     $syncHash.itemToolDialog.IsOpen = $false
@@ -1544,6 +1566,8 @@ function Set-LoggingDirectory {
     }
 }
 
+
+
 function Get-LDAPSearchNames {
     param (
     $ConfigHash,
@@ -1626,11 +1650,13 @@ function Start-ObjectSearch {
             if ($match.ObjectClass -eq 'User') {
                 $match = (Get-ADUser -Identity $match.SamAccountName -Properties @($configHash.UserPropList.PropName.Where( { $_ -ne 'Non-AD Property' }) | Sort-Object -Unique))                 
                 Set-QueryVarsToUpdate -ConfigHash $configHash -Type User
+                 Write-LogMessage -Path $configHash.actionlogPath -Message Query -SubjectName $match.SamAccountName -ActionName "Query" -SubjectType "User" -ArrayList $configHash.actionLog
             }
 
             elseif ($match.ObjectClass -eq 'Computer') {                       
                 $match = (Get-ADComputer -Identity $match.SamAccountName -Properties @($configHash.CompPropList.PropName.Where( { $_ -ne 'Non-AD Property' }) | Sort-Object -Unique))
                 Set-QueryVarsToUpdate -ConfigHash $configHash -Type Comp
+                Write-LogMessage -Path $configHash.actionlogPath -Message Query -SubjectName $match.Name -ActionName "Query" -SubjectType "Computer" -ArrayList $configHash.actionLog
             }
                 
             if ($match.SamAccountName -notin $syncHash.tabControl.Items.Name -and $match.Name -notin $syncHash.tabControl.Items.Name) {
@@ -1646,20 +1672,24 @@ function Start-ObjectSearch {
                     $match.PSObject.Properties | ForEach-Object { $queryHash.($match.SamAccountName)[$_.Name] = $_.Value }
                     $itemIndex = [Array]::IndexOf($syncHash.tabControl.Items.Name, $($match.SamAccountName))     
                     $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.tabControl.SelectedIndex = $itemIndex })
+                   
                 }
                 else {
                     $match.PSObject.Properties | ForEach-Object { $queryHash.($match.Name)[$_.Name] = $_.Value }
                     $itemIndex = [Array]::IndexOf($syncHash.tabControl.Items.Name, $($match.Name))     
                     $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.tabControl.SelectedIndex = $itemIndex })
+                    
                 }   
             }                    
         }
+
+    
 
         elseif (($match | Measure-Object).Count -gt 1) {
             $rsCmd.queue.Enqueue("Too many matches!")
             $syncHash.Window.Dispatcher.Invoke([Action] {
                     $syncHash.resultsSidePane.IsOpen = $true
-                    $syncHash.resultsSidePaneGrid.ItemsSource = $match
+                    $syncHash.resultsSidePaneGrid.ItemsSource = $match | Select-Object Name, SamAccountName, ObjectClass
                 })
         }
 
@@ -1915,7 +1945,8 @@ function Find-ObjectLogs {
 
                             ClientName     = $log.ClientName 
 
-                           
+                            Connectivity   = ($compPing.Online).toString()
+
 
                             ClientOnline   = if ($clientOnline) { ($clientOnline.Online).toString() };
                             
@@ -1995,8 +2026,14 @@ function Set-GridButtons {
     [parameter(Mandatory)][ValidateSet('Comp', 'User')]$Type,
     [switch]$SkipSelectionChange)
 
-    if ($type -eq 'User') { $itemName = "userComp" }
-    else { $itemName = "compUser" }
+    if ($type -eq 'User') { 
+        $itemName = "userComp" 
+        $butCode = 'r'
+    }
+    else {
+        $itemName = "compUser" 
+        $butCode = 'rc'
+    }
         
     if (!$SkipSelectionChange) {  
         
@@ -2017,7 +2054,7 @@ function Set-GridButtons {
     if ($type -eq 'User' -and ($syncHash.userCompFocusClientToggle.IsChecked) -and !($SkipSelectionChange)) { $syncHash.userCompFocusHostToggle.IsChecked = $true }
     elseif ($type -eq 'Comp' -and ($syncHash.compUserFocusClientToggle.IsChecked) -and !($SkipSelectionChange)) { $syncHash.compUserFocusUserToggle.IsChecked = $true }
     else {
-        foreach ($button in $syncHash.Keys.Where({$_ -like "*rbutbut*"})) {
+        foreach ($button in $syncHash.Keys.Where({$_ -like "*butbut*"})) {
             if (($syncHash.($itemName + 'Grid').SelectedItem.Type -in $configHash.rtConfig.($syncHash[$button].Tag).Types) -and
                 (!($configHash.rtConfig.($syncHash[$button].Tag).RequireOnline -and $syncHash.($itemName + 'Grid').SelectedItem.Connectivity -eq $false)) -and 
                 (!($configHash.rtConfig.($syncHash[$button].Tag).RequireUser -and $syncHash.($itemName + 'Grid').SelectedItem.userOnline -eq $false))) {                
@@ -2034,10 +2071,10 @@ function Set-GridButtons {
             if (($syncHash.($itemName + 'Grid').SelectedItem.Type -in $configHash.rtConfig.$button.Types) -and
                 (!($configHash.rtConfig.$button.RequireOnline -and $syncHash.($itemName + 'Grid').SelectedItem.Connectivity -eq $false)) -and 
                 (!($configHash.rtConfig.$button.RequireUser -and $syncHash.($itemName + 'Grid').SelectedItem.userOnline -eq $false))) {
-                $synchash.customRT.$button.rbut.IsEnabled = $true
+                $synchash.customRT.$button.($butCode + 'but').IsEnabled = $true
             }
             else {
-                $synchash.customRT.$button.rbut.IsEnabled = $false
+                $synchash.customRT.$button.($butCode + 'but').IsEnabled = $false
             }            
         }
 
@@ -2045,10 +2082,10 @@ function Set-GridButtons {
             if (($syncHash.($itemName + 'Grid').SelectedItem.Type -in $configHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
                 (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $syncHash.($itemName + 'Grid').SelectedItem.Connectivity -eq $false)) -and 
                 (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -and $syncHash.($itemName + 'Grid').SelectedItem.userOnline -eq $false))) {
-                $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $true
+                $syncHash.customContext.$button.(($butCode + 'but') + 'context' +  ($button -replace 'cxt')).IsEnabled = $true
             }
             else {
-                $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $false
+                $syncHash.customContext.$button.(($butCode + 'but') + 'context' +  ($button -replace 'cxt')).IsEnabled = $false
             }            
         }
     } 
@@ -2099,6 +2136,22 @@ function Set-ClientGridButtons {
     }
 }
 
+function Set-ActionLog {
+param ($ConfigHash)
+    $configHash.actionLog = New-Object System.Collections.ObjectModel.ObservableCollection[Object] 
+    #$configHash.actionLog.Add(([PSCustomObject]@{
+    #    Message     = $null
+  #      SubjectName = $null
+   #     ActionName  = $null
+  ##      SubjectType = $null
+   #     Admin       = $null
+   #     Date        = $null
+    #    Time        = $null
+      #  DateFull    = $null
+   # }))
+}
+        
+
 function Write-LogMessage {
     param (
         $Path,
@@ -2106,19 +2159,26 @@ function Write-LogMessage {
         $ActionName,
         $SubjectName,
         $SubjectType,
-        $ArrayList)
+        $ArrayList,
+        $Error)
 
     $logMsg = ([PSCustomObject]@{
         ActionName  = $actionName
+        Message     = $message
         SubjectName = $SubjectName
         SubjectType = $SubjectType
         Date        = (Get-Date -format d)
         Time        = (Get-Date -format t)
         DateFull    = Get-Date
-    } | ConvertTo-CSV -NoTypeInformation)[1]
+        Admin       = $env:USERNAME
+        Error       = if ($Error) {$error}
+                      else {'null'}
+    }) 
 
     $ArrayList.Add($logMsg) | Out-Null 
-    if ($path) { $logMsg | Out-File -Append -FilePath $path }
+    if ($Path -and (Test-Path $Path)) { 
+        if (!(Test-Path (Join-Path $Path -ChildPath "$($env:USERNAME)"))) {New-Item -ItemType Directory -Path (Join-Path $Path -ChildPath "$($env:USERNAME)") | Out-Null}
+        ($logMsg | ConvertTo-CSV -NoTypeInformation)[1] | Out-File -Append -FilePath (Join-Path $path -ChildPath "$($env:USERNAME)\$(Get-Date -format MM.dd.yyyy).log") -Force}
 
 }
 

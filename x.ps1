@@ -64,6 +64,7 @@ Set-Config -ConfigPath $savedConfig -Type Import -ConfigHash $configHash
 # matches config'd user/comp logins with default headers, creates new headers from custom values
 $defaultList = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
 @('userLogMapping','compLogMapping') | Set-LoggingStructure -DefaultList $DefaultList -ConfigHash $configHash
+Set-ActionLog -ConfigHash $configHash
 
 # Add default values if they are missing
 @('MSRA','MSTSC') | Set-RTDefaults -ConfigHash $configHash
@@ -443,6 +444,14 @@ $syncHash.settingQueryMapClick.Add_Click({
     $syncHash.settingGeneralFlyout.IsOpen = $true
 })
 
+$syncHash.settingMiscClick.Add_Click({
+    Set-ChildWindow -SyncHash $syncHash -Title "Misc. Settings" -Panel settingMiscGrid -HideCloseButton -Background Flyout
+    
+    if (!$configHash.actionlogPath) {$configHash.actionlogPath = "C:\Logs" }
+    $syncHash.settingLogPath.Text = $configHash.actionlogPath 
+    $syncHash.settingGeneralFlyout.IsOpen = $true
+})
+
 #endregion
 
 #region FlyOutExits
@@ -456,7 +465,10 @@ $syncHash.settingObjectToolFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $s
 
 $syncHash.settingNameFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Computer Categorization" -SkipContentPaneReset -SkipResize })
 
-$syncHash.settingGeneralFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "General Settings" -SkipContentPaneReset -SkipResize })
+$syncHash.settingGeneralFlyoutExit.Add_Click({
+    if ($syncHash.settingGeneralAddClick.Tag -eq 'null' -and (Test-Path $syncHash.settingLogPath.Text)) { $configHash.actionlogPath = $syncHash.settingLogPath.Text }
+    Reset-ChildWindow -SyncHash $syncHash -Title "General Settings" -SkipContentPaneReset -SkipResize    
+})
 
 $syncHash.settingContextDefFlyout.Add_OpeningFinished({
     $syncHash.settingContextListTypes.ItemsSource = $configHash.nameMapList
@@ -488,7 +500,7 @@ $syncHash.settingFlyoutExit.Add_Click( {
 
 #endregion
 
-
+$syncHash.settingActionPathClick.Add_Click({ $syncHash.settingLogPath.Text = New-FolderSelection -Title "Select tool's logging directory" })
         
 $syncHash.settingLoggingPcPathClick.Add_Click({ Set-LoggingDirectory -SyncHash $syncHash -ConfigHash $configHash -Type Comp })
 
@@ -554,7 +566,12 @@ $syncHash.searchBoxHelp.add_MouseLeftButtonUp({
     $syncHash.searchBoxHelp.Background = "Transparent"
 })
 
-
+$syncHash.HistoryToggle.Add_MouseLeftButtonUp({
+    if ($syncHash.historySidePane.IsOpen) { $syncHash.historySidePane.IsOpen = $false }
+    else { $syncHash.historySidePane.IsOpen = $true}
+    if ($syncHash.historySideDataGrid.Items) { $syncHash.historySideDataGrid.Items.Refresh()}
+    else {$syncHash.historySideDataGrid.ItemsSource = $configHash.actionLog }
+})
 
 
 $syncHash.tabControl.ItemsSource = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
@@ -648,10 +665,13 @@ $syncHash.tabMenu.add_Loaded( {
 
                                                 $queryHash.($editObject).($configHash.($type + 'PropList')[$id - 1].PropName) = $changedValue
                                                 $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: SUCCESS on [$($($editObject).toLower())]")
+                                                Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName Edit -SubjectName $editObject -SubjectType $type -ArrayList $configHash.actionLog 
                                             }
                                     
-                                            catch { $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())]") }
-                                        }
+                                            catch { 
+                                                 Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName Edit -SubjectName $editObject -SubjectType $type -ArrayList $configHash.actionLog -Error $_
+                                                $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())]") }
+                                                }
 
                                         else {
                                             if ([string]::IsNullOrEmpty($changedValue)) {
@@ -668,18 +688,28 @@ $syncHash.tabMenu.add_Loaded( {
                                                     }
 
                                                     $syncHash.SnackMsg.MessageQueue.Enqueue("[CLEAR]: SUCCESS on [$($($editObject).toLower())]")
+                                                    Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName Clear -SubjectName $editObject -SubjectType $type -ArrayList $configHash.actionLog 
                                                 }
 
-                                                catch { $syncHash.SnackMsg.MessageQueue.Enqueue("[CLEAR]: FAIL on [$($($editObject).toLower())]") }
+                                                catch { 
+                                                    Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName Clear -SubjectName $editObject -SubjectType $type -ArrayList $configHash.actionLog -Error $_
+                                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[CLEAR]: FAIL on [$($($editObject).toLower())]") 
+                                                }
                                             }
 
                                             else {     
+                                                Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName Edit -SubjectName $editObject -SubjectType $type -ArrayList $configHash.actionLog -Error $_
                                                 $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())] - expected type  [$($($propType).toUpper())]")
+                                                
                                             }
                                         }
                                     }
                         
-                                    else { $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())] - ADEntity .dll missing; cannot edit") }
+                                    else { 
+                                        Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName Edit -SubjectName $editObject -SubjectType $type -ArrayList $configHash.actionLog -Error $_
+                                        $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: FAILED on [$($($editObject).toLower())] - ADEntity .dll missing; cannot edit") 
+                                       
+                                    }
                                 })
                             }
 
@@ -737,7 +767,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                 try {
                                                     Invoke-Expression -Command $cmd
                                                     $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString SUCCESS on $actionObjectString") })
-              
+                                                    Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $actionNameString -SubjectName $actionObjectString -SubjectType $type -ArrayList $configHash.actionLog 
+
                                                     if ($rsCmd.propList.('actionCmd' + $b + 'Refresh')) {
                                                         if ($PropName -ne 'Non-Ad Property') {
                                                             if ($type -eq 'User') {                               
@@ -772,6 +803,7 @@ $syncHash.tabMenu.add_Loaded( {
                           
                                                 catch {
                                                     $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString FAILURE on $actionObjectString") })
+                                                     Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $actionNameString -SubjectName $actionObjectString -SubjectType $type -ArrayList $configHash.actionLog -Error $_
                                                 }
                                             }
                                         })                         
@@ -805,6 +837,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                     try {
                                                         Invoke-Expression -Command ($configHash.($type + 'PropList')[$id - 1].('actionCmd' + $b))
                                                         $syncHash.SnackMsg.MessageQueue.Enqueue("[$($($actionName).toUpper())]: SUCCESS on [$($(Get-Variable -Name $type -ValueOnly).toLower())]")
+                                                        Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $actionName -SubjectName (Get-Variable -Name $type -ValueOnly) -SubjectType $type -ArrayList $configHash.actionLog 
 
                                                         if ($configHash.($type + 'PropList')[$id - 1].('actionCmd' + $b + 'Refresh')) {
                                                             if (($configHash.($type + 'PropList')[$id - 1].PropName) -ne 'Non-Ad Property') {
@@ -843,6 +876,7 @@ $syncHash.tabMenu.add_Loaded( {
                           
                                                     catch {
                                                         $syncHash.SnackMsg.MessageQueue.Enqueue("[$($($actionName).toUpper())] FAILURE on [$($(Get-Variable -Name $type -ValueOnly).toLower())]")
+                                                        Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $actionName -SubjectName (Get-Variable -Name $type -ValueOnly) -SubjectType $type -ArrayList $configHash.actionLog -Error $_
                                                     }                                                               
                                                 })
                                         }
@@ -1058,8 +1092,8 @@ $syncHash.tabMenu.add_Loaded( {
                             sessionID      = $sessionID
                         }
 
-                        Start-RSJob -ArgumentList $rsCmd, $syncHash -ScriptBlock {
-                            Param($rsCmd, $syncHash)
+                        Start-RSJob -ArgumentList $rsCmd, $syncHash, $configHash -ModulesToImport C:\TempData\internal\internal.psm1 -ScriptBlock {
+                            Param($rsCmd, $syncHash, $configHash)
                             
                             $user = $rsCmd.user
                             $comp = $rsCmd.comp
@@ -1068,11 +1102,13 @@ $syncHash.tabMenu.add_Loaded( {
                                 Invoke-Expression -Command $rsCmd.buttonSettings.actionCmd
                                 $syncHash.Window.Dispatcher.Invoke([Action]{
                                     $syncHash.SnackMsg.MessageQueue.Enqueue("[$($rsCmd.buttonSettings.ActionName.ToUpper())]: SUCCESS on $($rsCmd.user.ToLower()) on $($rsCmd.comp.ToLower())")
+                                    Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName ($rsCmd.buttonSettings.ActionName.ToUpper()) -SubjectName $rsCmd.User -SubjectType Context -ArrayList $configHash.actionLog 
                                 })
                             }
                             catch {
                                 $syncHash.Window.Dispatcher.Invoke([Action]{
                                     $syncHash.SnackMsg.MessageQueue.Enqueue("[$($rsCmd.buttonSettings.ActionName.ToUpper())]: FAIL on $($rsCmd.user.ToLower()) on $($rsCmd.comp.ToLower())")  
+                                    Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName ($rsCmd.buttonSettings.ActionName.ToUpper()) -SubjectName $rsCmd.User -SubjectType Context -ArrayList $configHash.actionLog -Error $_
                                 })
                             }
                         }
@@ -1083,10 +1119,12 @@ $syncHash.tabMenu.add_Loaded( {
                         try {
                             Invoke-Expression -Command $configHash.contextConfig[$id - 1].actionCmd
                             $syncHash.SnackMsg.MessageQueue.Enqueue("[$($configHash.contextConfig[$id - 1].ActionName.ToUpper())]: SUCCESS on $($user.ToLower()) on $($comp.ToLower())")
+                            Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName ($configHash.contextConfig[$id - 1].ActionName.ToUpper()) -SubjectName $user -SubjectType Context -ArrayList $configHash.actionLog 
                         }
                             
                         catch {
                             $syncHash.SnackMsg.MessageQueue.Enqueue("[$($configHash.contextConfig[$id - 1].ActionName.ToUpper())]: FAIL on $($user.ToLower()) on $($comp.ToLower())")
+                            Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName ($configHash.contextConfig[$id - 1].ActionName.ToUpper()) -SubjectName $user -SubjectType Context -ArrayList $configHash.actionLog -Error $_
                         }
                             
 
@@ -1100,7 +1138,7 @@ $syncHash.tabMenu.add_Loaded( {
         }
 
         $customField = 0
-        $sizeToExpand = ([math]::Ceiling(($configHash.userLogMapping | Where-Object {$_.Ignore -eq $false }).Count/5) - 1) * 55 + $syncHash.userCompControlRow.Height.Value
+        $sizeToExpand = ([math]::Ceiling(($configHash.userLogMapping | Where-Object {$_.FieldSel -ne 'Ignore' }).Count/5) - 1) * 55 + $syncHash.userCompControlRow.Height.Value
         $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.userCompControlRow.Height = $sizeToExpand})
         $configHash.userLogMapping | Where-Object { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } | ForEach-Object {
             # populate custom dock items
@@ -1137,7 +1175,7 @@ $syncHash.tabMenu.add_Loaded( {
         }
 
         $customField = 0
-        $sizeToExpand = ([math]::Ceiling(($configHash.compLogMapping | Where-Object {$_.Ignore -eq $false }).Count/5) - 1) * 55 + $syncHash.compUserControlRow.Height.Value
+        $sizeToExpand = ([math]::Ceiling(($configHash.compLogMapping | Where-Object {$_.FieldSel -ne 'Ignore' }).Count/5) - 1) * 55 + $syncHash.compUserControlRow.Height.Value
         $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.compUserControlRow.Height = $sizeToExpand}) 
         $configHash.compLogMapping | Where-Object { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } | ForEach-Object {
             # populate custom dock items
@@ -1431,7 +1469,7 @@ $syncHash.userCompFocusHostToggle.Add_Checked( {
                 if (($syncHash.userCompGrid.SelectedItem.Type -in $configHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
                    (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $syncHash.userCompGrid.SelectedItem.Connectivity -eq $false)) -and 
                    (!($configHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -and $syncHash.userCompGrid.SelectedItem.userOnline -eq $false))) {
-                    $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $true
+                   $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $true
                 }
                 else {
                     $syncHash.customContext.$button.('rbutcontext' +  ($button -replace 'cxt')).IsEnabled = $false
@@ -1456,8 +1494,8 @@ $syncHash.userCompFocusClientToggle.Add_Checked({
 })
 
 $syncHash.searchSettingsPopUp.Add_Closed({
-
-   $configHash.queryProps = Get-LDAPSearchNames -ConfigHash $configHash -SyncHash $syncHash
+    $configHash.queryProps = [System.Collections.ArrayList]@()
+    Get-LDAPSearchNames -ConfigHash $configHash -SyncHash $syncHash | ForEach-Object {$configHash.queryProps.Add($_) | Out-Null}
 })
 
 $syncHash.userCompFocusClientToggle.Add_Unchecked({ $syncHash.userCompFocusHostToggle.IsChecked = $true })
@@ -1490,7 +1528,10 @@ $syncHash.SearchBox.add_KeyDown( {
         if ($null -like $syncHash.SearchBox.Text -and $_.Key -ne 'Escape') { $syncHash.SnackMsg.MessageQueue.Enqueue("Empty!") }
            
         elseif ($syncHash.SearchBox.Text.Length -ge 3 -or $_.Key -eq 'Escape') { 
-            if (!($configHash.queryProps)) { $configHash.queryProps = Get-LDAPSearchNames -ConfigHash $configHash -SyncHash $syncHash }
+            if (!($configHash.queryProps)) { 
+                $configHash.queryProps = [System.Collections.ArrayList]@()
+                Get-LDAPSearchNames -ConfigHash $configHash -SyncHash $syncHash | ForEach-Object {$configHash.queryProps.Add($_) | Out-Null} 
+            }
             Start-ObjectSearch -SyncHash $syncHash -ConfigHash $configHash -QueryHash $queryHash -Key $_.Key }
 
         else { $syncHash.SnackMsg.MessageQueue.Enqueue("Query must be at least 3 characters long!") }
@@ -1499,7 +1540,7 @@ $syncHash.SearchBox.add_KeyDown( {
 
 $syncHash.itemToolDialogConfirmButton.Add_Click({
 
-    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash -ScriptBlock {
+    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash  -ModulesToImport C:\TempData\internal\internal.psm1  -ScriptBlock {
     Param($queue, $toolID, $configHash, $queryHash)
 
         $item = ($configHash.currentTabItem).toLower()
@@ -1508,19 +1549,24 @@ $syncHash.itemToolDialogConfirmButton.Add_Click({
         try {                     
             Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
-                $queue.Enqueue("[$toolName]: Success - Standalone tool complete") 
+                $queue.Enqueue("[$toolName]: Success - Standalone tool complete")
+                Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -ArrayList $configHash.actionLog 
             }
 
             else {
                 $queue.Enqueue("[$toolName]: Success on [$item] - tool complete")
+                    Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog 
             }
+                                           
         }
         catch {
             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                 $queue.Enqueue("[$toolName]: Fail - Standalone tool incomplete") 
+                Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
             }
             else {
                 $queue.Enqueue("[$toolName]: Fail on [$item] - tool incomplete")
+                Write-LogMessage -Path $configHash.actionlogPath -Message Fail -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
             }
         }
     }
@@ -2173,9 +2219,11 @@ $syncHash.settingObjectToolExecute.Add_Click({
 
       $syncHash.SearchBox.Tag = ($syncHash.resultsSidePaneGrid.SelectedItem | Select-Object -ExpandProperty SamAccountName) -replace '\$' 
       $syncHash.SearchBox.Focus()
+      
       $wshell = New-Object -ComObject wscript.shell;
       $wshell.SendKeys('{ESCAPE}')
       $syncHash.resultsSidePane.IsOpen = $false
+     # $syncHash.resultsSidePaneGrid.ItemsSource = $null
 
       
    
@@ -2322,11 +2370,6 @@ $syncHash.sidePaneExit.Add_Click({
     
 
 })
-$syncHash.resultsSidePane.Add_ClosingFinished({
-
-    $syncHash.resultsSidePaneGrid.ItemsSource = $null
-})
-
 
 
  

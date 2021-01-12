@@ -341,6 +341,8 @@
                 TargetType="DataGridRow">
 
                 <Style.Triggers>
+
+
                     <MultiTrigger>
                         <MultiTrigger.Conditions>
                             <Condition Property="Controls:DataGridHelper.SelectionUnit" Value="FullRow" />
@@ -374,6 +376,7 @@
                             <Condition Property="IsSelected" Value="True" />
                         </MultiTrigger.Conditions>
                         <Setter Property="Background" Value="Transparent" />
+
                         <Setter Property="BorderBrush" Value="Transparent" />
                     </MultiTrigger>
                 </Style.Triggers>
@@ -384,6 +387,26 @@
                 TargetType="DataGridRow">
                 <Setter Property="Background" Value="#FF363333" />
             </Style>
+            <Style
+                x:Key="dataGridRowStyleHistory"
+                BasedOn="{StaticResource dataGridRowStyle}"
+                TargetType="DataGridRow">
+                <Style.Triggers>
+
+                    <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                        <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent3}" />
+                    </Trigger>
+                    <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                        <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent4}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+
+
+
+
+
             <Style
                 x:Key="dataGridRowResultsStyleLog"
                 BasedOn="{StaticResource dataGridRowStyle}"
@@ -422,7 +445,6 @@
                 BasedOn="{StaticResource dataGridCell}"
                 TargetType="DataGridCell">
                 <Style.Setters>
-
                     <Setter Property="Background" Value="Transparent" />
                 </Style.Setters>
             </Style>
@@ -700,6 +722,280 @@
         </Grid>
 
         <Grid Name="windowContent" Visibility="Visible">
+            <Canvas
+                Height="300"
+                Margin="40,0,0,75"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Panel.ZIndex="2"
+                Background="Transparent">
+                <Controls:Flyout
+                    Name="historySidePane"
+                    Width="600"
+                    Height="325"
+                    Margin="17.5,0,0,20"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Panel.ZIndex="-10"
+                    Background="#FF444444"
+                    CloseButtonVisibility="Collapsed"
+                    IsOpen="True"
+                    Position="Left">
+
+                    <StackPanel Margin="10,-40,10,0">
+                        <DockPanel>
+                            <Label
+                                Margin="-30,0,0,0"
+                                HorizontalAlignment="Center"
+                                Controls:ControlsHelper.ContentCharacterCasing="Upper"
+                                Content="History"
+                                DockPanel.Dock="Right"
+                                FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                FontSize="18">
+                                <Label.Effect>
+                                    <DropShadowEffect />
+                                </Label.Effect>
+                            </Label>
+                        </DockPanel>
+                        <DockPanel>
+                            <DataGrid
+                                Name="historySideDataGrid"
+                                Grid.Row="0"
+                                Height="285"
+                                Padding="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Controls:DataGridHelper.SelectionUnit="FullRow"
+                                md:DataGridAssist.CellPadding="0"
+                                md:DataGridAssist.ColumnHeaderPadding="-5,0,-5,0"
+                                md:ListViewAssist.ListViewItemPadding="1"
+                                AlternationCount="2"
+                                AutoGenerateColumns="False"
+                                Background="Transparent"
+                                BorderBrush="#FF444444"
+                                BorderThickness="1,0,1,1"
+                                CanUserAddRows="False"
+                                CanUserDeleteRows="False"
+                                CanUserResizeColumns="False"
+                                CanUserResizeRows="False"
+                                CanUserSortColumns="False"
+                                CellStyle="{StaticResource dataGridCellResultsLog}"
+                                DockPanel.Dock="Top"
+                                Focusable="True"
+                                GridLinesVisibility="All"
+                                HorizontalScrollBarVisibility="Disabled"
+                                IsReadOnly="True"
+                                KeyboardNavigation.TabNavigation="Cycle"
+                                RowHeaderWidth="0"
+                                RowHeight="30"
+                                RowStyle="{StaticResource dataGridRowStyleHistory}"
+                                ScrollViewer.CanContentScroll="False"
+                                SelectionMode="Single"
+                                VerticalScrollBarVisibility="Auto">
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style BasedOn="{StaticResource MahApps.Styles.DataGridColumnHeader}" TargetType="DataGridColumnHeader">
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="Margin" Value="0,0,0,-25" />
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
+
+
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn
+                                        Width="60"
+                                        Header="ACTION"
+                                        HeaderStyle="{StaticResource datagridColumnNoTab}">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                    <Label
+                                                        Margin="10,0,0,0"
+                                                        Padding="0"
+                                                        VerticalAlignment="Center"
+                                                        HorizontalContentAlignment="Left"
+                                                        Content="{Binding ActionName}" />
+                                                </Viewbox>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn
+                                        Width="70"
+                                        Header="MESSAGE"
+                                        HeaderStyle="{StaticResource datagridColumnNoTab}">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                    <Label
+                                                        Margin="0,0,0,0"
+                                                        Padding="0"
+                                                        VerticalAlignment="Center"
+                                                        HorizontalContentAlignment="Left"
+                                                        Controls:ControlsHelper.ContentCharacterCasing="Upper"
+                                                        Background="Transparent"
+                                                        Content="{Binding Message}" />
+                                                </Viewbox>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+
+                                    <DataGridTemplateColumn
+                                        Width="40"
+                                        Header=""
+                                        HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button
+                                                    x:Name="resultsErrorItem"
+                                                    Width="15"
+                                                    Height="15"
+                                                    Margin="-10,-7,0,-7"
+                                                    Padding="0"
+                                                    FontFamily="Segoe MDL2 Assets"
+                                                    FontSize="14"
+                                                    IsTabStop="False">
+                                                    <Button.Style>
+                                                        <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
+
+                                                            <Setter Property="Content" Value="" />
+
+                                                            <Setter Property="ToolTip" Value="{Binding Error}" />
+                                                            <Setter Property="Foreground" Value="IndianRed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Error}" Value="null">
+                                                                    <Setter Property="Content" Value="" />
+                                                                    <Setter Property="ToolTip" Value="Success" />
+                                                                    <Setter Property="Foreground" Value="LightGreen" />
+                                                                </DataTrigger>
+
+
+
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+
+
+
+                                    <DataGridTemplateColumn
+                                        Width="40"
+                                        Header=""
+                                        HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button
+                                                    x:Name="resultsQueryItem"
+                                                    Width="15"
+                                                    Height="15"
+                                                    Margin="-10,-7,0,-7"
+                                                    Padding="0"
+                                                    Content=""
+                                                    FontFamily="Segoe MDL2 Assets"
+                                                    FontSize="14"
+                                                    IsTabStop="False">
+                                                    <Button.Style>
+                                                        <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
+                                                            <Setter Property="Content" Value="" />
+                                                            <Setter Property="FontSize" Value="14" />
+                                                            <Setter Property="ToolTip" Value="Search object" />
+                                                            <Setter Property="Foreground" Value="Silver" />
+                                                            <Style.Triggers>
+
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </StackPanel>
+
+                </Controls:Flyout>
+                <DockPanel
+                    Height="280"
+                    Margin="-50,0,0,20"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Panel.ZIndex="2"
+                    Background="#FF444444">
+
+                    <DockPanel.Style>
+                        <Style TargetType="DockPanel">
+                            <Setter Property="Width" Value="68" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ElementName=HistoryToggle, Path=IsMouseOver}" Value="True">
+                                    <Setter Property="Width" Value="72" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DockPanel.Style>
+                    <DockPanel
+                        Name="HistoryToggle"
+                        Margin="40,0,-20,-10"
+                        VerticalAlignment="Center"
+                        Cursor="Hand">
+                        <Button
+                            Name="historyButton"
+                            Width="30"
+                            Height="30"
+                            Margin="2.5,0,0,-10"
+                            HorizontalAlignment="Left"
+                            DockPanel.Dock="Top"
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="15"
+                            IsTabStop="False">
+                            <Button.Style>
+                                <Style BasedOn="{StaticResource MahApps.Styles.Button.Circle}" TargetType="Button">
+                                    <Setter Property="Content" Value="" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=historySidePane, Path=IsOpen}" Value="True">
+                                            <Setter Property="Content" Value="" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.RenderTransform>
+                                <ScaleTransform ScaleX=".50" ScaleY=".50" />
+                            </Button.RenderTransform>
+
+                        </Button>
+                        <Label
+                            Padding="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Controls:ControlsHelper.ContentCharacterCasing="Upper"
+                            Content="History"
+                            DockPanel.Dock="Right"
+                            FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                            FontSize="14"
+                            FontWeight="Bold"
+                            Foreground="{StaticResource MahApps.Brushes.Button.Border}">
+                            <Label.LayoutTransform>
+                                <RotateTransform Angle="270" />
+                            </Label.LayoutTransform>
+                        </Label>
+                    </DockPanel>
+
+                </DockPanel>
+            </Canvas>
             <Controls:Flyout
                 Name="resultsSidePane"
                 Width="300"
@@ -731,131 +1027,135 @@
                             DockPanel.Dock="Right"
                             FontFamily="Segoe MDL2 Assets"
                             FontSize="20"
+                            IsTabStop="False"
                             Style="{DynamicResource MahApps.Styles.Button.Circle}" />
                         <Label
-                            Margin="0,0,0,0"
+                            Margin="15,0,0,0"
                             HorizontalAlignment="Center"
                             Controls:ControlsHelper.ContentCharacterCasing="Upper"
                             Content="Results"
                             DockPanel.Dock="Right"
                             FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                            FontSize="24">
+                            FontSize="18">
                             <Label.Effect>
                                 <DropShadowEffect />
                             </Label.Effect>
                         </Label>
                     </DockPanel>
-                    <DataGrid
-                        Name="resultsSidePaneGrid"
-                        Grid.Row="1"
-                        Grid.RowSpan="4"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="4"
-                        Margin="0,15,0,0"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
-                        HorizontalContentAlignment="Stretch"
-                        Panel.ZIndex="0"
-                        md:ListViewAssist.ListViewItemPadding="1"
-                        AutoGenerateColumns="False"
-                        Background="Transparent"
-                        BorderBrush="Transparent"
-                        BorderThickness="0"
-                        CanUserAddRows="False"
-                        CanUserDeleteRows="False"
-                        CanUserResizeColumns="False"
-                        CanUserResizeRows="False"
-                        CanUserSortColumns="False"
-                        CellStyle="{StaticResource dataGridCellResultsLog}"
-                        Focusable="True"
-                        HorizontalScrollBarVisibility="Disabled"
-                        KeyboardNavigation.TabNavigation="Cycle"
-                        RowHeaderWidth="0"
-                        RowHeight="40"
-                        RowStyle="{StaticResource dataGridRowResultsStyleLog}"
-                        ScrollViewer.CanContentScroll="False"
-                        SelectionMode="Single"
-                        Style="{StaticResource MahApps.Styles.DataGrid}"
-                        VerticalScrollBarVisibility="Auto">
+                    <DockPanel>
+                        <DataGrid
+                            Name="resultsSidePaneGrid"
+                            Height="{Binding ElementName=resultsSidePane, Path=ActualHeight, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="0,0,0,-60"
+                            VerticalAlignment="Top"
+                            Panel.ZIndex="0"
+                            md:ListViewAssist.ListViewItemPadding="1"
+                            AutoGenerateColumns="False"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            CanUserAddRows="False"
+                            CanUserDeleteRows="False"
+                            CanUserResizeColumns="False"
+                            CanUserResizeRows="False"
+                            CanUserSortColumns="False"
+                            CellStyle="{StaticResource dataGridCellResultsLog}"
+                            Focusable="True"
+                            HorizontalScrollBarVisibility="Disabled"
+                            KeyboardNavigation.TabNavigation="Cycle"
+                            RowHeaderWidth="0"
+                            RowHeight="40"
+                            RowStyle="{StaticResource dataGridRowResultsStyleLog}"
+                            ScrollViewer.CanContentScroll="False"
+                            SelectionMode="Single"
+                            Style="{StaticResource MahApps.Styles.DataGrid}"
+                            VerticalScrollBarVisibility="Auto">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style BasedOn="{StaticResource MahApps.Styles.DataGridColumnHeader}" TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="Margin" Value="0,0,0,-25" />
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn
+                                    Width="150"
+                                    Header=" NAME"
+                                    HeaderStyle="{StaticResource datagridColumnNoTab}">
 
-                        <DataGrid.Columns>
-                            <DataGridTemplateColumn
-                                Width="90"
-                                Header=" NAME"
-                                HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                    <DataGridTemplateColumn.CellTemplate>
 
-                                <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                <Label
+                                                    Margin="-10,0,0,0"
+                                                    Padding="0"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Left"
+                                                    Content="{Binding Name}" />
+                                            </Viewbox>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                                    <DataTemplate>
-                                        <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                            <Label
-                                                Margin="-10,0,0,0"
+                                <DataGridTemplateColumn
+                                    Width="70"
+                                    Header="    TYPE"
+                                    HeaderStyle="{StaticResource datagridColumnNoTab}">
+
+                                    <DataGridTemplateColumn.CellTemplate>
+
+                                        <DataTemplate>
+                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                <Label
+                                                    Margin="0,0,0,0"
+                                                    Padding="0"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Left"
+                                                    Controls:ControlsHelper.ContentCharacterCasing="Upper"
+                                                    Background="Transparent"
+                                                    Content="{Binding ObjectClass}" />
+                                            </Viewbox>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn
+                                    Width="40"
+                                    Header=""
+                                    HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button
+                                                x:Name="resultsQueryItem"
+                                                Width="15"
+                                                Height="15"
+                                                Margin="-10,-7,0,-7"
                                                 Padding="0"
-                                                VerticalAlignment="Center"
-                                                HorizontalContentAlignment="Left"
-                                                Content="{Binding Name}" />
-                                        </Viewbox>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="14"
+                                                IsTabStop="False">
+                                                <Button.Style>
+                                                    <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
+                                                        <Setter Property="Content" Value="" />
+                                                        <Setter Property="FontSize" Value="14" />
+                                                        <Setter Property="ToolTip" Value="Search object" />
+                                                        <Setter Property="Foreground" Value="Silver" />
+                                                        <Style.Triggers>
 
-                            <DataGridTemplateColumn
-                                Width="135"
-                                Header="    TYPE"
-                                HeaderStyle="{StaticResource datagridColumnNoTab}">
-
-                                <DataGridTemplateColumn.CellTemplate>
-
-                                    <DataTemplate>
-                                        <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                            <Label
-                                                Margin="0"
-                                                Padding="0"
-                                                VerticalAlignment="Center"
-                                                HorizontalContentAlignment="Left"
-                                                Controls:ControlsHelper.ContentCharacterCasing="Upper"
-                                                Background="Transparent"
-                                                Content="{Binding ObjectClass}" />
-                                        </Viewbox>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-
-                            <DataGridTemplateColumn
-                                Width="40"
-                                Header=""
-                                HeaderStyle="{StaticResource datagridColumnNoTab}">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Button
-                                            x:Name="resultsQueryItem"
-                                            Width="15"
-                                            Height="15"
-                                            Margin="-6,-7,0,-7"
-                                            Padding="0"
-                                            Content=""
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="14"
-                                            IsTabStop="False">
-                                            <Button.Style>
-                                                <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
-                                                    <Setter Property="Content" Value="" />
-                                                    <Setter Property="FontSize" Value="14" />
-                                                    <Setter Property="ToolTip" Value="Search object" />
-                                                    <Style.Triggers>
-
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent4}" />
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
                 </StackPanel>
             </Controls:Flyout>
             <simpleChildWindow:ChildWindow
@@ -1329,6 +1629,7 @@
                         Margin="15,0,0,0"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
+                        Panel.ZIndex="10"
                         Source="{iconPacks:ModernImage Kind=Question,
                                                        Brush=White}" />
                     <ScrollViewer Grid.Column="1" Height="350">
@@ -2422,9 +2723,21 @@
                                             Name="rtSettingRequiresUser"
                                             Margin="60,0,0,0"
                                             Content="Target user must be logged in"
-                                            FontSize="10"
-                                            IsChecked="{Binding Path=requireUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            Style="{StaticResource MaterialDesignAccentCheckBox}" />
+                                            FontSize="10">
+                                            <CheckBox.Style>
+                                                <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
+                                                    <Setter Property="IsChecked" Value="{Binding requireUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <Setter Property="IsEnabled" Value="True" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=rtSettingRequiresOnline, Path=IsChecked}" Value="False">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                            <Setter Property="IsChecked" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+
+                                                </Style>
+                                            </CheckBox.Style>
+                                        </CheckBox>
                                     </StackPanel>
                                     <TextBox
                                         Name="settingRtCommand"
@@ -2943,14 +3256,29 @@
                                             Name="settingGeneralAddClick"
                                             Width="25"
                                             Height="25"
-                                            Padding="0"
                                             HorizontalAlignment="Right"
                                             Content=""
                                             DockPanel.Dock="Right"
                                             FontFamily="Segoe MDL2 Assets"
                                             FontSize="12"
-                                            ToolTip="Add variable"
-                                            Visibility="Visible" />
+                                            ToolTip="Add item">
+                                            <Button.Style>
+
+
+                                                <Style BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}" TargetType="Button">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Setter Property="Padding" Value="0" />
+                                                    <Setter Property="BorderThickness" Value=".5" />
+                                                    <Setter Property="Background" Value="#2a2a2a" />
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource MahApps.Brushes.Button.Border}" />
+                                                    <Style.Triggers>
+                                                        <Trigger Property="Tag" Value="null">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
                                     </DockPanel>
 
                                     <DataGrid
@@ -3164,6 +3492,40 @@
                                             </DataGridTemplateColumn>
                                         </DataGrid.Columns>
                                     </DataGrid>
+                                    <DockPanel Name="settingMiscGrid" Margin="15">
+                                        <DockPanel HorizontalAlignment="Left" DockPanel.Dock="Left">
+                                            <TextBox
+                                                Name="settingLogPath"
+                                                Width="335"
+                                                Height="28"
+                                                Margin="0,0,0,0"
+                                                Padding="-10,-3,0,-10"
+                                                VerticalContentAlignment="Top"
+                                                md:HintAssist.Foreground="White"
+                                                md:HintAssist.Hint="Logging Path"
+                                                AcceptsTab="True"
+                                                BorderBrush="White"
+                                                BorderThickness="1"
+                                                CaretBrush="WhiteSmoke"
+                                                DockPanel.Dock="Left"
+                                                FontSize="11"
+                                                Style="{DynamicResource MaterialDesignOutlinedTextFieldTextBox}"
+                                                Text="{Binding Path=LogPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                TextWrapping="NoWrap"
+                                                VerticalScrollBarVisibility="Auto" />
+                                            <Button
+                                                x:Name="settingActionPathClick"
+                                                Grid.Row="3"
+                                                Grid.Column="4"
+                                                Width="34"
+                                                Margin="10,2,0,0"
+                                                Content=""
+                                                DockPanel.Dock="Left"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="16"
+                                                Visibility="Visible" />
+                                        </DockPanel>
+                                    </DockPanel>
                                 </StackPanel>
                             </Grid>
                         </Controls:Flyout>
@@ -3209,6 +3571,31 @@
                                 </DockPanel>
                                 <Button
                                     x:Name="settingQueryMapClick"
+                                    Width="30"
+                                    Margin="5,10,5,6"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Content=""
+                                    DockPanel.Dock="Right"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="16"
+                                    Visibility="Visible" />
+                            </DockPanel>
+                            <DockPanel>
+                                <DockPanel HorizontalAlignment="Stretch" DockPanel.Dock="Left">
+                                    <Label
+                                        Content="Misc. Settings"
+                                        DockPanel.Dock="Top"
+                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                        FontSize="16" />
+                                    <TextBlock
+                                        Margin="5,0,0,0"
+                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                        Foreground="LightGray"
+                                        Text="Select misc. settings (action logging)" />
+                                </DockPanel>
+                                <Button
+                                    x:Name="settingMiscClick"
                                     Width="30"
                                     Margin="5,10,5,6"
                                     HorizontalAlignment="Right"
@@ -3789,9 +4176,21 @@
                                                                 Name="settingContextActionUserOnline"
                                                                 md:CheckBoxAssist.CheckBoxSize="15"
                                                                 Content="Target user must be logged in"
-                                                                FontSize="10"
-                                                                IsChecked="{Binding RequireUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                Style="{DynamicResource MaterialDesignAccentCheckBox}" />
+                                                                FontSize="10">
+                                                                <CheckBox.Style>
+                                                                    <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
+                                                                        <Setter Property="IsChecked" Value="{Binding RequireUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                                        <Setter Property="IsEnabled" Value="True" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding ElementName=settingContextActionCompOnline, Path=IsChecked}" Value="False">
+                                                                                <Setter Property="IsEnabled" Value="False" />
+                                                                                <Setter Property="IsChecked" Value="False" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+
+                                                                    </Style>
+                                                                </CheckBox.Style>
+                                                            </CheckBox>
                                                             <CheckBox
                                                                 Name="settingContextActionCompOnline"
                                                                 md:CheckBoxAssist.CheckBoxSize="15"
