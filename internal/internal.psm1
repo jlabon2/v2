@@ -5,7 +5,7 @@
 # generated hash tables used throughout tool
 function New-HashTables {
 
-    # Stores values logging missing or errored items during init
+    # Stores values log0ging missing or errored items during init
     $global:sysCheckHash = [hashtable]::Synchronized(@{ })
 
     # Stores config values imported JSON, during config, or both
@@ -253,7 +253,27 @@ function Set-InitialValues {
 
         # create observable collection and add values
         $configHash.$type = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-        $tempList | ForEach-Object { $configHash.$type.Add($_) }
+        if ($type -eq 'objectToolConfig') {
+            foreach ($item in $tempList) { 
+
+                $configHash.$type.Add($item) 
+                $temp = $configHash.$type[([Array]::IndexOf($configHash.$type, $item))].toolCommandGridConfig
+                $configHash.$type[([Array]::IndexOf($configHash.$type, $item))].toolCommandGridConfig = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+                
+                if ($temp) {                 
+                    $temp | ForEach-Object { $configHash.$type[([Array]::IndexOf($configHash.$type, $item))].toolCommandGridConfig.Add($_) }
+                }
+                else {
+                  $temp = Get-InitialValues -GroupName 'toolCommandGridConfig'
+                  $temp | ForEach-Object { $configHash.$type[([Array]::IndexOf($configHash.$type, $item))].toolCommandGridConfig.Add($_) }
+                }
+            }
+        }
+
+        else { $tempList | ForEach-Object { $configHash.$type.Add($_) } }
+
+
+     
 
     }
 
@@ -458,7 +478,7 @@ function Add-CustomToolControls {
     $syncHash.objectTools = @{ }
     #create custom tool buttons for queried objects
     foreach ($tool in $configHash.objectToolConfig) {
-        if ($tool.toolActionValid) {
+        if ($tool.toolActionValid -or $tool.ToolType -eq 'CommandGrid') {
             switch ($tool.objectType) {
                 { $_ -match "Both|Comp" } { 
         
@@ -490,12 +510,48 @@ function Add-CustomToolControls {
                 }
                 { $_ -eq "Standalone" } { 
         
+                $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent') = New-Object System.Windows.Controls.StackPanel -Property  @{
+                    Name = $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent') 
+                    HorizontalAlignment = "Center"
+                    VerticalAlignment = "Center"
+                }
+
+                $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonGlyph')  = New-Object System.Windows.Controls.Label -Property  @{
+                    Content   = $tool.toolActionIcon
+                    FontFamily = 'Segoe MDL2 Assets'
+                    HorizontalAlignment = "Center"
+                    FontSize   = '28'
+
+                }
+                
+                $SyncHash.objectTools.('tool' + $tool.ToolID + 'Label1')  = New-Object System.Windows.Controls.Label -Property  @{
+                    FontFamily = 'Segoe UI'
+                    FontSize   = '12'
+                    HorizontalAlignment = "Center"
+                    Content    = $tool.ToolName
+
+                }
+                
+                $SyncHash.objectTools.('tool' + $tool.ToolID + 'Label2')  = New-Object System.Windows.Controls.Label -Property  @{
+                    FontFamily = 'Segoe UI Light'
+                    FontSize   = '10'
+                    HorizontalAlignment = "Center"
+                    Margin     = "0,-10,0,0"
+                    Content    = $tool.toolActionToolTip
+                }
+                            
+                
+                $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonGlyph'))
+                $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'Label1'))
+                $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'Label2'))
+
                 $syncHash.objectTools.('tool' + $tool.ToolID) = @{
                         ToolButton = New-Object System.Windows.Controls.Button -Property  @{
                             Style   = $syncHash.Window.FindResource('standAloneButton')
                             Name    = ('tool' + $tool.ToolID)
-                            Content = $tool.toolActionIcon
+                            Content =  $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent')
                             ToolTip = $tool.toolActionToolTip
+                                  
                         }
                     }
 
@@ -662,6 +718,46 @@ function Add-CustomToolControls {
                                     $syncHash.itemToolGridItemsGrid.SelectionMode = "Single"
                                 }  
 
+                            }
+                            'CommandGrid' {
+                            
+ 
+                                $syncHash.itemToolDialog.Title = $configHash.objectToolConfig[$toolId - 1].toolName
+                                $syncHash.itemCommandGridText.Text = $configHash.objectToolConfig[$toolId - 1].toolDescription
+                                $syncHash.itemToolCommandGridPanel.Visibility = "Visible"
+                                $syncHash.itemToolCommandGridDataGrid.ItemsSource = $null
+                                $syncHash.toolsCommandGridExecuteAllPanel.Visibility = "Collapsed"
+                                $syncHash.itemToolDialog.IsOpen = $true
+                                
+                                   Start-RSJob -Name PopulateCommandGridbox -ArgumentList $configHash, $syncHash, $toolID -ScriptBlock {
+                                        param($configHash, $syncHash, $toolID)
+
+                            
+                                                      
+                                        $syncHash.Window.Dispatcher.Invoke([Action] {                                  
+                                                $syncHash.itemCommandGridProgress.Visibility = "Visible"
+                                            })
+
+                                        
+                                        $source = $configHash.objectToolConfig[$toolId - 1].toolCommandGridConfig
+                                        $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+
+                                        foreach ($item in ($source | Where-Object {$_.ActionCmdValid -eq 'True' -and $_.queryCmdValid -eq 'True'})) {
+                                            $list.Add(([PSCustomObject]@{
+                                                ItemName = $item.SetName
+                                                Result   = (Invoke-Expression $item.queryCmd).toString()
+                                            }))
+                                        }  
+                                        
+                                        Start-Sleep -Seconds 1
+
+                                        $syncHash.Window.Dispatcher.Invoke([Action] {
+                                                $syncHash.itemToolCommandGridDataGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list
+                                                $syncHash.itemCommandGridProgress.Visibility = "Collapsed"
+                                                $syncHash.toolsCommandGridExecuteAllPanel.Visibility = "Visible"
+                                            })
+                                    } 
+                            
                             }
 
                         }
@@ -924,10 +1020,17 @@ function Start-VarUpdater {
         param($configHash, $varHash)
 
         $startTime = Get-Date
-
+        $first = $true
         do {
             
             Set-DurationVarsToUpdate -ConfigHash $configHash -StartTime $startTime
+
+            if ($first -eq $true) {
+                $configHash.varData.UpdateMinute = $true
+                $configHash.varData.UpdateHour = $true
+                $configHash.varData.UpdateDay = $true
+                $first = $false
+            }
 
             if ($configHash.varData.ContainsValue($true)) {
                 foreach ($varInfo in ($configHash.varData.Keys)) {
@@ -1154,8 +1257,14 @@ function Start-ItemToolAction {
         [Parameter(Mandatory)][ValidateSet('List', 'Grid')][string]$Control,
         $ItemList)
 
-    Start-RSJob -ArgumentList $configHash, $itemList, $syncHash.snackMsg.MessageQueue, $syncHash.('itemTool' + $Control + 'SelectConfirmButton').Tag -ScriptBlock {
-        param($configHash, $itemList, $queue, $toolID) 
+        $rsItemTool = @{
+            Name            = "ItemToolAction"
+            ArgumentList    = @($configHash, $itemList, $syncHash.snackMsg.MessageQueue, $syncHash.('itemTool' + $Control + 'SelectConfirmButton').Tag, $SyncHash.Window )
+            ModulesToImport = @('C:\TempData\internal\internal.psm1', 'C:\TempData\func\func.psm1')
+        }
+
+    Start-RSJob @rsItemTool -ScriptBlock {
+        param($configHash, $itemList, $queue, $toolID, $window) 
 
         $toolName = $configHash.objectToolConfig[$toolID - 1].toolActionToolTip
         $target = $configHash.currentTabItem
@@ -1167,15 +1276,27 @@ function Start-ItemToolAction {
             foreach ($selectedItem in $itemList) {
                 Invoke-Expression -Command $configHash.objectToolConfig[$toolID - 1].toolAction
             }
-
-            $queue.Enqueue("[$toolName]: SUCCESS: tool ran on $target")
-             Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $Target -ActionName $toolName -ArrayList $configHash.actionLog 
-
+            
+            if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
+                $queue.Enqueue("[$toolName]: Success - Standalone tool complete")
+                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -SubjectType 'Standalone' -ArrayList $configHash.actionLog
+            }
+            
+            else {
+                $queue.Enqueue("[$toolName]: SUCCESS: tool ran on $target")
+                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $Target -ActionName $toolName -ArrayList $configHash.actionLog 
+            }
         }
         
         catch {
-            $queue.Enqueue("[$toolName]: FAIL: tool incomplete on $target") 
-            Write-LogMessage -Path $configHash.actionlogPath -Message Fail -SubjectName $Target -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+            if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
+                $queue.Enqueue("[$toolName]: Fail - Standalone tool incomplete") 
+                Write-LogMessage -syncHashWindow $Window -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+            }
+            else {
+                $queue.Enqueue("[$toolName]: FAIL: tool incomplete on $target") 
+                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Fail -SubjectName $Target -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+            }
         }
     }
 
@@ -1612,6 +1733,7 @@ function Start-ObjectSearch {
         searchTag  = $syncHash.SearchBox.Tag
         searchText = $syncHash.SearchBox.Text
         queue      = $syncHash.snackMsg.MessageQueue
+        exact      = $SyncHash.searchExactToggle.IsChecked
     }
 
     $rsJob = @{
@@ -1631,11 +1753,11 @@ function Start-ObjectSearch {
         
         else {
             if (!($configHash.searchBaseConfig.OU)) {         
-                $match = Get-ADObject -Filter (Get-FilterString -PropertyList $configHash.queryProps -SyncHash $syncHash -Query $rsCmd.searchText) -Properties SamAccountName, Name
+                $match = Get-ADObject -Filter (Get-FilterString -PropertyList $configHash.queryProps -SyncHash $syncHash -Query $rsCmd.searchText -Exact $rsCmd.Exact) -Properties SamAccountName, Name
             }
             else {
                 $match = [System.Collections.ArrayList]@()
-                $filter = Get-FilterString -PropertyList $configHash.queryProps -SyncHash $syncHash -Query $rsCmd.searchText
+                $filter = Get-FilterString -PropertyList $configHash.queryProps -SyncHash $syncHash -Query $rsCmd.searchText -Exact $rsCmd.Exact
                 foreach ($searchBase in ($configHash.searchBaseConfig | Where-Object {$null -ne $_.OU})) {
                     $result = (Get-ADObject -Filter $filter -SearchBase $searchBase.OU -SearchScope $searchBase.QueryScope -Properties SamAccountName, Name) | Where-Object { $_.ObjectClass -match "user|computer"}
                     if ($result) { $result | ForEach-Object {$match.Add($_) | Out-Null} }
@@ -2156,26 +2278,31 @@ function Write-LogMessage {
     param (
         $Path,
         [ValidateSet('Fail', 'Succeed', 'Query')]$Message,
-        $ActionName,
+        [Parameter(Mandatory)]$ActionName,
         $SubjectName,
         $SubjectType,
-        $ArrayList,
-        $Error)
-
+        [Parameter(Mandatory)]$ArrayList,
+        $Error,
+        $syncHashWindow)
+   
+    $textInfo = (Get-Culture).TextInfo
+ 
     $logMsg = ([PSCustomObject]@{
-        ActionName  = $actionName
-        Message     = $message
-        SubjectName = $SubjectName
-        SubjectType = $SubjectType
+        ActionName  = $textInfo.ToTitleCase(($actionName.ToLower() -replace '[][]')) 
+        Message     = $textInfo.ToTitleCase($message.ToLower() -replace '[][]')
+        SubjectName = if ($subjectName) {($SubjectName -replace '[][]').ToLower()};
+        SubjectType = if ($subectType) {$textInfo.ToTitleCase($SubjectType.ToLower() -replace '[][]')};
         Date        = (Get-Date -format d)
         Time        = (Get-Date -format t)
         DateFull    = Get-Date
-        Admin       = $env:USERNAME
+        Admin       = ($env:USERNAME).ToLower()
         Error       = if ($Error) {$error}
                       else {'null'}
     }) 
 
-    $ArrayList.Add($logMsg) | Out-Null 
+    if ($syncHashWindow) { $syncHashWindow.Dispatcher.Invoke([Action]{ $ArrayList.Add($logMsg)})}
+    else { $ArrayList.Add($logMsg) | Out-Null  }
+
     if ($Path -and (Test-Path $Path)) { 
         if (!(Test-Path (Join-Path $Path -ChildPath "$($env:USERNAME)"))) {New-Item -ItemType Directory -Path (Join-Path $Path -ChildPath "$($env:USERNAME)") | Out-Null}
         ($logMsg | ConvertTo-CSV -NoTypeInformation)[1] | Out-File -Append -FilePath (Join-Path $path -ChildPath "$($env:USERNAME)\$(Get-Date -format MM.dd.yyyy).log") -Force}
@@ -2183,9 +2310,9 @@ function Write-LogMessage {
 }
 
 function Get-FilterString {
-    param ($PropertyList, $Query, $SyncHash)
+    param ($PropertyList, $Query, $SyncHash, [bool]$Exact)
 
-    if ($syncHash.searchExactToggle.IsChecked) {$compareOp = '-eq'}
+    if ($exact) {$compareOp = '-eq'}
     else {$compareOp = '-like'}
 
     for ($i = 0; $i -lt $PropertyList.Count; $i++) {
@@ -2197,8 +2324,195 @@ function Get-FilterString {
         }
     }
 
-    $searchString
+    if ($Exact) { $searchString -replace '\*' }
+    else { $searchString}
 }
+
+
+function Get-LogItems {
+    param
+    (
+        [Parameter(Mandatory, ValueFromPipeline, HelpMessage = "Data to process")]
+        $InputObject,
+        [Parameter(Mandatory)]$Collection
+    )
+
+    begin { $tempArray = [System.Collections.ArrayList]@()}
+
+    process {
+    
+        (Get-Content $InputObject.FullName | ConvertFrom-Csv -Header ActionName, Message, SubjectName, SubjectType, Date, Time, DateFull, Admin, Error) |
+            Select-Object ActionName, Message, SubjectName, SubjectType, Admin, Error, @{Label = 'Date'; Expression = { Get-Date(Get-Date($_.DateFull)) -Format 'M/d/yyyy hh:mm:ss tt' } } |
+                ForEach-Object { $tempArray.Add($_)}
+        
+        
+    }
+
+    end { $tempArray | Sort-Object -Property Date -Descending | ForEach-Object {$collection.Add($_)} }
+
+}
+
+function Set-FilteredLogs {
+    param ($SyncHash, $LogView)
+
+        $searchText = $syncHash.toolsLogSearchBox.Text
+        $endDateTime = [datetime]$syncHash.toolsLogEndDate.Text
+        $startDateTime = [datetime]$syncHash.toolsLogStartDate.Text
+       # $window.Dispatcher.Invoke([Action]{$LogView.Filter = $null})
+
+        $LogView.Filter = $null
+
+        if ([string]::IsNullOrWhiteSpace($searchText)) { 
+            $LogView.Filter=  { param ($item)  (([datetime]$item.Date -ge $startDateTime) -and ([datetime]$item.Date -le $endDateTime))}
+        }
+
+        else {
+            $LogView.Filter = {param ($item) ((([datetime]$item.Date -ge $startDateTime) -and ([datetime]$item.Date -le $endDateTime)) -and
+                                    ((($item.ActionName -like "*$searchText*") -or ($item.SubjectName -like "*$searchText*") -or ($item.Admin -like "*$searchText*") )))}
+        }
+        
+    
+}
+
+function Initialize-LogGrid {
+    param([ValidateSet('All', 'User')]$Scope, $ConfigHash, $SyncHash)
+
+    $syncHash.toolsLogStartDate.Text = Get-Date ((Get-Date).AddDays(-7))  -format MM/d/yyyy
+    $syncHash.toolsLogStartDate.DisplayDateStart = (Get-Date).AddDays(-7)
+    $syncHash.toolsLogStartDate.DisplayDateEnd = (Get-Date)
+    $syncHash.toolsLogEndDate.DisplayDateStart = (Get-Date).AddDays(-7)
+    $syncHash.toolsLogEndDate.DisplayDateEnd = (Get-Date)
+
+
+    $rsCmd = @{
+            currentUser = $env:USERNAME
+            window      = $syncHash.Window
+            Scope       = $scope
+            Unloaded    = $syncHash.toolsLogProgress.Tag
+            }
+
+    $syncHash.toolsLogDataGrid.ItemsSource = $null
+    
+
+    $configHash.logCollection = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+    $configHash.logCollectionView =  [System.Windows.Data.ListCollectionView]$configHash.logCollection 
+    $syncHash.toolsLogDataGrid.ItemsSource = $configHash.logCollectionView
+    $syncHash.toolsLogDataGrid.ItemsSource.Refresh()
+
+    Start-RSJob -Name GridInit -ArgumentList $rsCmd, $configHash, $syncHash -FunctionsToImport Get-LogItems {
+        param ($rsCmd, $configHash, $syncHash)
+
+        Start-Sleep -Seconds 2
+        
+        if ($scope -eq 'User') {$logList = Get-ChildItem (Join-Path $configHash.actionlogPath -ChildPath $rsCmd.CurrentUser)}
+        else { $logList = Get-ChildItem $configHash.actionlogPath -Recurse }
+        
+        $logList | Where-Object {([datetime]($_.Name -replace '.log')) -ge ((Get-Date).AddDays(-7))} |
+                Get-LogItems -Collection $configHash.logCollection 
+       
+        Start-Sleep -Seconds 1
+        $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.toolsLogDataGrid.ItemsSource.Refresh()})
+        
+        $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.toolsLogProgress.Tag = "Loaded"})
+        $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.toolsLogEmpty.Tag = "Loaded"})
+     }
+     
+    $syncHash.toolsLogDialog.IsOpen = $true
+}
+
+function New-LogHTMLExport {
+    param([ValidateSet('All', 'User')]$Scope, $ConfigHash, $TimeFrame) 
+
+    process {
+
+        if ($TimeFrame) {
+            switch ($TimeFrame) {
+
+            "All"      { break }
+            "1 Year"   {$span = (Get-Date).AddYears(-1)}
+            "6 Month"  {$span = (Get-Date).AddMonths(-6)}
+            "3 Month"  {$span = (Get-Date).AddMonths(-3)}
+            "1 Month"  {$span = (Get-Date).AddMonths(-1)}
+            "2 Week"   {$span = (Get-Date).AddDays(-14)}
+            "1 Week"   {$span = (Get-Date).AddDays(-7)}
+            "Last Day" {$span = (Get-Date).AddDays(-1)}
+            {"*"}      {$span = Get-Date((Get-Date $span -Format M/d/yyyy))}
+
+            }
+        }
+
+        $rsLogExport = @{
+            Name            = 'LogWriteHtml'
+            ArgumentList    = $configHash, $scope, $env:USERNAME, $timeFrame, $span
+            ModulesToImport = @('C:\TempData\internal\internal.psm1', 'C:\TempData\func\func.psm1', 'PSWriteHTML')
+        }   
+        
+        Start-RSJob @rsLogExport -ScriptBlock {
+            param ($configHash, $scope, $currentUser, $timeFrame, $span)
+
+            $logList = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+    
+            if ($scope -eq 'User') { 
+                $logs = Get-ChildItem (Join-Path $configHash.actionlogPath -ChildPath $env:USERNAME)
+                $title = "Log Data for $currentUser ($timeFrame)"
+            }
+            else {
+                $logs = Get-ChildItem $configHash.actionlogPath -Recurse -File 
+                $title = "Log Data for All Admins ($timeFrame)"
+            }
+
+            if ($span) { 
+                
+                $logs | Where-Object {([datetime]($_.Name -replace '.log')) -ge $span}  | Get-LogItems -Collection $logList }
+            else { $logs  | Get-LogItems -Collection $logList }
+
+
+            $actionTotal = ($logList | Where-Object { $_.ActionName -ne 'query' } | Measure-Object).Count
+
+            New-HTML -Name 'Logged Actions' -Temporary -Show {
+                New-HTMLContent  -HeaderText $title {
+                    New-HTMLTable -DataTable $logList -DefaultSortColumn 'Date' -DateTimeSortingFormat 'M/d/yyyy hh:mm:ss tt' -DefaultSortOrder Descending -Style display
+        
+                }
+
+                New-HTMLContent -HeaderText 'Metrics' {
+                    New-HTMLPanel {
+                        New-HTMLChart -Gradient -Title 'Actions' -TitleAlignment center  {
+                            New-ChartToolbar -Download               
+                            $logList | Where-Object { $_.ActionName -ne 'query' } | Group-Object -Property Actionname | ForEach-Object {
+                                New-ChartPie -Name $_.Name -Value $_.Count
+                            }
+                        }
+                    }
+
+                    New-HTMLPanel {
+                        New-HTMLChart -Gradient -Title 'Top Users' -TitleAlignment center {
+                            New-ChartLegend -Name 'Events'
+                            $logList | Where-Object { $_.SubjectType -eq 'user' -and $_.SubjectName -notlike $Null } | Group-Object -Property SubjectName |
+                                Sort-Object -Property Count -Descending | Select-Object -First 10 | ForEach-Object {
+                                    New-ChartBar -Name $_.Name -Value $_.Count
+                    
+                                }
+                        }
+                    }
+
+                    if ($scope -eq 'All') {
+                        New-HTMLPanel {
+                            New-HTMLChart -Gradient -Title 'Admins' -TitleAlignment center  {
+                                New-ChartToolbar -Download               
+                                $logList | Where-Object { $_.ActionName -ne 'query' } | Group-Object -Property Admin | ForEach-Object {
+                                    New-ChartPie -Name $_.Name -Value $_.Count
+                                }
+                            }
+                        }
+                    }
+                      
+                }       
+            }
+        }
+    }
+}
+
 
 #endregion
 
