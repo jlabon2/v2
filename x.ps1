@@ -342,6 +342,7 @@ $syncHash.settingNameMapClick.Add_Click( {
     if ($configHash.nameMapList.GetType().Name -ne 'ListCollectionView') {
         $configHash.nameMapListView = [System.Windows.Data.ListCollectionView]$configHash.nameMapList 
         $configHash.nameMapListView.IsLiveSorting = $true
+       $configHash.nameMapListView.SortDescriptions.Add((New-Object System.Windows.Data.PropertySortDescription "Date"))
         
         $syncHash.settingNameDataGrid.ItemsSource = $configHash.nameMapListView         
         $configHash.nameMapListView.Refresh()
@@ -373,7 +374,19 @@ $syncHash.settingNameAddClick.Add_Click( {
 
 })
 
+$syncHash.settingCommandGridAddClick.Add_Click({
+     $configHash.objectToolConfig[([Array]::IndexOf($configHash.objectToolConfig, $syncHash.settingObjectToolsPropGrid.SelectedItem))].toolCommandGridConfig.Add([PSCustomObject]@{
+       ToolID      =  ($syncHash.settingObjectToolsPropGrid.SelectedItem.toolCommandGridConfig.toolID | Sort-Object -Descending | Select-Object -First 1) + 1
+       SetName     =  $null
+       queryCmd    =  'Check-Something -UserName $user'
+       actionCmd   = 'Do-Something -UserName $user'
+	   actionCmdValid = "null"
+	   queryCmdValid  = "null"
+    })
+    
+    $syncHash.settingCommandGridDataGrid.Items.Refresh()    
 
+})
 
 $syncHash.settingVarAddClick.Add_Click( {
     
@@ -419,6 +432,11 @@ $syncHash.settingGeneralAddClick.Add_Click( {
 $syncHash.settingVarDialogClose.Add_Click({
     $syncHash.settingVarDialog.IsOpen = $false 
     $synchash.settingVarDataGrid.Items.Refresh()
+})
+
+$syncHash.settingCommandGridDialogClose.Add_Click({
+    $syncHash.settingCommandGridDialog.IsOpen = $false
+    $syncHash.settingCommandGridDataGrid.Items.Refresh()
 })
 
 #endregion
@@ -544,6 +562,9 @@ $syncHash.TabMenu.add_SelectionChanged( {
        $syncHash.TabMenu.Items.Header | ForEach-Object { $_.Foreground = "Gray" }
        $syncHash.tabMenu.SelectedItem.Header.Foreground = "AliceBlue"
 
+       $syncHash.historySideDataGrid.ItemsSource = $configHash.actionLog
+       $syncHash.historySideDataGrid.Items.Refresh()
+
         if ($syncHash.tabMenu.SelectedItem.Tag -eq 'Query') {
             $syncHash.SearchBox.Focus()
         }
@@ -569,8 +590,7 @@ $syncHash.searchBoxHelp.add_MouseLeftButtonUp({
 $syncHash.HistoryToggle.Add_MouseLeftButtonUp({
     if ($syncHash.historySidePane.IsOpen) { $syncHash.historySidePane.IsOpen = $false }
     else { $syncHash.historySidePane.IsOpen = $true}
-    if ($syncHash.historySideDataGrid.Items) { $syncHash.historySideDataGrid.Items.Refresh()}
-    else {$syncHash.historySideDataGrid.ItemsSource = $configHash.actionLog }
+    $syncHash.historySideDataGrid.Items.Refresh()
 })
 
 
@@ -749,8 +769,8 @@ $syncHash.tabMenu.add_Loaded( {
                                             }
     
                                
-                                            Start-RSJob -Name threadedAction -ArgumentList $rsCmd, $queryHash, $b -ScriptBlock {
-                                                Param($rsCmd, $queryHash, $b)
+                                            Start-RSJob -Name threadedAction -ArgumentList $rsCmd, $queryHash, $b, $configHash -ModulesToImport  C:\TempData\internal\internal.psm1 -ScriptBlock {
+                                                Param($rsCmd, $queryHash, $b, $configHash)
                                                         
                                                 Start-Sleep -Milliseconds 500
                                                            
@@ -767,7 +787,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                 try {
                                                     Invoke-Expression -Command $cmd
                                                     $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString SUCCESS on $actionObjectString") })
-                                                    Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $actionNameString -SubjectName $actionObjectString -SubjectType $type -ArrayList $configHash.actionLog 
+                                                    Write-LogMessage -syncHashWindow $rsCmd.Window -Path $configHash.actionlogPath -Message Succeed -ActionName $actionNameString -SubjectName $actionObjectString -SubjectType $type -ArrayList $configHash.actionLog 
 
                                                     if ($rsCmd.propList.('actionCmd' + $b + 'Refresh')) {
                                                         if ($PropName -ne 'Non-Ad Property') {
@@ -1252,7 +1272,7 @@ $syncHash.tabControl.add_SelectionChanged( {
         
          $currentTabItem = $syncHash.tabControl.SelectedItem.Name
     
-        Start-RSJob -Name "VisualChange" -ThreadOptions UseNewThread -ArgumentList  $syncHash, $queryHash, $configHash, $currentTabItem -ScriptBlock {
+        Start-RSJob -Name "VisualChange" -ArgumentList  $syncHash, $queryHash, $configHash, $currentTabItem -ScriptBlock {
             Param($syncHash, $queryHash, $configHash, $currentTabItem)
                 
                 $queryHash.$currentTabItem.ActiveItem = $true
@@ -1540,8 +1560,8 @@ $syncHash.SearchBox.add_KeyDown( {
 
 $syncHash.itemToolDialogConfirmButton.Add_Click({
 
-    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash  -ModulesToImport C:\TempData\internal\internal.psm1  -ScriptBlock {
-    Param($queue, $toolID, $configHash, $queryHash)
+    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash, $syncHash.Window -ModulesToImport C:\TempData\internal\internal.psm1  -ScriptBlock {
+    Param($queue, $toolID, $configHash, $queryHash, $window)
 
         $item = ($configHash.currentTabItem).toLower()
         $toolName = ($configHash.objectToolConfig[$toolID - 1].toolActionToolTip).ToUpper()
@@ -1550,23 +1570,23 @@ $syncHash.itemToolDialogConfirmButton.Add_Click({
             Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                 $queue.Enqueue("[$toolName]: Success - Standalone tool complete")
-                Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -ArrayList $configHash.actionLog 
+                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -SubjectType 'Standalone' -ArrayList $configHash.actionLog
             }
 
             else {
                 $queue.Enqueue("[$toolName]: Success on [$item] - tool complete")
-                    Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog 
+                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog 
             }
                                            
         }
         catch {
             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                 $queue.Enqueue("[$toolName]: Fail - Standalone tool incomplete") 
-                Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+                Write-LogMessage -syncHashWindow $Window -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
             }
             else {
                 $queue.Enqueue("[$toolName]: Fail on [$item] - tool incomplete")
-                Write-LogMessage -Path $configHash.actionlogPath -Message Fail -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+                Write-LogMessage -syncHashWindow $Window -Path $configHash.actionlogPath -Message Fail -SubjectName $item -ActionName $toolName -SubjectType 'Standalone' -ArrayList $configHash.actionLog -Error $_
             }
         }
     }
@@ -1584,8 +1604,64 @@ $syncHash.itemToolDialog.Add_ClosingFinished({
     $syncHash.itemToolGridADSelectedItem.Content = $null
     $syncHash.itemToolImageBorder.Visibility = "Collapsed"
     $syncHash.itemToolGridSelect.Visibility = "Collapsed"
+    $syncHash.itemToolCommandGridPanel.Visibility = "Collapsed"
 
 })
+
+
+#region ActionLogReview
+
+$syncHash.toolsSingleLogExport.Add_Click({ 
+    $syncHash.toolsExportDialog.isOpen = $true
+    $syncHash.toolsExportDialog.Tag = 'Single'
+})
+
+$syncHash.toolsAllLogExport.Add_Click({ 
+    $syncHash.toolsExportDialog.isOpen = $true
+    $syncHash.toolsExportDialog.Tag = 'All'
+})
+
+$syncHash.toolsExportConfirmButton.Add_Click({
+    if ($syncHash.toolsExportDialog.Tag -eq 'Single') { New-LogHTMLExport -Scope User -ConfigHash $configHash -TimeFrame $syncHash.toolsExportDate.SelectedValue.Content }
+    else { New-LogHTMLExport -Scope All -ConfigHash $configHash -TimeFrame $syncHash.toolsExportDate.SelectedValue.Content }
+
+    $syncHash.SnackMsg.MessageQueue.Enqueue("Log export started") 
+    $syncHash.toolsExportDialog.isOpen = $false
+})
+
+$syncHash.toolsExportConfirmCancel.Add_Click({ $syncHash.toolsExportDialog.isOpen = $false })
+
+$syncHash.toolsAllLogView.Add_Click({ 
+    $syncHash.toolsLogProgress.Tag = "Unloaded"
+    $syncHash.toolsLogEmpty.Tag = "Unloaded"
+    Initialize-LogGrid -Scope All -ConfigHash $configHash -SyncHash $syncHash
+})
+
+$syncHash.toolsSingleLogView.Add_Click({ 
+    $syncHash.toolsLogProgress.Tag = "Unloaded"
+    $syncHash.toolsLogEmpty.Tag = "Unloaded"
+    Initialize-LogGrid -Scope User -ConfigHash $configHash -SyncHash $syncHash 
+})
+
+$syncHash.toolsLogStartDate.Add_CalendarClosed({ Set-FilteredLogs -SyncHash $syncHash -LogView $configHash.logCollectionView })
+
+$syncHash.toolsLogEndDate.Add_CalendarClosed({ Set-FilteredLogs -SyncHash $syncHash -LogView $configHash.logCollectionView })
+
+$syncHash.toolsLogSearchBox.add_KeyDown( { if ($_.Key -eq "Enter") { Set-FilteredLogs -SyncHash $syncHash -LogView $configHash.logCollectionView } })
+
+
+
+
+
+$syncHAsh.toolsLogDialogClose.Add_Click({
+    $syncHash.toolsLogDialog.IsOpen = $false
+})
+#endregion
+
+
+
+
+
 
 [System.Windows.RoutedEventHandler]$eventonNetDataGrid = {
     $button = $_.OriginalSource
@@ -1718,6 +1794,52 @@ $syncHash.itemToolDialog.Add_ClosingFinished({
     }
 
 
+}
+
+[System.Windows.RoutedEventHandler]$eventonCommandGridDataGrid = {
+    $button = $_.OriginalSource
+
+    if ($button.Name -match "settingCommandGridClearItem") { 
+        $id = $syncHash.settingCommandGridDataGrid.SelectedItem.ToolID
+        $configHash.objectToolConfig[([Array]::IndexOf($configHash.objectToolConfig, $syncHash.settingObjectToolsPropGrid.SelectedItem))].toolCommandGridConfig.RemoveAt($syncHash.settingCommandGridDataGrid.SelectedItem.ToolID - 1)
+
+        $configHash.objectToolConfig[([Array]::IndexOf($configHash.objectToolConfig, $syncHash.settingObjectToolsPropGrid.SelectedItem))].toolCommandGridConfig |
+            Where-Object { $_.ToolID -gt $id } | ForEach-Object { $_.ToolID = $_.ToolID - 1 }
+        
+        $syncHash.settingCommandGridDataGrid.Items.Refresh()
+    }
+
+    
+    elseif ($button.Name -match "settingCommandGridQueryBox") {
+        $syncHash.settingCommandGridPopupText.Tag = "Query"
+        $syncHash.settingCommandGridDialog.IsOpen = $true
+    
+    }
+
+     elseif ($button.Name -match "settingCommandGridActionBox") {
+        $syncHash.settingCommandGridPopupText.Tag = "Action"
+        $syncHash.settingCommandGridDialog.IsOpen = $true
+    
+    }
+
+    elseif ($button.Name -match 'settingCommandGridExecute') {
+     $id = $syncHash.settingCommandGridDataGrid.SelectedItem.ToolID
+        foreach ($cmd in @('queryCmd','actionCmd')) {
+            
+            $scriptBlockErrors = @()
+            [void][System.Management.Automation.Language.Parser]::ParseInput(($configHash.objectToolConfig[([Array]::IndexOf($configHash.objectToolConfig, $syncHash.settingObjectToolsPropGrid.SelectedItem))].toolCommandGridConfig[$id - 1].$cmd), [ref]$null, [ref]$scriptBlockErrors)
+
+            if ($scriptBlockErrors) {
+                $configHash.objectToolConfig[([Array]::IndexOf($configHash.objectToolConfig, $syncHash.settingObjectToolsPropGrid.SelectedItem))].toolCommandGridConfig[$id - 1].($cmd + 'Valid') = 'False'
+            }
+
+            else {
+                    $configHash.objectToolConfig[([Array]::IndexOf($configHash.objectToolConfig, $syncHash.settingObjectToolsPropGrid.SelectedItem))].toolCommandGridConfig[$id - 1].($cmd + 'Valid') = 'True'
+            }
+        }   
+        
+        $syncHash.settingCommandGridDataGrid.Items.Refresh()   
+    }
 }
 
 [System.Windows.RoutedEventHandler]$eventonOUDataGrid = {
@@ -1858,12 +1980,34 @@ $syncHash.settingNameDialog.Add_DialogClosing( {
     }
 }
 
+
+[System.Windows.RoutedEventHandler]$eventonHistoryDataGrid = {
+
+
+    $button = $_.OriginalSource
+   
+
+    if ($button.Name -match 'resultsErrorItem') { 
+        $syncHash.historySideDataGrid.SelectedItem.Error | Set-Clipboard 
+        $syncHash.SnackMsg.MessageQueue.Enqueue("Error copied") 
+        }
+
+    if  ($button.Name -match 'resultsQueryItem')  {
+        $searchVal = $syncHash.historySideDataGrid.SelectedItem.SubjectName       
+        $syncHash.SearchBox.Tag = $searchVal
+        $syncHash.historySidePane.IsOpen = $false
+        $syncHash.SearchBox.Focus()
+        $wshell = New-Object -ComObject wscript.shell;
+        $wshell.SendKeys('{ESCAPE}')
+       
+    }       
+}
+
+
 [System.Windows.RoutedEventHandler]$EventonContextGrid = {
 
-    # GET THE NAME OF EVENT SOURCE
+
     $button = $_.OriginalSource
-    # THIS RETURN THE ROW DATA AVAILABLE
-    # resultObj scope is the whole script
    
 
     if ($button.Name -match 'settingContextEdit') {
@@ -1890,6 +2034,14 @@ $syncHash.settingNameDialog.Add_DialogClosing( {
               
     }
 }
+[System.Windows.RoutedEventHandler]$EventonObjectToolCommandGridGrid = {
+ $button = $_.OriginalSource
+
+if ($button.Name -match 'toolsCommandGridExecute') {
+    Write-Host "TEST!"
+ }
+ }    
+
 
 [System.Windows.RoutedEventHandler]$EventonObjectToolGrid = {
 
@@ -1901,12 +2053,17 @@ $syncHash.settingNameDialog.Add_DialogClosing( {
 
     if ($button.Name -match 'settingObjectToolsEdit') {
 
-    $syncHash.settingObjectToolDefFlyout.Height = $syncHash.settingChildHeight.ActualHeight      
-    $syncHash.settingObjectToolDefFlyout.IsOpen = $true
-    $syncHash.settingObjectToolIcon.ItemsSource = $configHash.buttonGlyphs
-    $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingObjectToolDefFlyout.Background.Color).ToString()
-    $syncHash.settingChildWindow.Title = "Define Tool"
-    $syncHash.settingChildWindow.ShowCloseButton = $false
+        if ($syncHash.settingObjectToolsPropGrid.SelectedItem.toolType -eq 'CommandGrid') {
+            $syncHash.settingCommandGridDataGrid.ItemsSource = $syncHash.settingObjectToolsPropGrid.SelectedItem.toolCommandGridConfig
+        }
+       
+        $syncHash.settingObjectToolDefFlyout.Height = $syncHash.settingChildHeight.ActualHeight      
+        $syncHash.settingObjectToolDefFlyout.IsOpen = $true
+        $syncHash.settingObjectToolIcon.ItemsSource = $configHash.buttonGlyphs
+        $syncHash.settingCommandGridToolIcon.ItemsSource = $configHash.buttonGlyphs
+        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingObjectToolDefFlyout.Background.Color).ToString()
+        $syncHash.settingChildWindow.Title = "Define Tool"
+        $syncHash.settingChildWindow.ShowCloseButton = $false
 
     }
 
@@ -2194,7 +2351,8 @@ $syncHash.settingObjectToolExecute.Add_Click({
 
             ToolID                = $i
             ToolName              = $null
-            toolTypeList          = @("Execute","Select","Grid","List")
+            toolTypeList          = @("Execute","Select","Grid","CommandGrid")
+            toolCommandGridConfig = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
             toolType              = 'null'
             objectList            = @("Comp","User","Both","Standalone")
             objectType            = $null
@@ -2206,11 +2364,14 @@ $syncHash.settingObjectToolExecute.Add_Click({
             toolActionSelectAD    = $false
             toolFetchCmd          = 'Get-Something'
             toolActionMultiSelect = $false
-            toolDescription       = "Sort item description"
+            toolDescription       = "Generic tool description"
             toolTargetFetchCmd    = 'Get-Something -Identity $target'
               
         })
-      
+    
+    $temp = Get-InitialValues -GroupName 'toolCommandGridConfig'
+    $temp | ForEach-Object { $configHash.objectToolConfig[$i -1].toolCommandGridConfig.Add($_) }
+
     $configHash.objectToolCount = ($configHash.objectToolConfig | Measure-Object).Count
 }
 
@@ -2274,6 +2435,13 @@ $syncHash.settingNameDataGrid.AddHandler([System.Windows.Controls.TextBox]::Prev
 $syncHash.settingVarDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonVarDataGrid)
 $syncHash.settingVarDataGrid.AddHandler([System.Windows.Controls.TextBox]::PreviewMouseLeftButtonUpEvent, $eventonVarDataGrid)
 $syncHash.settingOUDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonOUDataGrid)
+$syncHash.historySideDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonHistoryDataGrid)
+$syncHash.toolsLogDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonHistoryDataGrid)
+$syncHash.itemToolCommandGridDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $EventonObjectToolCommandGridGrid)
+$syncHash.settingCommandGridDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonCommandGridDataGrid)
+$syncHash.settingCommandGridDataGrid.AddHandler([System.Windows.Controls.TextBox]::PreviewMouseLeftButtonUpEvent, $eventonCommandGridDataGrid)
+
+
 
 
 
