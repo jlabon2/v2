@@ -205,8 +205,8 @@ function Suspend-FailedItems {
     
     $syncHash.Window.Dispatcher.invoke([action] { 
             $syncHash.tabMenu.Items[3].IsEnabled = $true
-            $syncHash.tabMenu.SelectedIndex = 3 
-        })   
+            $syncHash.tabMenu.SelectedIndex = 3  })   
+
 } 
 
 
@@ -565,7 +565,7 @@ function Add-CustomToolControls {
                 $syncHash.objectTools.$toolButton.ToolButton.Add_Click( {
                         param([Parameter(Mandatory)][Object]$sender)
                         $toolID = $sender.Name -replace ".*tool"
-                    
+                        $toolID > C:\test.txt
                         switch ($configHash.objectToolConfig[$toolId - 1].toolType) {
 
                             'Execute' {
@@ -586,6 +586,7 @@ function Add-CustomToolControls {
                                         Param($queue, $toolID, $configHash, $queryHash)
 
                                         $item = ($configHash.currentTabItem).toLower()
+                                        $targetType = $queryHash[$item].ObjectClass -replace 'c','C' -replace 'u','U'
                                         $toolName = ($configHash.objectToolConfig[$toolID - 1].toolActionToolTip).ToUpper()
 
                                         try {                     
@@ -597,7 +598,7 @@ function Add-CustomToolControls {
 
                                             else {
                                                 $queue.Enqueue("[$toolName]: Success on [$item] - tool complete")
-                                                 Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog 
+                                                 Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -SubjectType $targetType -ActionName $toolName -ArrayList $configHash.actionLog 
                                             }
                                            
                                         }
@@ -608,7 +609,7 @@ function Add-CustomToolControls {
                                             }
                                             else {
                                                 $queue.Enqueue("[$toolName]: Fail on [$item] - tool incomplete")
-                                                Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+                                                Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -SubjectType $targetType -ArrayList $configHash.actionLog -Error $_
                                             }
                                         }
                                     }
@@ -697,6 +698,7 @@ function Add-CustomToolControls {
                                         $syncHash.Window.Dispatcher.Invoke([Action] {
                                                 $syncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list
                                                 $syncHash.itemToolGridProgress.Visibility = "Collapsed"
+                                                $syncHash.itemToolGridItemsGrid.Items.Refresh()
                                             })
                                     } 
                                                
@@ -727,6 +729,9 @@ function Add-CustomToolControls {
                                 $syncHash.itemToolCommandGridPanel.Visibility = "Visible"
                                 $syncHash.itemToolCommandGridDataGrid.ItemsSource = $null
                                 $syncHash.toolsCommandGridExecuteAllPanel.Visibility = "Collapsed"
+
+                            
+
                                 $syncHash.itemToolDialog.IsOpen = $true
                                 
                                    Start-RSJob -Name PopulateCommandGridbox -ArgumentList $configHash, $syncHash, $toolID -ScriptBlock {
@@ -741,15 +746,24 @@ function Add-CustomToolControls {
                                         
                                         $source = $configHash.objectToolConfig[$toolId - 1].toolCommandGridConfig
                                         $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+                                        $index = 0
 
                                         foreach ($item in ($source | Where-Object {$_.ActionCmdValid -eq 'True' -and $_.queryCmdValid -eq 'True'})) {
                                             $list.Add(([PSCustomObject]@{
-                                                ItemName = $item.SetName
-                                                Result   = (Invoke-Expression $item.queryCmd).toString()
+                                                Index           = [int]$item.ToolID - 1
+                                                ItemName        = $item.SetName 
+                                                ParentToolIndex = $toolID - 1
+                                                Result          = (Invoke-Expression $item.queryCmd).toString()
                                             }))
-                                        }  
+
+                                            $index++
+                                        }
                                         
-                                        Start-Sleep -Seconds 1
+                                        if (($list.Result -notmatch 'True' | Measure-Object).Count -gt 0) {
+                                            $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.toolsCommandGridExecuteAll.Tag = 'True'})
+                                        }
+                                        
+                                        Start-Sleep -Seconds 1 
 
                                         $syncHash.Window.Dispatcher.Invoke([Action] {
                                                 $syncHash.itemToolCommandGridDataGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list
@@ -1188,11 +1202,6 @@ function Reset-ChildWindow {
     
     Set-ChildWindow -SyncHash $syncHash -Background Standard
 
-    if ($syncHash.settingStatusChildBoard.Visibility -eq 'Collapsed') {
-        $syncHash.settingStatusChildBoard.Visibility = 'Visible'
-        $syncHash.settingConfigPanel.Visibility = 'Visible'
-    }
-
 }
 
 #endregion
@@ -1205,8 +1214,10 @@ function Set-ADItemBox {
         [Parameter(Mandatory)][hashtable]$SyncHash,
         [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
 
+        if ($control -eq 'Grid') { $toolID = $syncHash.itemToolGridSelectConfirmButton.Tag }
+        else { $toolID = $syncHash.itemToolListSelectConfirmButton.Tag }
 
-    Start-RSJob -Name ('populate' + $Control) -ArgumentList $configHash, $syncHash, $syncHash.itemToolListSelectConfirmButton.Tag, $Control -FunctionsToImport Select-ADObject -ScriptBlock {
+    Start-RSJob -Name ('populate' + $Control) -ArgumentList $configHash, $syncHash, $toolID, $Control -FunctionsToImport Select-ADObject -ScriptBlock {
         param($configHash, $syncHash, $toolID, $Control)
 
 
@@ -1231,7 +1242,7 @@ function Set-ADItemBox {
         $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
         
         if ($Control -eq 'ListBox') {
-            Invoke-Expression ($configHash.objectToolConfig[$toolId - 1].toolFetchCmd) | ForEach-Object { $list.Add([PSCUstomObject]@{'Name' = $_ }) }
+            Invoke-Expression ($configHash.objectToolConfig[$toolId - 1].toolFetchCmd) | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) }
         }
         else {
             Invoke-Expression ($configHash.objectToolConfig[$toolId - 1].toolFetchCmd) | ForEach-Object { $list.Add($_) }
@@ -1259,15 +1270,16 @@ function Start-ItemToolAction {
 
         $rsItemTool = @{
             Name            = "ItemToolAction"
-            ArgumentList    = @($configHash, $itemList, $syncHash.snackMsg.MessageQueue, $syncHash.('itemTool' + $Control + 'SelectConfirmButton').Tag, $SyncHash.Window )
+            ArgumentList    = @($configHash, $itemList, $syncHash.snackMsg.MessageQueue, $syncHash.('itemTool' + $Control + 'SelectConfirmButton').Tag, $SyncHash.Window, $queryHash)
             ModulesToImport = @('C:\TempData\internal\internal.psm1', 'C:\TempData\func\func.psm1')
         }
 
     Start-RSJob @rsItemTool -ScriptBlock {
-        param($configHash, $itemList, $queue, $toolID, $window) 
+        param($configHash, $itemList, $queue, $toolID, $window, $queryHash) 
 
         $toolName = $configHash.objectToolConfig[$toolID - 1].toolActionToolTip
         $target = $configHash.currentTabItem
+        $targetType = $queryHash[$target].ObjectClass -replace 'u','U' -replace 'c','C'
 
         try {
 
@@ -1284,7 +1296,7 @@ function Start-ItemToolAction {
             
             else {
                 $queue.Enqueue("[$toolName]: SUCCESS: tool ran on $target")
-                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $Target -ActionName $toolName -ArrayList $configHash.actionLog 
+                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $Target -SubjectType $targetType -ActionName $toolName -ArrayList $configHash.actionLog 
             }
         }
         
@@ -1295,7 +1307,7 @@ function Start-ItemToolAction {
             }
             else {
                 $queue.Enqueue("[$toolName]: FAIL: tool incomplete on $target") 
-                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Fail -SubjectName $Target -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Fail -SubjectName $Target -SubjectType $targetType  -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
             }
         }
     }
@@ -1747,7 +1759,7 @@ function Start-ObjectSearch {
         param($queryHash, $configHash, $syncHash, $rsCmd)        
                
         if ($rsCmd.key -eq 'Escape') {
-            $match = (Get-ADObject -Filter "(SamAccountName -eq '$($rsCmd.searchTag)'  -and ObjectClass -eq 'User') -or 
+            $match = (Get-ADObject -Filter "(SamAccountName -eq '$($rsCmd.searchTag)' -and ObjectClass -eq 'User') -or 
                 (Name -eq '$($rsCmd.searchTag)' -and ObjectClass -eq 'Computer')" -Properties SamAccountName) 
         }
         
@@ -2272,6 +2284,24 @@ param ($ConfigHash)
       #  DateFull    = $null
    # }))
 }
+
+
+function Write-SnackMsg {
+    param ( 
+        [Parameter(Mandatory)]$Queue, 
+        [Parameter(Mandatory)]$ToolName, 
+         [ValidateSet('Fail', 'Success')]$Status,
+        $SubtoolName, 
+        $SubjectName)
+
+    if ($SubtoolName) { $ToolName = $ToolName + ':' + $SubtoolName }
+    
+    if ($Status -eq 'Fail') { $subStatus = "incomplete"}
+    else { $subStatus = "complete"}
+
+    if ($SubjectName) {$Queue.Enqueue("[$($toolName)]: $Status on $($SubjectName.toLower()) - tool $subStatus")}
+    else  {$Queue.Enqueue("[$($toolName)]: $Status - standalone tool $subStatus")}
+}
         
 
 function Write-LogMessage {
@@ -2291,7 +2321,7 @@ function Write-LogMessage {
         ActionName  = $textInfo.ToTitleCase(($actionName.ToLower() -replace '[][]')) 
         Message     = $textInfo.ToTitleCase($message.ToLower() -replace '[][]')
         SubjectName = if ($subjectName) {($SubjectName -replace '[][]').ToLower()};
-        SubjectType = if ($subectType) {$textInfo.ToTitleCase($SubjectType.ToLower() -replace '[][]')};
+        SubjectType = if ($subjectType) {$textInfo.ToTitleCase($SubjectType.ToLower() -replace '[][]')};
         Date        = (Get-Date -format d)
         Time        = (Get-Date -format t)
         DateFull    = Get-Date
@@ -2356,7 +2386,7 @@ function Set-FilteredLogs {
     param ($SyncHash, $LogView)
 
         $searchText = $syncHash.toolsLogSearchBox.Text
-        $endDateTime = [datetime]$syncHash.toolsLogEndDate.Text
+        $endDateTime = (Get-Date($syncHash.toolsLogEndDate.Text)).AddHours(23.9999)
         $startDateTime = [datetime]$syncHash.toolsLogStartDate.Text
        # $window.Dispatcher.Invoke([Action]{$LogView.Filter = $null})
 
@@ -2505,8 +2535,7 @@ function New-LogHTMLExport {
                                 }
                             }
                         }
-                    }
-                      
+                    }                     
                 }       
             }
         }

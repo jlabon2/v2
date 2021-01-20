@@ -1381,7 +1381,7 @@
                 BorderThickness="1"
                 CloseByEscape="True"
                 EnableDropShadow="False"
-                IsOpen="True"
+                IsOpen="False"
                 ShowCloseButton="True">
                 <simpleChildWindow:ChildWindow.OverlayBrush>
                     <SolidColorBrush Color="Transparent" />
@@ -1472,6 +1472,7 @@
                                 Content=""
                                 FontFamily="Segoe MDL2 Assets"
                                 FontSize="18"
+                                IsEnabled="True"
                                 Style="{StaticResource actiontoolbtn}" />
                         </DockPanel>
                         <DockPanel
@@ -1652,6 +1653,7 @@
                                 Content=""
                                 FontFamily="Segoe MDL2 Assets"
                                 FontSize="18"
+                                IsEnabled="True"
                                 Style="{StaticResource actiontoolbtn}" />
                         </DockPanel>
                         <DockPanel
@@ -1824,7 +1826,7 @@
                         MaxWidth="750"
                         HorizontalAlignment="Stretch"
                         Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Visible">
+                        Visibility="Collapsed">
                         <TextBlock
                             Name="itemCommandGridText"
                             Margin="10,10,10,15"
@@ -1862,7 +1864,7 @@
                             CanUserResizeColumns="False"
                             CanUserResizeRows="False"
                             CanUserSortColumns="True"
-                            CellStyle="{StaticResource dataGridCell}"
+                            CellStyle="{StaticResource dataGridCellLog}"
                             ColumnHeaderHeight="0"
                             DockPanel.Dock="Top"
                             Focusable="True"
@@ -1927,7 +1929,7 @@
                                                 Background="Transparent"
                                                 BorderBrush="Transparent"
                                                 BorderThickness="0"
-                                                Tag="{Binding Result}"
+                                                Tag="{Binding Result, UpdateSourceTrigger=PropertyChanged}"
                                                 TextWrapping="Wrap">
 
                                                 <TextBox.Style>
@@ -2009,10 +2011,10 @@
                                 FontSize="14">
                                 <Button.Style>
                                     <Style BasedOn="{StaticResource actiontoolbtn}" TargetType="Button">
-                                        <Setter Property="IsEnabled" Value="True" />
+                                        <Setter Property="IsEnabled" Value="False" />
                                         <Style.Triggers>
                                             <Trigger Property="Tag" Value="True">
-                                                <Setter Property="IsEnabled" Value="False" />
+                                                <Setter Property="IsEnabled" Value="True" />
                                             </Trigger>
                                         </Style.Triggers>
                                     </Style>
@@ -8205,285 +8207,318 @@
                                                                 SelectedDate="{x:Static sys:DateTime.Now}"
                                                                 Style="{StaticResource MaterialDesignFloatingHintDatePicker}" />
                                                         </DockPanel>
-                                                        <DataGrid
-                                                            Name="toolsLogDataGrid"
+                                                        <Grid
                                                             MaxWidth="1500"
                                                             MaxHeight="1000"
                                                             Margin="50"
-                                                            Padding="0"
                                                             HorizontalAlignment="Stretch"
                                                             VerticalAlignment="Stretch"
-                                                            Controls:DataGridHelper.SelectionUnit="FullRow"
-                                                            md:DataGridAssist.CellPadding="-3,0,-3,0"
-                                                            md:DataGridAssist.ColumnHeaderPadding="5,0,5,0"
-                                                            md:ListViewAssist.ListViewItemPadding="1"
-                                                            AlternationCount="2"
-                                                            AutoGenerateColumns="False"
-                                                            Background="Transparent"
-                                                            BorderBrush="#FF444444"
-                                                            BorderThickness="1"
-                                                            CanUserAddRows="False"
-                                                            CanUserDeleteRows="False"
-                                                            CanUserReorderColumns="False"
-                                                            CanUserResizeColumns="False"
-                                                            CanUserResizeRows="False"
-                                                            CanUserSortColumns="False"
-                                                            CellStyle="{StaticResource dataGridCellResultsLog}"
-                                                            DockPanel.Dock="Top"
-                                                            EnableColumnVirtualization="True"
-                                                            EnableRowVirtualization="True"
-                                                            Focusable="True"
-                                                            GridLinesVisibility="All"
-                                                            HorizontalScrollBarVisibility="Disabled"
-                                                            IsReadOnly="True"
-                                                            KeyboardNavigation.TabNavigation="Cycle"
-                                                            RowHeaderWidth="0"
-                                                            RowHeight="30"
-                                                            RowStyle="{StaticResource dataGridRowStyleHistory}"
-                                                            ScrollViewer.CanContentScroll="False"
-                                                            SelectionMode="Single"
-                                                            Tag="Unloaded"
-                                                            VerticalScrollBarVisibility="Visible"
-                                                            VirtualizingStackPanel.IsVirtualizing="True"
-                                                            VirtualizingStackPanel.VirtualizationMode="Recycling">
-                                                            <DataGrid.Style>
-                                                                <Style BasedOn="{StaticResource MaterialDesignDataGrid}" TargetType="DataGrid">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                    <Style.Triggers>
-                                                                        <Trigger Property="HasItems" Value="False">
-                                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                                        </Trigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
+                                                            DockPanel.Dock="Top">
+                                                            <DataGrid
+                                                                Name="toolsLogDataGrid"
+                                                                MaxWidth="1500"
+                                                                MaxHeight="1000"
+                                                                Padding="0"
+                                                                HorizontalAlignment="Stretch"
+                                                                VerticalAlignment="Stretch"
+                                                                Panel.ZIndex="5"
+                                                                Controls:DataGridHelper.SelectionUnit="FullRow"
+                                                                md:DataGridAssist.CellPadding="-3,0,-3,0"
+                                                                md:DataGridAssist.ColumnHeaderPadding="5,0,5,0"
+                                                                md:ListViewAssist.ListViewItemPadding="1"
+                                                                AlternationCount="2"
+                                                                AutoGenerateColumns="False"
+                                                                Background="Transparent"
+                                                                BorderBrush="#FF444444"
+                                                                BorderThickness="1"
+                                                                CanUserAddRows="False"
+                                                                CanUserDeleteRows="False"
+                                                                CanUserReorderColumns="False"
+                                                                CanUserResizeColumns="False"
+                                                                CanUserResizeRows="False"
+                                                                CanUserSortColumns="False"
+                                                                CellStyle="{StaticResource dataGridCellResultsLog}"
+                                                                DockPanel.Dock="Top"
+                                                                EnableColumnVirtualization="True"
+                                                                EnableRowVirtualization="True"
+                                                                Focusable="True"
+                                                                GridLinesVisibility="All"
+                                                                HorizontalScrollBarVisibility="Disabled"
+                                                                IsReadOnly="True"
+                                                                KeyboardNavigation.TabNavigation="Cycle"
+                                                                RowHeaderWidth="0"
+                                                                RowHeight="30"
+                                                                RowStyle="{StaticResource dataGridRowStyleHistory}"
+                                                                ScrollViewer.CanContentScroll="False"
+                                                                SelectionMode="Single"
+                                                                Tag="Unloaded"
+                                                                VerticalScrollBarVisibility="Visible"
+                                                                VirtualizingStackPanel.IsVirtualizing="True"
+                                                                VirtualizingStackPanel.VirtualizationMode="Recycling">
+                                                                <DataGrid.Style>
+                                                                    <Style BasedOn="{StaticResource MaterialDesignDataGrid}" TargetType="DataGrid">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                        <Style.Triggers>
+                                                                            <Trigger Property="HasItems" Value="False">
+                                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                            </Trigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
 
-                                                            </DataGrid.Style>
-                                                            <DataGrid.ColumnHeaderStyle>
-                                                                <Style BasedOn="{StaticResource MahApps.Styles.DataGridColumnHeader}" TargetType="DataGridColumnHeader">
-                                                                    <Setter Property="Background" Value="Transparent" />
-                                                                    <Setter Property="Margin" Value="0,0,0,-25" />
+                                                                </DataGrid.Style>
+                                                                <DataGrid.ColumnHeaderStyle>
+                                                                    <Style BasedOn="{StaticResource MahApps.Styles.DataGridColumnHeader}" TargetType="DataGridColumnHeader">
+                                                                        <Setter Property="Background" Value="#252525" />
+                                                                        <Setter Property="Margin" Value="0,0,0,-25" />
 
-                                                                </Style>
-                                                            </DataGrid.ColumnHeaderStyle>
+                                                                    </Style>
+                                                                </DataGrid.ColumnHeaderStyle>
 
 
-                                                            <DataGrid.Columns>
-                                                                <DataGridTemplateColumn
-                                                                    Width="15*"
-                                                                    Header="ACTION"
-                                                                    HeaderStyle="{StaticResource historyGridHeader}">
+                                                                <DataGrid.Columns>
+                                                                    <DataGridTemplateColumn
+                                                                        Width="15*"
+                                                                        Header="ACTION"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
 
-                                                                    <DataGridTemplateColumn.CellTemplate>
+                                                                        <DataGridTemplateColumn.CellTemplate>
 
-                                                                        <DataTemplate>
-                                                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                <Label
-                                                                                    VerticalAlignment="Center"
-                                                                                    HorizontalContentAlignment="Left"
-                                                                                    Content="{Binding ActionName}" />
-                                                                            </Viewbox>
-                                                                        </DataTemplate>
-                                                                    </DataGridTemplateColumn.CellTemplate>
-                                                                </DataGridTemplateColumn>
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                                    <Label
+                                                                                        VerticalAlignment="Center"
+                                                                                        HorizontalContentAlignment="Left"
+                                                                                        Content="{Binding ActionName}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
 
-                                                                <DataGridTemplateColumn
-                                                                    Width="10*"
-                                                                    Header="RESULT"
-                                                                    HeaderStyle="{StaticResource historyGridHeader}">
+                                                                    <DataGridTemplateColumn
+                                                                        Width="10*"
+                                                                        Header="RESULT"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
 
-                                                                    <DataGridTemplateColumn.CellTemplate>
+                                                                        <DataGridTemplateColumn.CellTemplate>
 
-                                                                        <DataTemplate>
-                                                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                <Label
-                                                                                    VerticalAlignment="Center"
-                                                                                    HorizontalContentAlignment="Left"
-                                                                                    Background="Transparent"
-                                                                                    Content="{Binding Message}" />
-                                                                            </Viewbox>
-                                                                        </DataTemplate>
-                                                                    </DataGridTemplateColumn.CellTemplate>
-                                                                </DataGridTemplateColumn>
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                                    <Label
+                                                                                        VerticalAlignment="Center"
+                                                                                        HorizontalContentAlignment="Left"
+                                                                                        Background="Transparent"
+                                                                                        Content="{Binding Message}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
 
-                                                                <DataGridTemplateColumn
-                                                                    Width="15*"
-                                                                    Header="TARGET"
-                                                                    HeaderStyle="{StaticResource historyGridHeader}">
+                                                                    <DataGridTemplateColumn
+                                                                        Width="15*"
+                                                                        Header="TARGET"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
 
-                                                                    <DataGridTemplateColumn.CellTemplate>
+                                                                        <DataGridTemplateColumn.CellTemplate>
 
-                                                                        <DataTemplate>
-                                                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                <Label
-                                                                                    VerticalAlignment="Center"
-                                                                                    HorizontalContentAlignment="Left"
-                                                                                    Content="{Binding SubjectName}" />
-                                                                            </Viewbox>
-                                                                        </DataTemplate>
-                                                                    </DataGridTemplateColumn.CellTemplate>
-                                                                </DataGridTemplateColumn>
-                                                                <DataGridTemplateColumn
-                                                                    Width="10*"
-                                                                    Header="TYPE"
-                                                                    HeaderStyle="{StaticResource historyGridHeader}">
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                                    <Label
+                                                                                        VerticalAlignment="Center"
+                                                                                        HorizontalContentAlignment="Left"
+                                                                                        Content="{Binding SubjectName}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+                                                                    <DataGridTemplateColumn
+                                                                        Width="10*"
+                                                                        Header="TYPE"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
 
-                                                                    <DataGridTemplateColumn.CellTemplate>
+                                                                        <DataGridTemplateColumn.CellTemplate>
 
-                                                                        <DataTemplate>
-                                                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                <Label
-                                                                                    Margin="10,0,0,0"
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                                    <Label
+                                                                                        Margin="10,0,0,0"
+                                                                                        Padding="0"
+                                                                                        VerticalAlignment="Center"
+                                                                                        HorizontalContentAlignment="Left"
+                                                                                        Content="{Binding SubjectType}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+                                                                    <DataGridTemplateColumn
+                                                                        Width="20*"
+                                                                        Header="DATE"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}"
+                                                                        SortMemberPath="Date">
+
+                                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Center" StretchDirection="DownOnly">
+                                                                                    <Label
+                                                                                        Margin="2.5,0,2.5,0"
+                                                                                        Padding="0"
+                                                                                        VerticalAlignment="Center"
+                                                                                        HorizontalContentAlignment="Center"
+                                                                                        Content="{Binding Date}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+                                                                    <DataGridTemplateColumn
+                                                                        Width="10*"
+                                                                        Header="Admin"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
+
+                                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                                    <Label
+                                                                                        Margin="10,0,0,0"
+                                                                                        Padding="0"
+                                                                                        VerticalAlignment="Center"
+                                                                                        HorizontalContentAlignment="Center"
+                                                                                        Content="{Binding Admin}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+
+
+                                                                    <DataGridTemplateColumn
+                                                                        Width="10*"
+                                                                        Header=""
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
+                                                                        <DataGridTemplateColumn.CellTemplate>
+                                                                            <DataTemplate>
+                                                                                <Button
+                                                                                    x:Name="resultsErrorItem"
+                                                                                    Width="15"
+                                                                                    Height="15"
+                                                                                    Margin="-6,-7,0,-7"
                                                                                     Padding="0"
-                                                                                    VerticalAlignment="Center"
-                                                                                    HorizontalContentAlignment="Left"
-                                                                                    Content="{Binding SubjectType}" />
-                                                                            </Viewbox>
-                                                                        </DataTemplate>
-                                                                    </DataGridTemplateColumn.CellTemplate>
-                                                                </DataGridTemplateColumn>
-                                                                <DataGridTemplateColumn
-                                                                    Width="20*"
-                                                                    Header="DATE"
-                                                                    HeaderStyle="{StaticResource historyGridHeader}"
-                                                                    SortMemberPath="Date">
+                                                                                    HorizontalAlignment="Center"
+                                                                                    FontFamily="Segoe MDL2 Assets"
+                                                                                    FontSize="14"
+                                                                                    IsTabStop="False">
+                                                                                    <Button.Style>
+                                                                                        <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
 
-                                                                    <DataGridTemplateColumn.CellTemplate>
+                                                                                            <Setter Property="Content" Value="" />
 
-                                                                        <DataTemplate>
-                                                                            <Viewbox HorizontalAlignment="Center" StretchDirection="DownOnly">
-                                                                                <Label
-                                                                                    Margin="2.5,0,2.5,0"
+                                                                                            <Setter Property="ToolTip">
+                                                                                                <Setter.Value>
+                                                                                                    <TextBlock MaxWidth="200" TextWrapping="Wrap">
+                                                                                                        <Run Foreground="IndianRed" Text="{Binding Error}" />
+                                                                                                        <LineBreak />
+                                                                                                        <LineBreak />
+                                                                                                        <Run Text="Select to copy error" />
+                                                                                                    </TextBlock>
+                                                                                                </Setter.Value>
+                                                                                            </Setter>
+                                                                                            <Setter Property="Foreground" Value="IndianRed" />
+                                                                                            <Style.Triggers>
+                                                                                                <DataTrigger Binding="{Binding Error}" Value="null">
+                                                                                                    <Setter Property="Content" Value="" />
+                                                                                                    <Setter Property="ToolTip" Value="" />
+                                                                                                    <Setter Property="md:RippleAssist.IsDisabled" Value="False" />
+                                                                                                    <Setter Property="Cursor" Value="Arrow" />
+                                                                                                    <Setter Property="Foreground" Value="LightGreen" />
+                                                                                                </DataTrigger>
+
+
+
+                                                                                                <MultiTrigger>
+                                                                                                    <MultiTrigger.Conditions>
+                                                                                                        <Condition Property="IsMouseOver" Value="True" />
+                                                                                                        <Condition Property="Content" Value="" />
+                                                                                                    </MultiTrigger.Conditions>
+                                                                                                    <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
+                                                                                                </MultiTrigger>
+                                                                                            </Style.Triggers>
+                                                                                        </Style>
+                                                                                    </Button.Style>
+                                                                                </Button>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+
+
+
+
+                                                                    <DataGridTemplateColumn Width="10*" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                                        <DataGridTemplateColumn.CellTemplate>
+                                                                            <DataTemplate>
+                                                                                <Button
+                                                                                    x:Name="resultsQueryItem"
+                                                                                    Width="15"
+                                                                                    Height="15"
+                                                                                    Margin="-7.5,-7,0,-7"
                                                                                     Padding="0"
-                                                                                    VerticalAlignment="Center"
-                                                                                    HorizontalContentAlignment="Center"
-                                                                                    Content="{Binding Date}" />
-                                                                            </Viewbox>
-                                                                        </DataTemplate>
-                                                                    </DataGridTemplateColumn.CellTemplate>
-                                                                </DataGridTemplateColumn>
-                                                                <DataGridTemplateColumn
-                                                                    Width="10*"
-                                                                    Header="Admin"
-                                                                    HeaderStyle="{StaticResource historyGridHeader}">
+                                                                                    HorizontalAlignment="Center"
+                                                                                    Content=""
+                                                                                    FontFamily="Segoe MDL2 Assets"
+                                                                                    FontSize="14"
+                                                                                    IsTabStop="False">
+                                                                                    <Button.Style>
+                                                                                        <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
+                                                                                            <Setter Property="Content" Value="" />
+                                                                                            <Setter Property="FontSize" Value="14" />
+                                                                                            <Setter Property="ToolTip" Value="Search object" />
+                                                                                            <Setter Property="Foreground" Value="Silver" />
+                                                                                            <Style.Triggers>
 
-                                                                    <DataGridTemplateColumn.CellTemplate>
+                                                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                                                    <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
+                                                                                                </Trigger>
+                                                                                            </Style.Triggers>
+                                                                                        </Style>
+                                                                                    </Button.Style>
+                                                                                </Button>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+                                                                </DataGrid.Columns>
+                                                            </DataGrid>
+                                                            <DockPanel
+                                                                Name="toolsLogEmpty"
+                                                                HorizontalAlignment="Center"
+                                                                VerticalAlignment="Top"
+                                                                Panel.ZIndex="-5">
+                                                                <Label
+                                                                    HorizontalAlignment="Center"
+                                                                    Panel.ZIndex="-5"
+                                                                    Content="No items available with current filter"
+                                                                    FontFamily="Segoe UI"
+                                                                    FontSize="14" />
+                                                                <DockPanel.Style>
+                                                                    <Style TargetType="DockPanel">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
 
-                                                                        <DataTemplate>
-                                                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                <Label
-                                                                                    Margin="10,0,0,0"
-                                                                                    Padding="0"
-                                                                                    VerticalAlignment="Center"
-                                                                                    HorizontalContentAlignment="Center"
-                                                                                    Content="{Binding Admin}" />
-                                                                            </Viewbox>
-                                                                        </DataTemplate>
-                                                                    </DataGridTemplateColumn.CellTemplate>
-                                                                </DataGridTemplateColumn>
+                                                                        <Style.Triggers>
+                                                                            <Trigger Property="Tag" Value="Loaded">
+                                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                            </Trigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </DockPanel.Style>
 
-
-                                                                <DataGridTemplateColumn
-                                                                    Width="10*"
-                                                                    Header=""
-                                                                    HeaderStyle="{StaticResource historyGridHeader}">
-                                                                    <DataGridTemplateColumn.CellTemplate>
-                                                                        <DataTemplate>
-                                                                            <Button
-                                                                                x:Name="resultsErrorItem"
-                                                                                Width="15"
-                                                                                Height="15"
-                                                                                Margin="-6,-7,0,-7"
-                                                                                Padding="0"
-                                                                                HorizontalAlignment="Center"
-                                                                                FontFamily="Segoe MDL2 Assets"
-                                                                                FontSize="14"
-                                                                                IsTabStop="False">
-                                                                                <Button.Style>
-                                                                                    <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
-
-                                                                                        <Setter Property="Content" Value="" />
-
-                                                                                        <Setter Property="ToolTip">
-                                                                                            <Setter.Value>
-                                                                                                <TextBlock MaxWidth="200" TextWrapping="Wrap">
-                                                                                                    <Run Foreground="IndianRed" Text="{Binding Error}" />
-                                                                                                    <LineBreak />
-                                                                                                    <LineBreak />
-                                                                                                    <Run Text="Select to copy error" />
-                                                                                                </TextBlock>
-                                                                                            </Setter.Value>
-                                                                                        </Setter>
-                                                                                        <Setter Property="Foreground" Value="IndianRed" />
-                                                                                        <Style.Triggers>
-                                                                                            <DataTrigger Binding="{Binding Error}" Value="null">
-                                                                                                <Setter Property="Content" Value="" />
-                                                                                                <Setter Property="ToolTip" Value="" />
-                                                                                                <Setter Property="md:RippleAssist.IsDisabled" Value="False" />
-                                                                                                <Setter Property="Cursor" Value="Arrow" />
-                                                                                                <Setter Property="Foreground" Value="LightGreen" />
-                                                                                            </DataTrigger>
-
-
-
-                                                                                            <MultiTrigger>
-                                                                                                <MultiTrigger.Conditions>
-                                                                                                    <Condition Property="IsMouseOver" Value="True" />
-                                                                                                    <Condition Property="Content" Value="" />
-                                                                                                </MultiTrigger.Conditions>
-                                                                                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
-                                                                                            </MultiTrigger>
-                                                                                        </Style.Triggers>
-                                                                                    </Style>
-                                                                                </Button.Style>
-                                                                            </Button>
-                                                                        </DataTemplate>
-                                                                    </DataGridTemplateColumn.CellTemplate>
-                                                                </DataGridTemplateColumn>
-
-
-
-
-                                                                <DataGridTemplateColumn Width="10*" HeaderStyle="{StaticResource datagridColumnNoTab}">
-                                                                    <DataGridTemplateColumn.CellTemplate>
-                                                                        <DataTemplate>
-                                                                            <Button
-                                                                                x:Name="resultsQueryItem"
-                                                                                Width="15"
-                                                                                Height="15"
-                                                                                Margin="-7.5,-7,0,-7"
-                                                                                Padding="0"
-                                                                                HorizontalAlignment="Center"
-                                                                                Content=""
-                                                                                FontFamily="Segoe MDL2 Assets"
-                                                                                FontSize="14"
-                                                                                IsTabStop="False">
-                                                                                <Button.Style>
-                                                                                    <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
-                                                                                        <Setter Property="Content" Value="" />
-                                                                                        <Setter Property="FontSize" Value="14" />
-                                                                                        <Setter Property="ToolTip" Value="Search object" />
-                                                                                        <Setter Property="Foreground" Value="Silver" />
-                                                                                        <Style.Triggers>
-
-                                                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
-                                                                                            </Trigger>
-                                                                                        </Style.Triggers>
-                                                                                    </Style>
-                                                                                </Button.Style>
-                                                                            </Button>
-                                                                        </DataTemplate>
-                                                                    </DataGridTemplateColumn.CellTemplate>
-                                                                </DataGridTemplateColumn>
-                                                            </DataGrid.Columns>
-                                                        </DataGrid>
+                                                            </DockPanel>
+                                                        </Grid>
                                                         <DockPanel
                                                             Name="toolsLogProgress"
-                                                            Margin="0,250,0,0"
+                                                            Margin="0,175,0,0"
                                                             DockPanel.Dock="Top">
                                                             <ProgressBar
                                                                 Name="logProgressRing"
                                                                 Width="150"
                                                                 Height="150"
+                                                                Margin="0,0,0,25"
                                                                 HorizontalAlignment="Center"
                                                                 VerticalAlignment="Center"
                                                                 DockPanel.Dock="Top"
@@ -8505,28 +8540,7 @@
                                                                 </Style>
                                                             </DockPanel.Style>
                                                         </DockPanel>
-                                                        <DockPanel
-                                                            Name="toolsLogEmpty"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center">
-                                                            <Label
-                                                                HorizontalAlignment="Center"
-                                                                Content="No items available with current filter"
-                                                                FontFamily="Segoe UI"
-                                                                FontSize="14" />
-                                                            <DockPanel.Style>
-                                                                <Style TargetType="DockPanel">
-                                                                    <Setter Property="Visibility" Value="Collapsed" />
 
-                                                                    <Style.Triggers>
-                                                                        <Trigger Property="Tag" Value="Loaded">
-                                                                            <Setter Property="Visibility" Value="Visible" />
-                                                                        </Trigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </DockPanel.Style>
-
-                                                        </DockPanel>
                                                     </DockPanel>
 
 

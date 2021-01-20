@@ -252,7 +252,13 @@ $syncHash.settingLogo.add_Loaded( {
                 Start-PropBoxPopulate -ConfigHash $configHash 
                 Set-ADGenericQueryNames -ConfigHash $configHash               
                 Set-QueryPropertyList -SyncHash $syncHash -ConfigHash $configHash
-                
+
+                 if ($syncHash.settingStatusChildBoard.Visibility -eq 'Collapsed') {
+                    $syncHash.Window.Dispatcher.invoke([action]{ 
+                        $syncHash.settingStatusChildBoard.Visibility = 'Visible'
+                        $syncHash.settingConfigPanel.Visibility = 'Visible'
+                    })
+                }              
             }  
                 
             Show-WPFWindow -SyncHash $syncHash     
@@ -765,7 +771,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                                 else { ($queryHash[$syncHash.tabControl.SelectedItem.Name]).Name }
                                                 boxResources = $syncHash.($type[0] + 'box' + $id + 'resources')
                                                 window       = $syncHash.Window
-                                                snackMsg     = $syncHash.SnackMsg
+                                                snackMsg     = $syncHash.SnackMsg.MessageQueue
                                             }
     
                                
@@ -774,8 +780,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                         
                                                 Start-Sleep -Milliseconds 500
                                                            
-                                                $actionNameString = "[$($($rsCmd.propList.('actionCmd' + $b + 'ToolTip')).toUpper())]"
-                                                $actionObjectString = "[$($($rsCmd.actionObject).toLower())]"
+                                                $actionName = $rsCmd.propList.('actionCmd' + $b + 'ToolTip')
+                                                $actionObject = $rsCmd.actionObject
 
                                                 $cmd = $rsCmd.propList.('actionCmd' + $b)
                                                 $type = $rsCmd.Type
@@ -786,8 +792,8 @@ $syncHash.tabMenu.add_Loaded( {
 
                                                 try {
                                                     Invoke-Expression -Command $cmd
-                                                    $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString SUCCESS on $actionObjectString") })
-                                                    Write-LogMessage -syncHashWindow $rsCmd.Window -Path $configHash.actionlogPath -Message Succeed -ActionName $actionNameString -SubjectName $actionObjectString -SubjectType $type -ArrayList $configHash.actionLog 
+                                                    Write-SnackMsg -Queue $rsCmd.SnackMsg -ToolName $actionName -Status Success -SubjectName $actionObject                           
+                                                    Write-LogMessage -syncHashWindow $rsCmd.Window -Path $configHash.actionlogPath -Message Succeed -ActionName $actionName -SubjectName $actionObject -SubjectType $type -ArrayList $configHash.actionLog 
 
                                                     if ($rsCmd.propList.('actionCmd' + $b + 'Refresh')) {
                                                         if ($PropName -ne 'Non-Ad Property') {
@@ -822,8 +828,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                 }
                           
                                                 catch {
-                                                    $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.snackMsg.MessageQueue.Enqueue("$actionNameString FAILURE on $actionObjectString") })
-                                                     Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $actionNameString -SubjectName $actionObjectString -SubjectType $type -ArrayList $configHash.actionLog -Error $_
+                                                    Write-SnackMsg -Queue $rsCmd.SnackMsg -ToolName $actionName -Status Fail -SubjectName $actionObject
+                                                    Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $actionName -SubjectName $actionObject -SubjectType $type -ArrayList $configHash.actionLog -Error $_
                                                 }
                                             }
                                         })                         
@@ -856,8 +862,8 @@ $syncHash.tabMenu.add_Loaded( {
 
                                                     try {
                                                         Invoke-Expression -Command ($configHash.($type + 'PropList')[$id - 1].('actionCmd' + $b))
-                                                        $syncHash.SnackMsg.MessageQueue.Enqueue("[$($($actionName).toUpper())]: SUCCESS on [$($(Get-Variable -Name $type -ValueOnly).toLower())]")
-                                                        Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $actionName -SubjectName (Get-Variable -Name $type -ValueOnly) -SubjectType $type -ArrayList $configHash.actionLog 
+                                                        Write-SnackMsg -Queue ($syncHash.SnackMsg.MessageQueue) -ToolName $actionName -Status Success -SubjectName $actionObject
+                                                        Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $actionName -SubjectName $actionObject -SubjectType $type -ArrayList $configHash.actionLog 
 
                                                         if ($configHash.($type + 'PropList')[$id - 1].('actionCmd' + $b + 'Refresh')) {
                                                             if (($configHash.($type + 'PropList')[$id - 1].PropName) -ne 'Non-Ad Property') {
@@ -895,8 +901,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                     }
                           
                                                     catch {
-                                                        $syncHash.SnackMsg.MessageQueue.Enqueue("[$($($actionName).toUpper())] FAILURE on [$($(Get-Variable -Name $type -ValueOnly).toLower())]")
-                                                        Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $actionName -SubjectName (Get-Variable -Name $type -ValueOnly) -SubjectType $type -ArrayList $configHash.actionLog -Error $_
+                                                        Write-SnackMsg -Queue ($syncHash.SnackMsg.MessageQueue) -ToolName $actionName -Status Fail -SubjectName $actionObject
+                                                        Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $actionName -SubjectName $actionObject -SubjectType $type -ArrayList $configHash.actionLog -Error $_
                                                     }                                                               
                                                 })
                                         }
@@ -1110,6 +1116,7 @@ $syncHash.tabMenu.add_Loaded( {
                             user           = $user
                             buttonSettings = $configHash.contextConfig[$id - 1]
                             sessionID      = $sessionID
+                            snackBar       = $syncHash.SnackMsg.MessageQueue
                         }
 
                         Start-RSJob -ArgumentList $rsCmd, $syncHash, $configHash -ModulesToImport C:\TempData\internal\internal.psm1 -ScriptBlock {
@@ -1117,34 +1124,38 @@ $syncHash.tabMenu.add_Loaded( {
                             
                             $user = $rsCmd.user
                             $comp = $rsCmd.comp
+                            
+                            $combinedString = "$($user.ToLower()) on $($comp.ToLower())"
+                            $toolName = $rsCmd.buttonSettings.ActionName
+                            
 
                             try {
                                 Invoke-Expression -Command $rsCmd.buttonSettings.actionCmd
-                                $syncHash.Window.Dispatcher.Invoke([Action]{
-                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[$($rsCmd.buttonSettings.ActionName.ToUpper())]: SUCCESS on $($rsCmd.user.ToLower()) on $($rsCmd.comp.ToLower())")
-                                    Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName ($rsCmd.buttonSettings.ActionName.ToUpper()) -SubjectName $rsCmd.User -SubjectType Context -ArrayList $configHash.actionLog 
-                                })
+                                Write-SnackMsg -Queue $rsCmd.Snackbar -ToolName $toolName -Status Success -SubjectName $combinedString
+                                $syncHash.Window.Dispatcher.Invoke([Action]{ Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName ($rsCmd.buttonSettings.ActionName.ToUpper()) -SubjectName $rsCmd.User -SubjectType 'Context' -ArrayList $configHash.actionLog })
                             }
+                            
                             catch {
-                                $syncHash.Window.Dispatcher.Invoke([Action]{
-                                    $syncHash.SnackMsg.MessageQueue.Enqueue("[$($rsCmd.buttonSettings.ActionName.ToUpper())]: FAIL on $($rsCmd.user.ToLower()) on $($rsCmd.comp.ToLower())")  
-                                    Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName ($rsCmd.buttonSettings.ActionName.ToUpper()) -SubjectName $rsCmd.User -SubjectType Context -ArrayList $configHash.actionLog -Error $_
-                                })
+                                Write-SnackMsg -Queue $rsCmd.Snackbar -ToolName $toolName -Status Success -SubjectName $combinedString
+                                $syncHash.Window.Dispatcher.Invoke([Action]{ Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName ($rsCmd.buttonSettings.ActionName.ToUpper()) -SubjectName $rsCmd.User -SubjectType 'Context' -ArrayList $configHash.actionLog -Error $_ })
                             }
                         }
                     }
 
                     else {
 
+                        $combinedString = "$($user.ToLower()) on $($comp.ToLower())"
+                        $toolName = $configHash.contextConfig[$id - 1].ActionName
+
                         try {
                             Invoke-Expression -Command $configHash.contextConfig[$id - 1].actionCmd
-                            $syncHash.SnackMsg.MessageQueue.Enqueue("[$($configHash.contextConfig[$id - 1].ActionName.ToUpper())]: SUCCESS on $($user.ToLower()) on $($comp.ToLower())")
-                            Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName ($configHash.contextConfig[$id - 1].ActionName.ToUpper()) -SubjectName $user -SubjectType Context -ArrayList $configHash.actionLog 
+                            Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName $toolName -Status Success -SubjectName $combinedString
+                            Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName ($configHash.contextConfig[$id - 1].ActionName.ToUpper()) -SubjectName $user -SubjectType 'Context' -ArrayList $configHash.actionLog 
                         }
                             
                         catch {
-                            $syncHash.SnackMsg.MessageQueue.Enqueue("[$($configHash.contextConfig[$id - 1].ActionName.ToUpper())]: FAIL on $($user.ToLower()) on $($comp.ToLower())")
-                            Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName ($configHash.contextConfig[$id - 1].ActionName.ToUpper()) -SubjectName $user -SubjectType Context -ArrayList $configHash.actionLog -Error $_
+                           Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName $toolName -Status Success -SubjectName $combinedString
+                            Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName ($configHash.contextConfig[$id - 1].ActionName.ToUpper()) -SubjectName $user -SubjectType 'Context' -ArrayList $configHash.actionLog -Error $_
                         }
                             
 
@@ -1320,6 +1331,8 @@ $syncHash.tabControl.add_SelectionChanged( {
 
                             Remove-Variable -Name resultColor -ErrorAction SilentlyContinue                 
             
+                            $syncHash.Window.Dispatcher.invoke([action] { $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Textbox').Text = $null})
+
                             if (($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).ValidCmd -eq $true -and ($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).transCmdsEnabled) {
                                 $result = ($queryHash[$currentTabItem]).(($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).PropName)
                                 $value = Invoke-Expression -Command (($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).TranslationCmd)
@@ -1564,29 +1577,30 @@ $syncHash.itemToolDialogConfirmButton.Add_Click({
     Param($queue, $toolID, $configHash, $queryHash, $window)
 
         $item = ($configHash.currentTabItem).toLower()
+        $targetType = $queryHash[$item].ObjectClass -replace 'c','C' -replace 'u','U'
         $toolName = ($configHash.objectToolConfig[$toolID - 1].toolActionToolTip).ToUpper()
 
         try {                     
             Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
-                $queue.Enqueue("[$toolName]: Success - Standalone tool complete")
+                Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success
                 Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -SubjectType 'Standalone' -ArrayList $configHash.actionLog
             }
 
             else {
-                $queue.Enqueue("[$toolName]: Success on [$item] - tool complete")
-                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -ArrayList $configHash.actionLog 
+                Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success -SubjectName $item
+                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -SubjectType $targetType -ArrayList $configHash.actionLog 
             }
                                            
         }
         catch {
             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
-                $queue.Enqueue("[$toolName]: Fail - Standalone tool incomplete") 
+                Write-SnackMsg -Queue $queue -ToolName $toolName -Status Fail
                 Write-LogMessage -syncHashWindow $Window -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
             }
             else {
-                $queue.Enqueue("[$toolName]: Fail on [$item] - tool incomplete")
-                Write-LogMessage -syncHashWindow $Window -Path $configHash.actionlogPath -Message Fail -SubjectName $item -ActionName $toolName -SubjectType 'Standalone' -ArrayList $configHash.actionLog -Error $_
+                Write-SnackMsg -Queue $queue -ToolName $toolName -Status Fail -SubjectName $item
+                Write-LogMessage -syncHashWindow $Window -Path $configHash.actionlogPath -Message Fail -SubjectName $item -ActionName $toolName -SubjectType $targetType -ArrayList $configHash.actionLog -Error $_
             }
         }
     }
@@ -2034,13 +2048,144 @@ $syncHash.settingNameDialog.Add_DialogClosing( {
               
     }
 }
+
+$syncHash.itemToolCommandGridClose.Add_Click({ $syncHash.itemToolDialog.IsOpen = $false }) 
+
+$syncHash.toolsCommandGridExecuteAll.Add_Click({
+
+    $rsCmd = @{
+        cmdGridItems   = $syncHash.itemToolCommandGridDataGrid.Items
+        cmdGridParentIndex = $syncHash.itemToolCommandGridDataGrid.Items[0].ParentToolIndex
+        item = ($configHash.currentTabItem).toLower()
+    }
+
+    $rsParam = @{
+        Name = 'CommandGridAllRun'
+        ArgumentList = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd)
+        ModulesToImport = 'C:\TempData\internal\internal.psm1'
+    }
+
+    Start-RSJob @rsParam -ScriptBlock {
+    Param($queue, $configHash, $queryHash, $syncHash, $rsCmd)
+
+        $item = $rsCmd.item
+        $targetType = $queryHash[$item].ObjectClass -replace 'c','C' -replace 'u','U'
+
+        try {
+
+            foreach ($gridItem in ($rsCmd.cmdGridItems | Where-Object {$_.Result -ne 'True'})) {
+                
+                $actionCmd  = ($configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig |
+                    Where-Object {$_.actionCmdValid -eq 'True' -and $_.queryCmdValid -eq 'True'})[$gridItem.Index].actionCmd
+                
+                $queryCmd  = ($configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig |
+                    Where-Object {$_.actionCmdValid -eq 'True' -and $_.queryCmdValid -eq 'True'})[$gridItem.Index].queryCmd
+                
+                Invoke-Expression $actionCmd
+                $result = (Invoke-Expression $queryCmd).ToString()
+
+                $syncHash.Window.Dispatcher.Invoke([action]{ $syncHash.itemToolCommandGridDataGrid.Items[$gridItem.Index].Result = $result })
+            }
+
+            $syncHash.Window.Dispatcher.Invoke([action]{ $syncHash.itemToolCommandGridDataGrid.Items.Refresh() })
+
+            if (($syncHash.itemToolCommandGridDataGrid.Items.Result -match 'False' | Measure-Object).Count -eq 0) {
+                $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.toolsCommandGridExecuteAll.Tag = 'False'})
+            }
+           
+            $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].ToolName
+
+            if ($configHash.objectToolConfig[$rscmd.cmdGridParentIndex].objectType -eq 'Standalone') {
+                Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success
+                Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -SubjectType 'Standalone' -ArrayList $configHash.actionLog
+            }
+                
+            else {
+                Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rscmd.cmdGridItemName -Status Success -SubjectName $item
+                Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -SubjectType $targetType -ActionName $toolName -ArrayList $configHash.actionLog 
+            }
+        }    
+         
+
+        catch {
+            if ($configHash.objectToolConfig[$rscmd.cmdGridParentIndex].objectType -eq 'Standalone') {
+                Write-SnackMsg -Queue $queue -ToolName $toolName -Status Fail
+                Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -SubjectType 'Standalone' -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+            }
+            else {
+                Write-SnackMsg -Queue $queue -ToolName $toolName -Status Fail -SubjectName $item
+                Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -SubjectName $item -SubjectType $targetType -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+            }
+        }
+    }
+})
+
+
 [System.Windows.RoutedEventHandler]$EventonObjectToolCommandGridGrid = {
  $button = $_.OriginalSource
 
-if ($button.Name -match 'toolsCommandGridExecute') {
-    Write-Host "TEST!"
- }
- }    
+    if ($button.Name -match 'toolsCommandGridExecute') {
+
+        $rsCmd = @{
+            cmdGridItemIndex   = $syncHash.itemToolCommandGridDataGrid.SelectedItem.Index
+            cmdGridParentIndex = $syncHash.itemToolCommandGridDataGrid.SelectedItem.ParentToolIndex
+            cmdGridItemName    = $syncHash.itemToolCommandGridDataGrid.SelectedItem.ItemName
+            item = ($configHash.currentTabItem).toLower()
+        }
+
+        $rsParam = @{
+            Name = 'CommandGridRun'
+            ArgumentList = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd)
+            ModulesToImport = 'C:\TempData\internal\internal.psm1'
+        }
+
+        Start-RSJob @rsParam -ScriptBlock {
+        Param($queue, $configHash, $queryHash, $syncHash, $rsCmd)
+
+           $item = $rsCmd.item
+           $targetType = $queryHash[$item].ObjectClass -replace 'c','C' -replace 'u','U'
+
+           $actionCmd = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].actionCmd
+           $queryCmd  = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].queryCmd
+           $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].SetName
+
+            try {                     
+                Invoke-Expression $actionCmd
+                $result = (Invoke-Expression $queryCmd).ToString()
+                
+                $syncHash.Window.Dispatcher.Invoke([action]{
+                    $syncHash.itemToolCommandGridDataGrid.SelectedItem.Result = $result
+                    $syncHash.itemToolCommandGridDataGrid.Items.Refresh()               
+                })
+               
+                if ($configHash.objectToolConfig[$rscmd.cmdGridParentIndex].objectType -eq 'Standalone') {
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rscmd.cmdGridItemName -Status Success
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -ActionName ($($($toolName) + '-' + $($rscmd.cmdGridItemName))) -SubjectType 'Standalone' -ArrayList $configHash.actionLog
+                }
+                
+                else {
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rscmd.cmdGridItemName -Status Success -SubjectName $item
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -SubjectType $targetType -ActionName ($($($toolName) + '-' + $($rscmd.cmdGridItemName))) -ArrayList $configHash.actionLog 
+                }
+                
+                if (($syncHash.itemToolCommandGridDataGrid.Items.Result -notmatch 'True' | Measure-Object).Count -eq 0) {
+                    $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.toolsCommandGridExecuteAll.Tag = 'False'})
+                }                                          
+            }
+
+            catch {
+                if ($configHash.objectToolConfig[$rscmd.cmdGridParentIndex].objectType -eq 'Standalone') {
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rscmd.cmdGridItemName -Status Fail
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -ActionName ($($($toolName) + '-' + $($rscmd.cmdGridItemName))) -ArrayList $configHash.actionLog -Error $_
+                }
+                else {
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rscmd.cmdGridItemName -Status Fail -SubjectName $item
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -SubjectName $item -SubjectType $targetType -ActionName ($($($toolName) + '-' + $($rscmd.cmdGridItemName))) -SubjectType 'Standalone' -ArrayList $configHash.actionLog -Error $_
+                }
+            }
+        }
+    }
+}    
 
 
 [System.Windows.RoutedEventHandler]$EventonObjectToolGrid = {
