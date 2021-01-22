@@ -1855,3 +1855,18 @@ A///AAIACw=='))
     return $SelectedObject
 
 } #End Function Choose-ADOrganizationalUnit
+
+
+function Get-PSModulePath {
+
+    $customSelection = New-Object System.Windows.Forms.OpenFileDialog -Property @{
+        initialDirectory = 'C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules'
+        Title            = "Select PS Module"
+        Filter           = "PS modules (*.psm1)|*.psm1|All files (*.*)|*.*";
+        CheckFileExists  = $true
+        CheckPathExists  = $true
+    }
+
+    $customSelection.ShowDialog() | Out-Null
+    $customSelection
+}
