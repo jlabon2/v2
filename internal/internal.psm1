@@ -21,6 +21,63 @@ function New-HashTables {
     $global:queryHash = [hashtable]::Synchronized(@{ })
 
 }
+function Set-CurrentPane {
+    param ($SyncHash, $Panel)
+    $syncHash.infoPaneContent.Tag = $panel
+}
+
+function Set-InfoPaneContent {
+    param ($syncHash , $settingInfoHash) 
+    
+    $syncHash.infoPaneContent.DataContext = $settingInfoHash.($syncHash.infoPaneContent.Tag)
+   
+
+    if ([string]::IsNullOrEmpty(($settingInfoHash.($syncHash.infoPaneContent.Tag).Vars)) -and ([string]::IsNullOrEmpty(($settingInfoHash.($syncHash.infoPaneContent.Tag).Types)))) {
+        $syncHash.infoPaneVars.Visibility = "Collapsed"
+    }
+
+    
+
+    else {
+
+    if (
+        $settingInfoHash.($syncHash.infoPaneContent.Tag).Vars) { $syncHash.infoPaneVarHeader.Content = "Variables"
+        $type = 'vars'
+    }
+    else  { 
+        $syncHash.infoPaneVarHeader.Content = "Types" 
+        $type = 'types'
+    }
+
+        $syncHash.infoPaneVars.Visibility = "Visible"
+        $syncHash.infoPaneVarList.Blocks.Clear()
+        $flowPara = New-Object -Type System.Windows.Documents.Paragraph
+
+        foreach ($item in (($settingInfoHash.($syncHash.infoPaneContent.Tag).$type).Keys)) {
+
+            $bulletHeader = New-Object System.Windows.Documents.Run -Property @{
+                Text = "$item "
+                Style = $syncHash.Window.FindResource('varNameRun')
+            }
+
+            $bulletContent = New-Object System.Windows.Documents.Run -Property @{
+                Text = "- $(($settingInfoHash.($syncHash.infoPaneContent.Tag).$type)[$item])"
+                Style = $syncHash.Window.FindResource('varDescRun')
+            }
+
+            $bulletEnd = New-Object -TypeName System.Windows.Documents.LineBreak
+                    
+            $flowPara.AddChild($bulletHeader)
+            $flowPara.AddChild($bulletContent)
+            $flowPara.AddChild($bulletEnd)
+          
+            
+        }
+
+        $syncHash.infoPaneVarList.AddChild($flowPara)
+    
+    }
+}
 
 function Get-Glyphs {
     param (
@@ -119,6 +176,7 @@ function Set-Config {
             $configHash.adPropertyMap = $null
             $configHash.queryProps = $null
             $configHash.actionLog = $null
+            $configHash.modList = $null
 
             $configHash | ConvertTo-Json -Depth 8 | Out-File $($configPath + '.bak') -Force
 
@@ -565,7 +623,7 @@ function Add-CustomToolControls {
                 $syncHash.objectTools.$toolButton.ToolButton.Add_Click( {
                         param([Parameter(Mandatory)][Object]$sender)
                         $toolID = $sender.Name -replace ".*tool"
-                        $toolID > C:\test.txt
+
                         switch ($configHash.objectToolConfig[$toolId - 1].toolType) {
 
                             'Execute' {
@@ -1030,7 +1088,7 @@ function Start-VarUpdater {
     [CmdletBinding()]
     param ($configHash, $varHash)
 
-    Start-RSJob -Name VarUpdater -ArgumentList $configHash, $varHash -ModulesToImport C:\TempData\internal\internal.psm1 {
+    Start-RSJob -Name VarUpdater -ArgumentList $configHash, $varHash -ModulesToImport $configHash.modList {
         param($configHash, $varHash)
 
         $startTime = Get-Date
@@ -1102,6 +1160,7 @@ Function Set-ChildWindow {
     if ($Panel) {
         $syncHash.$Panel.Visibility = "Visible"
         $syncHash.settingChildWindow.IsOpen = $true
+        $syncHash.infoPaneContent.Tag = $panel
 
         switch ($Panel) {
 
@@ -1131,6 +1190,16 @@ Function Set-ChildWindow {
             'settingVarContent' {            
                 if ($configHash.varListConfig -ne $null) { $syncHash.settingVarDataGrid.ItemsSource = $configHash.varListConfig }
                 $syncHash.settingVarDataGrid.Visibility = "Visible"
+                $syncHash.settingModDataGrid.Visibility = "Collapsed"
+                $syncHash.settingVarAddClick.Tag = 'Var'
+
+            }
+
+            'settingModDataGrid' {
+                if ($configHash.modConfig -ne $null) { $syncHash.settingModDataGrid.ItemsSource = $configHash.modConfig }
+                $syncHash.settingModDataGrid.Visibility = "Visible"
+                $syncHash.settingVarDataGrid.Visibility = "Collapsed"
+                $syncHash.settingVarAddClick.Tag = 'Mod'
 
             }
 
@@ -1271,7 +1340,7 @@ function Start-ItemToolAction {
         $rsItemTool = @{
             Name            = "ItemToolAction"
             ArgumentList    = @($configHash, $itemList, $syncHash.snackMsg.MessageQueue, $syncHash.('itemTool' + $Control + 'SelectConfirmButton').Tag, $SyncHash.Window, $queryHash)
-            ModulesToImport = @('C:\TempData\internal\internal.psm1', 'C:\TempData\func\func.psm1')
+            ModulesToImport = $configHash.modList
         }
 
     Start-RSJob @rsItemTool -ScriptBlock {
@@ -1751,7 +1820,7 @@ function Start-ObjectSearch {
     $rsJob = @{
         Name            = 'Search'
         ArgumentList    = $queryHash, $configHash, $syncHash, $rsCmd
-        ModulesToImport = @('C:\TempData\internal\internal.psm1', 'C:\TempData\func\func.psm1')
+        ModulesToImport = $configHash.modList
     }
 
 
@@ -1854,7 +1923,7 @@ function Find-ObjectLogs {
     $rsLogPull = @{
         Name            = $type + 'LogPull'
         ArgumentList    = $queryHash, $configHash, $match, $syncHash
-        ModulesToImport = @('C:\TempData\internal\internal.psm1', 'C:\TempData\func\func.psm1')
+        ModulesToImport = $configHash.modList
     }
 
     if ($type -eq 'User') {
@@ -2474,7 +2543,7 @@ function New-LogHTMLExport {
         $rsLogExport = @{
             Name            = 'LogWriteHtml'
             ArgumentList    = $configHash, $scope, $env:USERNAME, $timeFrame, $span
-            ModulesToImport = @('C:\TempData\internal\internal.psm1', 'C:\TempData\func\func.psm1', 'PSWriteHTML')
+            ModulesToImport = @($configHash.modList, 'PSWriteHTML')
         }   
         
         Start-RSJob @rsLogExport -ScriptBlock {

@@ -5,7 +5,7 @@
 #- help dialogs : textbox databound to hashtable, text triggered by title contents
 
 #- general options item: searchBase, other search patterns, logging options
-#- static variables / source item:
+#- static variables / source $item:
 #- Color switches on glyph buttons???
 # - categorzation horzontal scrollbar on dialog textbox
 
@@ -33,9 +33,68 @@
 #     WPF - remove from code, add to WPF
 #     Func - Seperate to function
 #     Rm - Remove / not needed anymore
-
-
 Remove-Variable * -ErrorAction SilentlyContinue
+
+$settingInfoHash = @{
+    'settingCompPropContent' = [PSCustomObject]@{
+            'Body' = @' 
+This table allows you to map the Active Directory (AD) properties displayed when querying a computer. Each item can be given a friendly name in the 'FIELD NAME'  box - this will be displayed as the header. The corresponding drop-down box will determine the AD property queried. The 'TYPE' drop down will determine the type of actions that can be performed with the item. These can be defined for each field with the button in the DEF row. The types are explained below.
+
+The 'Non-AD Property' selection is an actionable-only field that allows its content to be populated using a custom query.
+'@
+        'Types'= @{
+           'ReadOnly'   = 'The field only shows the content as pulled from AD.'
+           'Editable'   = 'The field value can be updated or cleared and then saved to AD.'
+           'Actionable' = 'The field will allow up to two definable buttons to perform custom actions.'
+           'Raw'        = 'Any raw field will display the value directly as pulled from AD. Otherwise, the presentation of the content can be defined.'
+        }
+    } 
+    'settingUserPropContent' = [PSCustomObject]@{
+            'Body' = @' 
+This table allows you to map the Active Directory (AD) properties displayed when querying a user. Each item can be given a friendly name in the 'FIELD NAME'  box - this will be displayed as the header. The corresponding drop-down box will determine the AD property queried. The 'TYPE' drop down will determine the type of actions that can be performed with the item. These can be defined for each field with the button in the DEF row. The types are explained below.
+
+The 'Non-AD Property' selection is an actionable-only field that allows its content to be populated using a custom query.
+'@
+        'Types'= @{
+           'ReadOnly'   = 'The field only shows the content as pulled from AD.'
+           'Editable'   = 'The field value can be updated or cleared and then saved to AD.'
+           'Actionable' = 'The field will allow up to two definable buttons to perform custom actions.'
+           'Raw'        = 'Any raw field will display the value directly as pulled from AD. Otherwise, the presentation of the content can be defined.'
+        }
+    } 
+    'settingPropUserDefine' = [PSCustomObject]@{
+            'Body' = @'
+These fields define how the selected property will function in regards to the button type selected in the previous table. 
+
+The 'Result Presentation' scriptblock is present in any non-raw type. This will allow the property returned to be presented as an alternative value (e.g. a TRUE or FALSE value can be passed through an if statement and alternate text can be returned and displayed.
+
+The 'Attached Actions I-II' are buttons that will attach to the returned value when queried. Their respective scriptblock will run when the button is processed. Along each attached action, an icon can be selected for use with the button. The 'Refresh Prop' option will requery Active Directory after the action completes and update the value in the display. The 'New Thread' option will run the action in a new thread, though this may not neccarrily be faster overall for quicker actions.
+
+All script blocks must be validated using the 'Execute' button. This will only execute fully for the results scriptblock, but will altert for syntaxical errors for each button's respective scriptblock.
+
+The variables below can be referenced or manipulated within the scriptblocks.
+'@
+            'Vars' = @{
+               'resultColor' = '- [Result Presentation] - Setting the resultColor will determine the color of the returned value. This uses all valid .NET brush names and HEX values.'
+                'result'     = '- [Result Presentation] - The actual value of the returned Active Directory property.'
+                'user'       = '- [Actionable Items] - The value of the current, queried user. Only populated on action buttons for user properties.'
+                'comp'       = '- [Actionable Items] - The value of the current, queried computer. Only populated on action buttons for computer properties.'
+                'propName'   = '- [Actionable Items] - The name of the property attached to the field.'
+                'prop'       = '- [Actionable Items] - The value of the queriedbproperty attached to the field.'
+        }
+    }
+    'settingPropCompDefine' = [PSCustomObject]@{
+            'Body' = 'TestEdit'
+            'Vars' = @{
+                'One' = 'Test'
+        }
+    }
+}
+
+$modList = @('C:\TempData\func\func.psm1', 'C:\TempData\internal\internal.psm1')
+Import-Module $modList -Force -DisableNameChecking
+
+
 $ConfirmPreference = "None"
 #Copy-Item -Path  C:\TempData\v3\MainWindow.xaml -Destination C:\TempData\MainWindow.xaml -Force
 Copy-Item -Path "\\labtop\TempData\v3\v3\MainWindow.xaml"  -Destination C:\TempData\MainWindow.xaml -Force
@@ -47,9 +106,6 @@ $glyphList = 'C:\TempData\segoeGlyphs.txt'
 
 $savedConfig = "C:\TempData\config.json"
 
-Import-Module C:\TempData\func\func.psm1 -DisableNameChecking
-Remove-Module internal
-Import-Module C:\TempData\internal\internal.psm1
 
 # generated hash tables used throughout tool
 New-HashTables
@@ -58,13 +114,16 @@ New-HashTables
 Set-Config -ConfigPath $savedConfig -Type Import -ConfigHash $configHash
 
 # process loaded data or creates initial item templates for various config datagrids
-@('userPropList','compPropList','contextConfig','objectToolConfig','nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
+@('userPropList','compPropList','contextConfig','objectToolConfig','nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig', 'modConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
 @('userLogMapping','compLogMapping') | Set-InitialValues -ConfigHash $configHash
 
 # matches config'd user/comp logins with default headers, creates new headers from custom values
 $defaultList = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
 @('userLogMapping','compLogMapping') | Set-LoggingStructure -DefaultList $DefaultList -ConfigHash $configHash
 Set-ActionLog -ConfigHash $configHash
+
+$configHash.modConfig.modPath | ForEach-Object {$modList += $_}
+$configHash.modList = $modList
 
 # Add default values if they are missing
 @('MSRA','MSTSC') | Set-RTDefaults -ConfigHash $configHash
@@ -219,7 +278,7 @@ $syncHash.settingLogo.add_Loaded( {
             
         $sysCheckHash.sysChecks[0].RSModule = 'True'
 
-        Start-RSJob -Name init -ArgumentList $syncHash, $psexec, $sysCheckHash, $configHash, $savedConfig -ModulesToImport ActiveDirectory, C:\TempData\internal\internal.psm1 -ScriptBlock {        
+        Start-RSJob -Name init -ArgumentList $syncHash, $psexec, $sysCheckHash, $configHash, $savedConfig -ModulesToImport $configHash.modList -ScriptBlock {        
             Param($syncHash, $psExec, $sysCheckHash, $configHash, $savedConfig)
              
             Start-BasicADCheck -SysCheckHash $sysCheckHash -ConfigHash $configHash
@@ -394,19 +453,7 @@ $syncHash.settingCommandGridAddClick.Add_Click({
 
 })
 
-$syncHash.settingVarAddClick.Add_Click( {
-    
-    $configHash.varListConfig.Add([PSCustomObject]@{
-        VarNum              = ($configHash.varListConfig.VarNum | Sort-Object -Descending | Select-Object -First 1) + 1
-        VarName             = $null
-        VarCmd              = $null
-        UpdateFrequencyList = @('All Queries','User Queries','Comp Queries','Daily','Hourly','Every 15 mins','Program Start')
-        UpdateFrequency     = 'Program Start'
-    })    
 
-    $syncHash.settingVarDataGrid.Items.Refresh()                   
-
-})
 
 $syncHash.settingGeneralAddClick.Add_Click( {
     
@@ -435,6 +482,36 @@ $syncHash.settingGeneralAddClick.Add_Click( {
 
 })
 
+
+$syncHash.settingVarAddClick.Add_Click( {
+    
+    if ($syncHash.settingGeneralAddClick.Tag -eq 'Var') {
+        $configHash.varListConfig.Add([PSCustomObject]@{
+        VarNum              = ($configHash.varListConfig.VarNum | Sort-Object -Descending | Select-Object -First 1) + 1
+        VarName             = $null
+        VarCmd              = $null
+        UpdateFrequencyList = @('All Queries','User Queries','Comp Queries','Daily','Hourly','Every 15 mins','Program Start')
+        UpdateFrequency     = 'Program Start'
+    })    
+
+    $syncHash.settingVarDataGrid.Items.Refresh()       
+    
+    }
+    
+    else {
+   
+        $configHash.modConfig.Add([PSCustomObject]@{
+            ModNum  = ($configHash.modConfig.ModNum | Sort-Object -Descending | Select-Object -First 1) + 1
+            ModName = $null
+            ModPath = $null
+        })    
+
+        $syncHash.settingModDataGrid.Items.Refresh()
+    }                   
+
+})
+
+
 $syncHash.settingVarDialogClose.Add_Click({
     $syncHash.settingVarDialog.IsOpen = $false 
     $synchash.settingVarDataGrid.Items.Refresh()
@@ -457,10 +534,18 @@ $syncHash.settingVarMapClick.Add_Click({
     $syncHash.settingVarFlyout.IsOpen = $true
 })
 
+$syncHash.settingModMapClick.Add_Click({ 
+    Set-ChildWindow -SyncHash $syncHash -Title "Module Definitions" -Panel settingModDataGrid -HideCloseButton -Background Flyout
+    $syncHash.settingVarFlyout.IsOpen = $true
+})
+
+
+
 $syncHash.settingOUMapClick.Add_Click({ 
     Set-ChildWindow -SyncHash $syncHash -Title "Search Base Definitions" -Panel settingOUDataGrid -HideCloseButton -Background Flyout
     $syncHash.settingGeneralFlyout.IsOpen = $true
 })
+
 
 
 $syncHash.settingQueryMapClick.Add_Click({ 
@@ -481,7 +566,7 @@ $syncHash.settingMiscClick.Add_Click({
 #region FlyOutExits
 $syncHash.settingLoggingCompFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Login Log Paths" -SkipContentPaneReset -SkipResize })
 
-$syncHash.settingVarFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Resources and Variables" -SkipContentPaneReset -SkipResize })
+$syncHash.settingResourceFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Resources and Variables" -SkipContentPaneReset -SkipResize })
 
 $syncHash.settingLoggingUserFlyoutExit.Add_Click({ Reset-ChildWindow -SyncHash $syncHash -Title "Login Log Paths" -SkipContentPaneReset -SkipResize })
 
@@ -513,9 +598,15 @@ $syncHash.settingContextFlyoutExit.Add_Click({
 
 })
 
-$syncHash.settingFlyoutExit.Add_Click( {
-    if ($syncHash.settingUserPropContent.Visibility -eq 'Visible') { $type = 'User' }
-    else { $type = 'Computer' }
+$syncHash.settingFlyoutExit.Add_Click({
+    if ($syncHash.settingUserPropContent.Visibility -eq 'Visible') {
+        $type = 'User'
+        Set-CurrentPane -SyncHash $SyncHash -Panel 'settingUserPropContent'
+    }
+    else { 
+        $type = 'Computer' 
+        Set-CurrentPane -SyncHash $SyncHash -Panel 'settingCompPropContent'
+    }
 
     Reset-ChildWindow -SyncHash $syncHash -Title "$type Property Mappings" -SkipContentPaneReset -SkipResize -SkipDataGridReset
 
@@ -603,8 +694,17 @@ $syncHash.HistoryToggle.Add_MouseLeftButtonUp({
 $syncHash.tabControl.ItemsSource = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
 
 $syncHash.tabMenu.add_Loaded( {
+
+###SEARCHHERE#
+
+
+
+
+
+
     if ($sysCheckHash.sysChecks.RSModule -eq $true) {
-        Start-RSJob -Name menuLoad -ArgumentList $syncHash, $savedConfig, $sysCheckHash -ModulesToImport C:\TempData\internal\internal.psm1 -ScriptBlock {        
+
+        Start-RSJob -Name menuLoad -ArgumentList $syncHash, $savedConfig, $sysCheckHash -ModulesToImport $configHash.modList -ScriptBlock {        
             Param($syncHash, $savedConfig, $sysCheckHash)
 
             do {} until ($sysCheckHash.checkComplete)
@@ -775,7 +875,7 @@ $syncHash.tabMenu.add_Loaded( {
                                             }
     
                                
-                                            Start-RSJob -Name threadedAction -ArgumentList $rsCmd, $queryHash, $b, $configHash -ModulesToImport  C:\TempData\internal\internal.psm1 -ScriptBlock {
+                                            Start-RSJob -Name threadedAction -ArgumentList $rsCmd, $queryHash, $b, $configHash -ModulesToImport $configHash.modList -ScriptBlock {
                                                 Param($rsCmd, $queryHash, $b, $configHash)
                                                         
                                                 Start-Sleep -Milliseconds 500
@@ -1119,7 +1219,7 @@ $syncHash.tabMenu.add_Loaded( {
                             snackBar       = $syncHash.SnackMsg.MessageQueue
                         }
 
-                        Start-RSJob -ArgumentList $rsCmd, $syncHash, $configHash -ModulesToImport C:\TempData\internal\internal.psm1 -ScriptBlock {
+                        Start-RSJob -ArgumentList $rsCmd, $syncHash, $configHash -ModulesToImport $configHash.modList -ScriptBlock {
                             Param($rsCmd, $syncHash, $configHash)
                             
                             $user = $rsCmd.user
@@ -1573,7 +1673,7 @@ $syncHash.SearchBox.add_KeyDown( {
 
 $syncHash.itemToolDialogConfirmButton.Add_Click({
 
-    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash, $syncHash.Window -ModulesToImport C:\TempData\internal\internal.psm1  -ScriptBlock {
+    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash, $syncHash.Window -ModulesToImport $configHash.modList -ScriptBlock {
     Param($queue, $toolID, $configHash, $queryHash, $window)
 
         $item = ($configHash.currentTabItem).toLower()
@@ -1810,6 +1910,38 @@ $syncHAsh.toolsLogDialogClose.Add_Click({
 
 }
 
+[System.Windows.RoutedEventHandler]$eventonModDataGrid = {
+    $button = $_.OriginalSource
+
+    if ($button.Name -match "settingModClearItem") { 
+        $id = $syncHash.settingModDataGrid.SelectedItem.VarNum 
+        $configHash.modConfig.RemoveAt($syncHash.settingModDataGrid.SelectedItem.modNum - 1)
+        $configHash.modConfig | Where-Object { $_.modNum -gt $id } | ForEach-Object { $_.modNum = $_.modNum - 1 }
+        $syncHash.settingModDataGrid.Items.Refresh()
+       
+
+    }
+
+  
+
+    elseif ($button.Name -match "settingModPathSelect") {
+
+        $modPath = Get-PSModulePath
+
+        $syncHash.settingModDataGrid.SelectedItem.ModPath = $modPath.fileName
+        
+        if ([string]::IsNullOrEmpty($syncHash.settingModDataGrid.SelectedItem.ModName)) { 
+            $syncHash.settingModDataGrid.SelectedItem.ModName = [io.path]::GetFileNameWithoutExtension($modPath.SafeFileName)
+        }
+
+        $syncHash.settingModDataGrid.Items.Refresh() 
+
+    }
+
+
+}
+
+
 [System.Windows.RoutedEventHandler]$eventonCommandGridDataGrid = {
     $button = $_.OriginalSource
 
@@ -1902,7 +2034,7 @@ $syncHash.settingNameDialog.Add_DialogClosing( {
         $type = 'Comp'
     }
 
-    if ($button.Name -match 'settingActionComboBox' -or $button.Name -match "settingEdit") {
+    if ($button.Name -match "settingEdit") {
 
         $switchVal = (($configHash.($type + 'PropList')[$syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1]).ActionName)
         switch -wildcard ($switchVal) {
@@ -1915,6 +2047,7 @@ $syncHash.settingNameDialog.Add_DialogClosing( {
             }
 
             { $switchVal -notmatch "actionable" } { 
+               
                 $syncHash.settingFlyoutTranslate.IsExpanded = $true
                 $syncHash.settingFlyoutAction1.Visibility = "Collapsed"
                 $syncHash.settingFlyoutAction2.Visibility = "Collapsed"
@@ -1937,28 +2070,33 @@ $syncHash.settingNameDialog.Add_DialogClosing( {
                 }
             }
 
-            { $switchVal -match "actionable" } {                  
+            { $switchVal -match "actionable" } {
+                                
                 $syncHash.settingFlyoutAction1.Visibility = "Visible"
                 $syncHash.settingFlyoutAction2.Visibility = "Visible"
                 if ($syncHash.settingFlyoutTranslate.Visibility -eq "Collapsed") {
                     $syncHash.settingFlyoutAction1.IsExpanded = $true
                 }
             }
+
+            
         }
 
-        if ($button.Name -match "settingEdit") {
- 
-            $syncHash.settingResultBox.Text = ($configHash.($type + 'PropList')[$syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1]).Result
-            $syncHash.settingBox1Icon.ItemsSource = $configHash.buttonGlyphs
-            $syncHash.settingBox2Icon.ItemsSource = $configHash.buttonGlyphs
-            $syncHash.settingUserPropDefFlyout.Height = $syncHash.settingChildHeight.ActualHeight
+        if ($type -eq 'User') { Set-CurrentPane -SyncHash $syncHash -Pane 'settingPropUserDefine'}
+        else { Set-CurrentPane -SyncHash $syncHash -Pane 'settingPropCompDefine'}
+            
+        
+        $syncHash.settingResultBox.Text = ($configHash.($type + 'PropList')[$syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1]).Result
+        $syncHash.settingBox1Icon.ItemsSource = $configHash.buttonGlyphs
+        $syncHash.settingBox2Icon.ItemsSource = $configHash.buttonGlyphs
+        $syncHash.settingUserPropDefFlyout.Height = $syncHash.settingChildHeight.ActualHeight
            
-            $syncHash.settingUserPropDefFlyout.IsOpen = $true
-            $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingUserPropDefFlyout.Background.Color).ToString()
-            $syncHash.settingChildWindow.Title = "Define Button ($type)"
-            $syncHash.settingChildWindow.ShowCloseButton = $false
+        $syncHash.settingUserPropDefFlyout.IsOpen = $true
+        $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingUserPropDefFlyout.Background.Color).ToString()
+        $syncHash.settingChildWindow.Title = "Define Button ($type)"
+        $syncHash.settingChildWindow.ShowCloseButton = $false
 
-        }
+        
 
     }
 
@@ -2062,7 +2200,7 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click({
     $rsParam = @{
         Name = 'CommandGridAllRun'
         ArgumentList = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd)
-        ModulesToImport = 'C:\TempData\internal\internal.psm1'
+        ModulesToImport = $configHash.modList
     }
 
     Start-RSJob @rsParam -ScriptBlock {
@@ -2136,7 +2274,7 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click({
         $rsParam = @{
             Name = 'CommandGridRun'
             ArgumentList = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd)
-            ModulesToImport = 'C:\TempData\internal\internal.psm1'
+            ModulesToImport = $configHash.modList
         }
 
         Start-RSJob @rsParam -ScriptBlock {
@@ -2585,7 +2723,7 @@ $syncHash.toolsLogDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEve
 $syncHash.itemToolCommandGridDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $EventonObjectToolCommandGridGrid)
 $syncHash.settingCommandGridDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonCommandGridDataGrid)
 $syncHash.settingCommandGridDataGrid.AddHandler([System.Windows.Controls.TextBox]::PreviewMouseLeftButtonUpEvent, $eventonCommandGridDataGrid)
-
+$syncHash.settingModDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonModDataGrid)
 
 
 
@@ -2602,8 +2740,11 @@ $syncHash.settingInfoDialogClose.Add_Click({
 })
 
 $syncHash.settingInfoDialogOpen.Add_Click({
+    
     if ($syncHash.settingInfoDialog.IsOpen) { $syncHash.settingInfoDialog.IsOpen = $false }
     else { $syncHash.settingInfoDialog.IsOpen = $true }
+    Set-InfoPaneContent -SyncHash $syncHash -SettingInfoHash $settingInfoHash
+
 })
 
 

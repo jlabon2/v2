@@ -55,6 +55,24 @@
                 </Style.Triggers>
             </Style>
 
+            <Style x:Key="varNameRun" TargetType="Run">
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentBase}" />
+                <Setter Property="FontSize" Value="12.5" />
+            </Style>
+
+            <Style x:Key="varDescRun" TargetType="Run">
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="Foreground" Value="GhostWhite" />
+                <Setter Property="FontSize" Value="11" />
+            </Style>
+
+
+
+
+
+
+
             <Style
                 x:Key="flyoutItemBox"
                 BasedOn="{StaticResource MaterialDesignTextBox}"
@@ -997,7 +1015,7 @@
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Error}" Value="null">
                                                                     <Setter Property="Content" Value="" />
-                                                                    <Setter Property="ToolTip" Value="" />
+                                                                    <Setter Property="ToolTip" Value="No error" />
                                                                     <Setter Property="md:RippleAssist.IsDisabled" Value="False" />
                                                                     <Setter Property="Cursor" Value="Arrow" />
                                                                     <Setter Property="Foreground" Value="LightGreen" />
@@ -2150,7 +2168,7 @@
                             <md:DialogHost.DialogContent>
 
                                 <Border Background="{StaticResource MahApps.Brushes.Window.Background}" BorderThickness="0">
-                                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <Grid HorizontalAlignment="Left" VerticalAlignment="Stretch">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="15" />
                                             <RowDefinition Height="*" />
@@ -2173,26 +2191,45 @@
                                             Foreground="Silver"
                                             IsTabStop="False"
                                             Style="{StaticResource MaterialDesignIconButton}" />
-                                        <HeaderedContentControl
+                                        <ScrollViewer
                                             Grid.Row="1"
-                                            Margin="10,0,0,0"
-                                            FontFamily="{StaticResource MaterialDesignFont}"
-                                            Header="Help" />
-                                        <RichTextBox
-                                            Grid.Row="1"
-                                            Margin="7.5"
-                                            md:HintAssist.IsFloating="True"
-                                            md:TextFieldAssist.DecorationVisibility="Hidden"
-                                            md:TextFieldAssist.NewSpecHighlightingEnabled="False"
-                                            md:TextFieldAssist.UnderlineBrush="Transparent"
-                                            BorderThickness="0"
-                                            Cursor="Arrow"
-                                            FontFamily="Segoe Light UI"
-                                            ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                            SelectionBrush="Transparent"
-                                            Style="{StaticResource MaterialDesignRichTextBox}">
-                                            <FlowDocument Name="childHelpText" />
-                                        </RichTextBox>
+                                            HorizontalScrollBarVisibility="Disabled"
+                                            VerticalScrollBarVisibility="Auto">
+                                            <StackPanel Name="infoPaneContent" Margin="10,15,10,0">
+                                                <Controls:MetroHeader
+                                                    Content="Information"
+                                                    FontSize="14"
+                                                    FontWeight="SemiBold"
+                                                    Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
+                                                <TextBlock
+                                                    Name="settingInfoBody"
+                                                    Width="{Binding ElementName=settingInfoDialog, Path=Width, UpdateSourceTrigger=PropertyChanged}"
+                                                    Margin="0,0,0,15"
+                                                    md:TextFieldAssist.DecorationVisibility="Hidden"
+                                                    md:TextFieldAssist.NewSpecHighlightingEnabled="False"
+                                                    md:TextFieldAssist.UnderlineBrush="Transparent"
+                                                    Cursor="Arrow"
+                                                    FontFamily="Segoe Light UI"
+                                                    FontSize="12"
+                                                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                    Text="{Binding Body}"
+                                                    TextWrapping="Wrap" />
+                                                <StackPanel Name="infoPaneVars">
+                                                    <Controls:MetroHeader
+                                                        Name="infoPaneVarHeader"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
+
+
+                                                    <FlowDocumentScrollViewer
+                                                        Margin="-17.5,-17.5,0,0"
+                                                        HorizontalScrollBarVisibility="Disabled"
+                                                        VerticalScrollBarVisibility="Disabled">
+                                                        <FlowDocument Name="infoPaneVarList" TextAlignment="Left" />
+                                                    </FlowDocumentScrollViewer>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </ScrollViewer>
                                     </Grid>
                                 </Border>
                             </md:DialogHost.DialogContent>
@@ -3354,7 +3391,7 @@
                                     </md:DialogHost.DialogContent>
                                 </md:DialogHost>
                                 <Button
-                                    Name="settingVarFlyoutExit"
+                                    Name="settingResourceFlyoutExit"
                                     Grid.Row="0"
                                     Grid.RowSpan="2"
                                     Grid.Column="1"
@@ -3423,7 +3460,8 @@
                                         ScrollViewer.CanContentScroll="False"
                                         SelectionMode="Single"
                                         Style="{StaticResource MahApps.Styles.DataGrid}"
-                                        VerticalScrollBarVisibility="Auto">
+                                        VerticalScrollBarVisibility="Auto"
+                                        Visibility="Collapsed">
 
                                         <DataGrid.Columns>
                                             <DataGridTemplateColumn Header="  ID" HeaderStyle="{StaticResource datagridColumnNoTab}">
@@ -3524,11 +3562,134 @@
                                             </DataGridTemplateColumn>
                                         </DataGrid.Columns>
                                     </DataGrid>
+                                    <DataGrid
+                                        Name="settingModDataGrid"
+                                        Height="260"
+                                        Margin="0,-22.5,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Top"
+                                        HorizontalContentAlignment="Stretch"
+                                        Panel.ZIndex="0"
+                                        md:ListViewAssist.ListViewItemPadding="1"
+                                        AutoGenerateColumns="False"
+                                        Background="#FF363333"
+                                        BorderBrush="Transparent"
+                                        BorderThickness="0"
+                                        CanUserAddRows="False"
+                                        CanUserDeleteRows="False"
+                                        CanUserResizeColumns="False"
+                                        CanUserResizeRows="False"
+                                        CanUserSortColumns="True"
+                                        CellStyle="{StaticResource dataGridCellLog}"
+                                        Focusable="True"
+                                        KeyboardNavigation.TabNavigation="Contained"
+                                        RowHeaderWidth="0"
+                                        RowHeight="40"
+                                        RowStyle="{StaticResource dataGridRowStyleLog}"
+                                        ScrollViewer.CanContentScroll="False"
+                                        SelectionMode="Single"
+                                        Style="{StaticResource MahApps.Styles.DataGrid}"
+                                        VerticalScrollBarVisibility="Auto"
+                                        Visibility="Collapsed">
+
+                                        <DataGrid.Columns>
+                                            <DataGridTemplateColumn Header="  ID" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+                                                        <Label
+                                                            Margin="-8,-12,-8,-12"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalContentAlignment="Center"
+                                                            Background="Transparent"
+                                                            Content="{Binding ModNum}" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Header="  NAME" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+                                                        <TextBox
+                                                            x:Name="settingModName"
+                                                            Width="140"
+                                                            Height="20"
+                                                            Margin="-8,-12,-8,-12"
+                                                            Background="Transparent"
+                                                            BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}"
+                                                            BorderThickness=".5"
+                                                            IsEnabled="True"
+                                                            Style="{StaticResource customHeaderField}"
+                                                            Text="{Binding ModName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Header="  PATH" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+                                                        <TextBox
+                                                            x:Name="settingModPath"
+                                                            Width="260"
+                                                            Height="20"
+                                                            Margin="-8,-12,-8,-12"
+                                                            Background="Transparent"
+                                                            BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}"
+                                                            BorderThickness=".5"
+                                                            IsEnabled="True"
+                                                            Style="{StaticResource customHeaderField}"
+                                                            Text="{Binding ModPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Header="" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+                                                        <Button
+                                                            x:Name="settingModPathSelect"
+                                                            Width="40"
+                                                            Height="25"
+                                                            Margin="-8,-7,-8,-7"
+                                                            Padding="0"
+                                                            Content=""
+                                                            FontFamily="Segoe MDL2 Assets"
+                                                            FontSize="14" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Header="" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+                                                        <Button
+                                                            x:Name="settingModClearItem"
+                                                            Width="15"
+                                                            Height="15"
+                                                            Margin="-6,-7,0,-7"
+                                                            Padding="0"
+                                                            md:RippleAssist.IsCentered="True"
+                                                            md:RippleAssist.RippleOnTop="True"
+                                                            md:RippleAssist.RippleSizeMultiplier="5"
+                                                            Content=""
+                                                            FontFamily="Segoe MDL2 Assets"
+                                                            FontSize="14"
+                                                            Foreground="Silver"
+                                                            IsTabStop="False"
+                                                            Style="{StaticResource nameClear}" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
                                 </StackPanel>
+
                             </Grid>
                         </Controls:Flyout>
                         <Grid ShowGridLines="False">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="50" />
                                 <RowDefinition Height="50" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
@@ -3554,7 +3715,7 @@
                                         Margin="5,0,0,0"
                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                         Foreground="LightGray"
-                                        Text="Configure resources and vars to resource internally" />
+                                        Text="Configure variables for internal use" />
                                 </DockPanel>
 
                                 <Grid Grid.Column="2" ShowGridLines="False">
@@ -3565,6 +3726,48 @@
                                     </Grid.ColumnDefinitions>
                                     <Button
                                         x:Name="settingVarMapClick"
+                                        Grid.Column="1"
+                                        Margin="5,10,5,6"
+                                        VerticalAlignment="Top"
+                                        Content=""
+                                        FontFamily="Segoe MDL2 Assets"
+                                        FontSize="16"
+                                        Visibility="Visible" />
+                                </Grid>
+                            </Grid>
+                            <Grid
+                                Grid.Row="1"
+                                MinHeight="300"
+                                ShowGridLines="False">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="350" />
+                                    <ColumnDefinition Width="160" />
+
+                                    <ColumnDefinition Width="40" />
+                                    <ColumnDefinition Width="10" />
+                                </Grid.ColumnDefinitions>
+                                <DockPanel Grid.Column="1">
+                                    <Label
+                                        Content="Functions and Modules"
+                                        DockPanel.Dock="Top"
+                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                        FontSize="16" />
+                                    <TextBlock
+                                        Margin="5,0,0,0"
+                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
+                                        Foreground="LightGray"
+                                        Text="Configure modules and functions for internal use" />
+                                </DockPanel>
+
+                                <Grid Grid.Column="2" ShowGridLines="False">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="40" />
+                                        <ColumnDefinition Width="25" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button
+                                        x:Name="settingModMapClick"
                                         Grid.Column="1"
                                         Margin="5,10,5,6"
                                         VerticalAlignment="Top"
@@ -8208,16 +8411,12 @@
                                                                 Style="{StaticResource MaterialDesignFloatingHintDatePicker}" />
                                                         </DockPanel>
                                                         <Grid
-                                                            MaxWidth="1500"
-                                                            MaxHeight="1000"
                                                             Margin="50"
                                                             HorizontalAlignment="Stretch"
                                                             VerticalAlignment="Stretch"
                                                             DockPanel.Dock="Top">
                                                             <DataGrid
                                                                 Name="toolsLogDataGrid"
-                                                                MaxWidth="1500"
-                                                                MaxHeight="1000"
                                                                 Padding="0"
                                                                 HorizontalAlignment="Stretch"
                                                                 VerticalAlignment="Stretch"
@@ -8246,6 +8445,8 @@
                                                                 HorizontalScrollBarVisibility="Disabled"
                                                                 IsReadOnly="True"
                                                                 KeyboardNavigation.TabNavigation="Cycle"
+                                                                MaxColumnWidth="500"
+                                                                MinColumnWidth="100"
                                                                 RowHeaderWidth="0"
                                                                 RowHeight="30"
                                                                 RowStyle="{StaticResource dataGridRowStyleHistory}"
@@ -8370,7 +8571,7 @@
                                                                         </DataGridTemplateColumn.CellTemplate>
                                                                     </DataGridTemplateColumn>
                                                                     <DataGridTemplateColumn
-                                                                        Width="10*"
+                                                                        Width="15*"
                                                                         Header="Admin"
                                                                         HeaderStyle="{StaticResource historyGridHeader}">
 
@@ -8425,7 +8626,7 @@
                                                                                             <Style.Triggers>
                                                                                                 <DataTrigger Binding="{Binding Error}" Value="null">
                                                                                                     <Setter Property="Content" Value="" />
-                                                                                                    <Setter Property="ToolTip" Value="" />
+                                                                                                    <Setter Property="ToolTip" Value="No error" />
                                                                                                     <Setter Property="md:RippleAssist.IsDisabled" Value="False" />
                                                                                                     <Setter Property="Cursor" Value="Arrow" />
                                                                                                     <Setter Property="Foreground" Value="LightGreen" />
@@ -8898,7 +9099,7 @@
                                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                                         FontSize="14"
                                                         Foreground="LightGray"
-                                                        Text="Configure resources and vars to reference" />
+                                                        Text="Configure resources for use internally" />
                                                 </DockPanel>
                                                 <Button
                                                     x:Name="settingVarClick"
