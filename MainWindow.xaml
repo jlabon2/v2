@@ -273,43 +273,7 @@
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
-            <Style
-                x:Key="actiontoolbtn"
-                BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}"
-                TargetType="Button">
-                <Setter Property="Padding" Value="0" />
-                <Setter Property="BorderThickness" Value=".5" />
-                <Setter Property="Background" Value="#2a2a2a" />
-                <Setter Property="Content" Value="" />
-                <Setter Property="IsEnabled" Value="False" />
-                <Setter Property="BorderBrush" Value="{DynamicResource MahApps.Brushes.Button.Border}" />
-                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding toolType, Mode=OneWay}" Value="Execute">
-                        <Setter Property="Content" Value="" />
-                        <Setter Property="IsEnabled" Value="True" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding toolType, Mode=OneWay}" Value="Select">
-                        <Setter Property="Content" Value="" />
-                        <Setter Property="IsEnabled" Value="True" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding toolType, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" Value="Grid">
-                        <Setter Property="Content" Value="" />
-                        <Setter Property="IsEnabled" Value="True" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding toolType, Mode=OneWay}" Value="List">
-                        <Setter Property="Content" Value="" />
-                        <Setter Property="IsEnabled" Value="True" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding toolType, Mode=OneWay}" Value="CommandGrid">
-                        <Setter Property="Content" Value="" />
-                        <Setter Property="IsEnabled" Value="True" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding toolType}" Value="null">
-                        <Setter Property="IsEnabled" Value="False" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
+
             <Style
                 x:Key="actionbtnstatic"
                 BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}"
@@ -319,6 +283,43 @@
                 <Setter Property="Background" Value="#2a2a2a" />
                 <Setter Property="BorderBrush" Value="{DynamicResource MahApps.Brushes.Button.Border}" />
                 <Setter Property="FontFamily" Value="{StaticResource MahApps.Fonts.Family.Header}" />
+            </Style>
+            <Style
+                x:Key="actiontoolbtn"
+                BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}"
+                TargetType="Button">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="BorderThickness" Value=".5" />
+                <Setter Property="Background" Value="#2a2a2a" />
+                <Setter Property="Content" Value="" />
+                <Setter Property="IsEnabled" Value="False" />
+                <Setter Property="BorderBrush" Value="{StaticResource MahApps.Brushes.Button.Border}" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding toolType, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" Value="Execute">
+                        <Setter Property="Content" Value="" />
+                        <Setter Property="IsEnabled" Value="True" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding toolType, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" Value="Select">
+                        <Setter Property="Content" Value="" />
+                        <Setter Property="IsEnabled" Value="True" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding toolType, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" Value="Grid">
+                        <Setter Property="Content" Value="" />
+                        <Setter Property="IsEnabled" Value="True" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding toolType, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" Value="List">
+                        <Setter Property="Content" Value="" />
+                        <Setter Property="IsEnabled" Value="True" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding toolType, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" Value="CommandGrid">
+                        <Setter Property="Content" Value="" />
+                        <Setter Property="IsEnabled" Value="True" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding toolType}" Value="null">
+                        <Setter Property="IsEnabled" Value="False" />
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
             <Style
                 x:Key="upbtn"
@@ -581,7 +582,6 @@
             <Style x:Key="itemViewBox" TargetType="{x:Type Viewbox}">
                 <Setter Property="HorizontalAlignment" Value="Left" />
 
-                <Setter Property="MaxWidth" Value="180" />
                 <Setter Property="MaxHeight" Value="35" />
                 <Setter Property="MinWidth" Value="30" />
                 <Setter Property="MinHeight" Value="20" />
@@ -1539,22 +1539,9 @@
                                 Content=""
                                 DockPanel.Dock="Left"
                                 FontFamily="Segoe MDL2 Assets"
-                                FontSize="12">
-                                <Button.Style>
-                                    <Style BasedOn="{StaticResource actiontoolbtn}" TargetType="Button">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                        <Style.Triggers>
-
-                                            <DataTrigger Binding="{Binding ElementName=itemToolListSelectListBox, Path=SelectonMode}" Value="Single">
-                                                <Setter Property="Visibility" Value="Hidden" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding ElementName=itemToolListSelectListBox, Path=Items.Count}" Value="0">
-                                                <Setter Property="Visibility" Value="Hidden" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                                FontSize="12"
+                                IsEnabled="True"
+                                Visibility="Collapsed" />
                         </DockPanel>
                         <ListBox
                             Name="itemToolListSelectListBox"
@@ -1720,22 +1707,9 @@
                                 Content=""
                                 DockPanel.Dock="Left"
                                 FontFamily="Segoe MDL2 Assets"
-                                FontSize="12">
-                                <Button.Style>
-                                    <Style BasedOn="{StaticResource actiontoolbtn}" TargetType="Button">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                        <Style.Triggers>
-
-                                            <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=SelectonMode}" Value="Single">
-                                                <Setter Property="Visibility" Value="Hidden" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0">
-                                                <Setter Property="Visibility" Value="Hidden" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                                FontSize="12"
+                                IsEnabled="True"
+                                Visibility="Collapsed" />
                             <Border
                                 Name="itemToolImageBorder"
                                 Margin="10,22.5,0,0"
@@ -1941,7 +1915,7 @@
                                             <TextBox
                                                 Width="125"
                                                 Margin="0,-12,0,-12"
-                                                Padding="0"
+                                                Padding="0,2.5,0,2.5"
                                                 VerticalAlignment="Center"
                                                 HorizontalContentAlignment="Center"
                                                 Background="Transparent"
@@ -1953,6 +1927,7 @@
                                                 <TextBox.Style>
                                                     <Style BasedOn="{StaticResource gridTextItem}" TargetType="TextBox">
                                                         <Setter Property="Text" Value="{Binding Result}" />
+                                                        <Setter Property="Foreground" Value="WhiteSmoke" />
                                                         <Style.Triggers>
                                                             <Trigger Property="Tag" Value="True">
                                                                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />

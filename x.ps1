@@ -75,12 +75,14 @@ All script blocks must be validated using the 'Execute' button. This will only e
 The variables below can be referenced or manipulated within the scriptblocks.
 '@
             'Vars' = @{
-               'resultColor' = '- [Result Presentation] - Setting the resultColor will determine the color of the returned value. This uses all valid .NET brush names and HEX values.'
-                'result'     = '- [Result Presentation] - The actual value of the returned Active Directory property.'
-                'user'       = '- [Actionable Items] - The value of the current, queried user. Only populated on action buttons for user properties.'
-                'comp'       = '- [Actionable Items] - The value of the current, queried computer. Only populated on action buttons for computer properties.'
-                'propName'   = '- [Actionable Items] - The name of the property attached to the field.'
-                'prop'       = '- [Actionable Items] - The value of the queriedbproperty attached to the field.'
+               'resultColor [Result Presentation]' = 'Setting the resultColor will determine the color of the returned value. This uses all valid .NET brush names and HEX values.'
+                'result [Result Presentation]'     = 'The actual value of the returned Active Directory property.'
+                'user [Actionable Items]'          = 'The value of the current, queried user. Only populated on action buttons for user properties.'
+                'comp [Actionable Items]'          = 'The value of the current, queried computer. Only populated on action buttons for computer properties.'
+                'actionObject [Actionable Items] ' = 'General variable containing hte name of queried object (i.e. the user or computer)'               
+                'propName [Actionable Items]'      = 'The name of the property attached to the field. Not applicable to non-AD queries.'
+                'prop [Actionable Items]'          = 'The value of the queried property attached to the field.'
+
         }
     }
     'settingPropCompDefine' = [PSCustomObject]@{
@@ -123,7 +125,7 @@ $defaultList = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ig
 Set-ActionLog -ConfigHash $configHash
 
 $configHash.modConfig.modPath | ForEach-Object {$modList += $_}
-$configHash.modList = $modList
+$configHash.modList = $modList | Where-Object {[string]::IsNullOrWhiteSpace($_) -eq $false}
 
 # Add default values if they are missing
 @('MSRA','MSTSC') | Set-RTDefaults -ConfigHash $configHash
@@ -448,7 +450,7 @@ $syncHash.settingCommandGridAddClick.Add_Click({
 	   actionCmdValid = "null"
 	   queryCmdValid  = "null"
     })
-    
+ 
     $syncHash.settingCommandGridDataGrid.Items.Refresh()    
 
 })
@@ -790,7 +792,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                 }
 
                                                 $queryHash.($editObject).($configHash.($type + 'PropList')[$id - 1].PropName) = $changedValue
-                                                $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: SUCCESS on [$($($editObject).toLower())]")
+                                                Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName "EDIT" -SubjectName $editObject -Status Success
+                                               # $syncHash.SnackMsg.MessageQueue.Enqueue("[EDIT]: SUCCESS on [$($($editObject).toLower())]")
                                                 Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName Edit -SubjectName $editObject -SubjectType $type -ArrayList $configHash.actionLog 
                                             }
                                     
@@ -885,10 +888,13 @@ $syncHash.tabMenu.add_Loaded( {
 
                                                 $cmd = $rsCmd.propList.('actionCmd' + $b)
                                                 $type = $rsCmd.Type
-                                                $propName = $rsCmd.propList.PropName
+                                                $propName  = $rsCmd.propList.PropName
+                                                $fieldName = $rsCmd.propList.FieldName
                                             
                                                 New-Variable -Name $type -Value $rsCmd.actionObject
-                                                $prop = $queryHash.(Get-Variable -Name $type -ValueOnly).($propName)
+                                                
+                                                if ($PropName -ne 'Non-Ad Property') { $prop = $queryHash.$actionObject.$propName }
+                                                else { $prop = $queryHash.$actionObject.$fieldName } 
 
                                                 try {
                                                     Invoke-Expression -Command $cmd
@@ -906,12 +912,15 @@ $syncHash.tabMenu.add_Loaded( {
                                                                 $queryHash.($comp).($propName) = $result
                                                             }
                                                         }
-                                                        
+    
+
+
                                                         if ($queryHash.(Get-Variable -Name $type -ValueOnly).ActiveItem -eq $true) {  
                                                             if ($rsCmd.propList.ValidCmd) {
                                                                 $tranCmd = $rsCmd.propList.translationCmd
                                                                 $value = Invoke-Expression -Command $tranCmd
-                                                       
+                                                               
+                                                                    
                                                                 if ($resultColor) {
                                                                     $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.boxResources.($type[0] + 'box' + $rsCmd.id + "TextBox").Foreground = $resultColor })
                                                                 }
@@ -1224,7 +1233,8 @@ $syncHash.tabMenu.add_Loaded( {
                             
                             $user = $rsCmd.user
                             $comp = $rsCmd.comp
-                            
+                            $sessionID = $rsCmd.SessionID
+
                             $combinedString = "$($user.ToLower()) on $($comp.ToLower())"
                             $toolName = $rsCmd.buttonSettings.ActionName
                             
@@ -1437,14 +1447,20 @@ $syncHash.tabControl.add_SelectionChanged( {
                                 $result = ($queryHash[$currentTabItem]).(($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).PropName)
                                 $value = Invoke-Expression -Command (($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).TranslationCmd)
             
+
                                 if ($resultColor) {
                                     $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.($type[0] + 'box' + $i + "resources").($type[0] + 'box' + $i + "TextBox").Foreground = $resultColor })
-                
+               
                                 }
                             }
        
                             elseif (($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).PropName) {
                                 $value = ($queryHash[$currentTabItem]).(($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).PropName)
+                            }
+
+                            
+                            if  (($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).PropName -eq 'Non-Ad Property') {
+                                ($queryHash[$currentTabItem]) | Add-Member -Force -MemberType NoteProperty -Name (($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).FieldName) -Value $value
                             }
        
                             if ($null -notlike ($configHash.($type + 'propList') | Where-Object { $_.Field -eq $i }).PropName) {
@@ -1719,6 +1735,8 @@ $syncHash.itemToolDialog.Add_ClosingFinished({
     $syncHash.itemToolImageBorder.Visibility = "Collapsed"
     $syncHash.itemToolGridSelect.Visibility = "Collapsed"
     $syncHash.itemToolCommandGridPanel.Visibility = "Collapsed"
+    $syncHash.itemToolGridSelectAllButton.Visibility = "Collapsed"
+    $syncHash.itemToolListSelectAllButton.Visibility = "Collapsed"
 
 })
 
@@ -2219,6 +2237,8 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click({
                 $queryCmd  = ($configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig |
                     Where-Object {$_.actionCmdValid -eq 'True' -and $_.queryCmdValid -eq 'True'})[$gridItem.Index].queryCmd
                 
+                $result = $gridItem.result
+
                 Invoke-Expression $actionCmd
                 $result = (Invoke-Expression $queryCmd).ToString()
 
@@ -2267,6 +2287,7 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click({
         $rsCmd = @{
             cmdGridItemIndex   = $syncHash.itemToolCommandGridDataGrid.SelectedItem.Index
             cmdGridParentIndex = $syncHash.itemToolCommandGridDataGrid.SelectedItem.ParentToolIndex
+            result             = $syncHash.itemToolCommandGridDataGrid.SelectedItem.Result
             cmdGridItemName    = $syncHash.itemToolCommandGridDataGrid.SelectedItem.ItemName
             item = ($configHash.currentTabItem).toLower()
         }
@@ -2287,7 +2308,8 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click({
            $queryCmd  = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].queryCmd
            $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].SetName
 
-            try {                     
+            try {
+                $result = $rscmd.Result                     
                 Invoke-Expression $actionCmd
                 $result = (Invoke-Expression $queryCmd).ToString()
                 
@@ -2337,6 +2359,7 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click({
     if ($button.Name -match 'settingObjectToolsEdit') {
 
         if ($syncHash.settingObjectToolsPropGrid.SelectedItem.toolType -eq 'CommandGrid') {
+            $syncHash.settingCommandGridDataGrid.Visibility = "Visible"
             $syncHash.settingCommandGridDataGrid.ItemsSource = $syncHash.settingObjectToolsPropGrid.SelectedItem.toolCommandGridConfig
         }
        

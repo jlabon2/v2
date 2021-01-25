@@ -494,8 +494,7 @@ function Add-CustomItemBoxControls {
                 $colDef1.Width = "*"
 
                 $colDef2 = New-Object System.Windows.Controls.ColumnDefinition
-                $colDef2.Width = "Auto"
-                $colDef2.MaxWidth = "90"   
+                $colDef2.Width = "75"   
 
                 $syncHash.(($type + $i + 'resources')).($type + $i + 'Grid').ColumnDefinitions.Add($colDef1)
                 $syncHash.(($type + $i + 'resources')).($type + $i + 'Grid').ColumnDefinitions.Add($colDef2)
@@ -538,13 +537,43 @@ function Add-CustomToolControls {
     foreach ($tool in $configHash.objectToolConfig) {
         if ($tool.toolActionValid -or $tool.ToolType -eq 'CommandGrid') {
             switch ($tool.objectType) {
+
                 { $_ -match "Both|Comp" } { 
         
+          $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonContent') = New-Object System.Windows.Controls.StackPanel -Property  @{
+                    Name = $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonContent') 
+                    HorizontalAlignment = "Center"
+                    VerticalAlignment = "Center"
+                }
+
+                $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonGlyph')  = New-Object System.Windows.Controls.Label -Property  @{
+                    Content   = $tool.toolActionIcon
+                    FontFamily = 'Segoe MDL2 Assets'
+                    HorizontalAlignment = "Center"
+                    FontSize   = '28'
+
+                }
+                
+                $SyncHash.objectTools.('ctool' + $tool.ToolID + 'Label1')  = New-Object System.Windows.Controls.Label -Property  @{
+                    FontFamily = 'Segoe UI'
+                    FontSize   = '9.5'
+                     Margin     = "0,-8,0,0"
+                    HorizontalAlignment = "Center"
+                    Content    = $tool.ToolName
+
+                }
+              
+                            
+                
+                $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonGlyph'))
+                $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('ctool' + $tool.ToolID + 'Label1'))
+
+
                     $syncHash.objectTools.('ctool' + $tool.ToolID) = @{
                         ToolButton = New-Object System.Windows.Controls.Button -Property  @{
                             Style   = $syncHash.Window.FindResource('itemToolButton')
                             Name    = ('ctool' + $tool.ToolID)
-                            Content = $tool.toolActionIcon
+                            Content = $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonContent')
                             ToolTip = $tool.toolActionToolTip
                         }
                     }
@@ -553,12 +582,41 @@ function Add-CustomToolControls {
 
                 }
                 { $_ -match "Both|User" } { 
+
+                    $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonContent') = New-Object System.Windows.Controls.StackPanel -Property  @{
+                    Name = $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonContent') 
+                    HorizontalAlignment = "Center"
+                    VerticalAlignment = "Center"
+                }
+
+                $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonGlyph')  = New-Object System.Windows.Controls.Label -Property  @{
+                    Content   = $tool.toolActionIcon
+                    FontFamily = 'Segoe MDL2 Assets'
+                    HorizontalAlignment = "Center"
+                    FontSize   = '28'
+
+                }
+                
+                $SyncHash.objectTools.('utool' + $tool.ToolID + 'Label1')  = New-Object System.Windows.Controls.Label -Property  @{
+                    FontFamily = 'Segoe UI'
+                    FontSize   = '9.5'
+                     Margin     = "0,-8,0,0"
+                    HorizontalAlignment = "Center"
+                    Content    = $tool.ToolName
+
+                }
+                
+             
+                            
+                
+                $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonGlyph'))
+                $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('utool' + $tool.ToolID + 'Label1'))
         
                     $syncHash.objectTools.('utool' + $tool.ToolID) = @{
                         ToolButton = New-Object System.Windows.Controls.Button -Property  @{
                             Style   = $syncHash.Window.FindResource('itemToolButton')
                             Name    = ('utool' + $tool.ToolID)
-                            Content = $tool.toolActionIcon
+                            Content =  $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonContent')
                             ToolTip = $tool.toolActionToolTip
                         }
                     }
@@ -640,8 +698,8 @@ function Add-CustomToolControls {
                                 }
 
                                 else {
-                                    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $toolID, $configHash, $queryHash  -ScriptBlock {
-                                        Param($queue, $toolID, $configHash, $queryHash)
+                                    Start-RSJob -Name ItemTool -ArgumentList $syncHash.snackMsg.MessageQueue, $toolID, $configHash, $queryHash, $SyncHash.Window -ModulesToImport $configHash.modList -ScriptBlock {
+                                        Param($queue, $toolID, $configHash, $queryHash, $window)
 
                                         $item = ($configHash.currentTabItem).toLower()
                                         $targetType = $queryHash[$item].ObjectClass -replace 'c','C' -replace 'u','U'
@@ -651,23 +709,23 @@ function Add-CustomToolControls {
                                             Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
                                             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                                                $queue.Enqueue("[$toolName]: Success - Standalone tool complete")
-                                               Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -ArrayList $configHash.actionLog 
+                                               Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -ArrayList $configHash.actionLog 
                                             }
 
                                             else {
                                                 $queue.Enqueue("[$toolName]: Success on [$item] - tool complete")
-                                                 Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -SubjectType $targetType -ActionName $toolName -ArrayList $configHash.actionLog 
+                                                 Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -SubjectType $targetType -ActionName $toolName -ArrayList $configHash.actionLog 
                                             }
                                            
                                         }
                                         catch {
                                             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                                                $queue.Enqueue("[$toolName]: Fail - Standalone tool incomplete") 
-                                                Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+                                                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
                                             }
                                             else {
                                                 $queue.Enqueue("[$toolName]: Fail on [$item] - tool incomplete")
-                                                Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -SubjectType $targetType -ArrayList $configHash.actionLog -Error $_
+                                                Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -SubjectType $targetType -ArrayList $configHash.actionLog -Error $_
                                             }
                                         }
                                     }
@@ -687,10 +745,17 @@ function Add-CustomToolControls {
                                 if ($configHash.objectToolConfig[$toolId - 1].toolActionSelectAD -eq $false) {
                                 
                                     $syncHash.ItemToolADSelectionPanel.Visibility = "Collapsed"
+
+                                    $rsVars = @{
+                                        target = $configHash.currentTabItem
+                                        targetType = $queryHash[$configHash.currentTabItem].ObjectClass
+                                    }
+
+                                    Start-RSJob -Name PopulateListboxNoAD -ArgumentList $configHash, $syncHash, $toolID, $rsVars -ScriptBlock {
+                                        param($configHash, $syncHash, $toolID, $rsVars)
                             
-                                    Start-RSJob -Name PopulateListboxNoAD -ArgumentList $configHash, $syncHash, $toolID -ScriptBlock {
-                                        param($configHash, $syncHash, $toolID)
-                            
+                                        $target = $rsVars.target
+                                        $targetType = $rsVars.targetType
                                                       
                                         $syncHash.Window.Dispatcher.Invoke([Action] {                                    
                                                 $syncHash.itemTooListBoxProgress.Visibility = "Visible"
@@ -717,10 +782,12 @@ function Add-CustomToolControls {
                             
                                 if ($configHash.objectToolConfig[$toolId - 1].toolActionMultiSelect) {
                                     $syncHash.itemToolListSelectListBox.SelectionMode = "Multiple"
+                                    $syncHash.itemToolListSelectAllButton.Visibility = "Visible"
                                 }
 
                                 else {
                                     $syncHash.itemToolListSelectListBox.SelectionMode = "Single"
+                                    $syncHash.itemToolListSelectAllButton.Visibility = "Collapsed"
                                 }  
 
                      
@@ -736,14 +803,20 @@ function Add-CustomToolControls {
                                 $syncHash.itemToolGridSelect.Visibility = "Visible"
                                 $syncHash.itemToolDialog.IsOpen = $true  
 
+                                $rsVars = @{
+                                    target = $configHash.currentTabItem
+                                    targetType = $queryHash[$configHash.currentTabItem].ObjectClass
+                                }
+
                                 if ($configHash.objectToolConfig[$toolId - 1].toolActionSelectAD -eq $false) {
                                 
                                     $syncHash.itemToolGridADSelectionPanel.Visibility = "Collapsed"
                             
-                                    Start-RSJob -Name PopulateGridbox -FunctionsToImport Get-Icon -ArgumentList $configHash, $syncHash, $toolID -ScriptBlock {
-                                        param($configHash, $syncHash, $toolID)
+                                    Start-RSJob -Name PopulateGridbox -FunctionsToImport Get-Icon -ArgumentList $configHash, $syncHash, $toolID, $rsVars -ScriptBlock {
+                                        param($configHash, $syncHash, $toolID, $rsVars)
 
-                            
+                                        $target = $rsVars.target
+                                        $targetType = $rsVars.targetType
                                                       
                                         $syncHash.Window.Dispatcher.Invoke([Action] {                                  
                                                 $syncHash.itemToolGridProgress.Visibility = "Visible"
@@ -772,10 +845,12 @@ function Add-CustomToolControls {
                             
                                 if ($configHash.objectToolConfig[$toolId - 1].toolActionMultiSelect) {
                                     $syncHash.itemToolGridItemsGrid.SelectionMode = "Extended"
+                                    $syncHash.itemToolGridSelectAllButton.Visibility = "Visible"
                                 }
 
                                 else {
                                     $syncHash.itemToolGridItemsGrid.SelectionMode = "Single"
+                                    $syncHash.itemToolGridSelectAllButton.Visibility = "Collapsed"
                                 }  
 
                             }
@@ -2003,6 +2078,7 @@ function Find-ObjectLogs {
                                     DeviceLocation    = $hostLocation
                             
                                     Type              = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
+                                                        $comp = $log.ComputerName
                                                         if ($r -le 0) { "Computer" }
                                                         else {
                                                             if (($configHash.nameMapList | Sort-Object -Property ID -Descending)[$r].Condition) {
@@ -2021,9 +2097,9 @@ function Find-ObjectLogs {
                                     ClientIPAddress   = if ($clientOnline) { $clientOnline.IPV4Address };
                             
                                     ClientType        = for ($r = ($ruleCount - 1); $r -ge 0; $r--) {
-                                                        $comp = $_.ClientName
+                                                        $comp = $log.ClientName
                                                         if ($r -eq 0) { "Computer" }
-                                                        else {
+                                                        else {                                                          
                                                             if ($configHash.nameMapList[$r].Condition) {
                                                             try {
                                                                 if (Invoke-Expression $configHash.nameMapList[$r].Condition) {
