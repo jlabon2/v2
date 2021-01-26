@@ -630,6 +630,19 @@
             </Style>
 
             <Style
+                x:Key="adHocConfirmButton"
+                BasedOn="{StaticResource itemButton}"
+                TargetType="{x:Type Button}">
+                <Setter Property="Width" Value="60" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="Margin" Value="0,0,15,10" />
+                <Setter Property="Content" Value="Confirm" />
+                <Setter Property="FontFamily" Value="Segoe UI Light" />
+            </Style>
+
+
+
+            <Style
                 x:Key="itemToolButton"
                 BasedOn="{StaticResource itemButton}"
                 TargetType="{x:Type Button}">
@@ -1389,7 +1402,51 @@
                 </DockPanel>
             </simpleChildWindow:ChildWindow>
 
-
+            <simpleChildWindow:ChildWindow
+                x:Name="adHocConfirmWindow"
+                Title="Confirm"
+                AllowMove="True"
+                BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
+                BorderThickness="1"
+                CloseByEscape="False"
+                EnableDropShadow="False"
+                IsOpen="False"
+                ShowCloseButton="False">
+                <simpleChildWindow:ChildWindow.OverlayBrush>
+                    <SolidColorBrush Color="Transparent" />
+                </simpleChildWindow:ChildWindow.OverlayBrush>
+                <DockPanel>
+                    <DockPanel
+                        Name="adHocDialogConfirm"
+                        Width="250"
+                        HorizontalAlignment="Center"
+                        Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
+                        Visibility="Visible">
+                        <TextBlock
+                            Name="adHocConfirmText"
+                            Margin="10"
+                            HorizontalAlignment="Center"
+                            DockPanel.Dock="Top"
+                            Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                            TextWrapping="Wrap">
+                            Continue with action?
+                        </TextBlock>
+                        <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
+                            <StackPanel Name="adHocConfirmPanel" DockPanel.Dock="Left" />
+                            <Button
+                                Name="adHocConfirm"
+                                DockPanel.Dock="Left"
+                                Style="{StaticResource adHocConfirmButton}" />
+                            <Button
+                                Name="adHocConfirmCancel"
+                                Margin="15,0,0,10"
+                                Content="Cancel"
+                                DockPanel.Dock="Right"
+                                Style="{StaticResource adHocConfirmButton}" />
+                        </DockPanel>
+                    </DockPanel>
+                </DockPanel>
+            </simpleChildWindow:ChildWindow>
 
             <simpleChildWindow:ChildWindow
                 x:Name="itemToolDialog"
@@ -2143,7 +2200,7 @@
                             <md:DialogHost.DialogContent>
 
                                 <Border Background="{StaticResource MahApps.Brushes.Window.Background}" BorderThickness="0">
-                                    <Grid HorizontalAlignment="Left" VerticalAlignment="Stretch">
+                                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="15" />
                                             <RowDefinition Height="*" />
@@ -2157,6 +2214,7 @@
                                             Padding="0"
                                             HorizontalAlignment="Right"
                                             VerticalAlignment="Top"
+                                            Panel.ZIndex="5"
                                             md:RippleAssist.IsCentered="True"
                                             md:RippleAssist.RippleOnTop="True"
                                             md:RippleAssist.RippleSizeMultiplier="5"
@@ -2167,9 +2225,15 @@
                                             IsTabStop="False"
                                             Style="{StaticResource MaterialDesignIconButton}" />
                                         <ScrollViewer
-                                            Grid.Row="1"
+                                            Grid.Row="0"
+                                            Grid.RowSpan="2"
                                             HorizontalScrollBarVisibility="Disabled"
                                             VerticalScrollBarVisibility="Auto">
+                                            <ScrollViewer.Resources>
+                                                <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
+                                                    <Setter Property="Margin" Value="0,22.5,2.5,5" />
+                                                </Style>
+                                            </ScrollViewer.Resources>
                                             <StackPanel Name="infoPaneContent" Margin="10,15,10,0">
                                                 <Controls:MetroHeader
                                                     Content="Information"
@@ -3106,17 +3170,37 @@
                                             HorizontalAlignment="Left"
                                             VerticalAlignment="Top"
                                             DockPanel.Dock="Left" />
+                                        <StackPanel Margin="10,-18,45,0" DockPanel.Dock="Right">
+                                            <Label
+                                                Content="Applicable systems"
+                                                FontSize="8"
+                                                Foreground="{StaticResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
 
-                                        <ListBox
-                                            Name="settingRemoteListTypes"
-                                            Margin="40,0,45,0"
-                                            BorderBrush="Silver"
-                                            BorderThickness="1"
-                                            DisplayMemberPath="Name"
-                                            DockPanel.Dock="Right"
-                                            ItemsSource="{Binding TypeList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            SelectionMode="Multiple"
-                                            Style="{StaticResource MaterialDesignListBox}" />
+                                            <ListBox
+                                                Name="settingRemoteListTypes"
+                                                Height="65"
+                                                Margin="0,-4,0,0"
+                                                md:ListViewAssist.ListViewItemPadding="0"
+                                                Background="#FF363333"
+                                                BorderBrush="Silver"
+                                                BorderThickness="1"
+                                                DisplayMemberPath="Name"
+                                                FontFamily="Segoe UI Light"
+                                                FontSize="10"
+                                                ItemsSource="{Binding TypeList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                ScrollViewer.CanContentScroll="True"
+                                                ScrollViewer.VerticalScrollBarVisibility="Visible"
+                                                SelectionMode="Multiple"
+                                                Style="{StaticResource MaterialDesignListBox}">
+                                                <ListBox.ItemContainerStyle>
+                                                    <Style BasedOn="{StaticResource MaterialDesignListBoxItem}" TargetType="ListBoxItem">
+                                                        <Setter Property="Padding" Value="2,0,2,0" />
+                                                        <Setter Property="Background" Value="Transparent" />
+                                                    </Style>
+                                                </ListBox.ItemContainerStyle>
+
+                                            </ListBox>
+                                        </StackPanel>
                                     </DockPanel>
                                     <Button
                                         Name="settingRemoteFlyoutExit"
@@ -3220,10 +3304,10 @@
                                 Name="settingrtAddClick"
                                 Grid.Row="0"
                                 Grid.Column="4"
-                                Grid.ColumnSpan="1"
-                                Width="25"
-                                Height="25"
-                                Margin="0,0,10,0"
+                                Grid.ColumnSpan="2"
+                                Width="20"
+                                Height="20"
+                                Margin="0,-1,4,0"
                                 Padding="0"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Bottom"
@@ -3231,7 +3315,8 @@
                                 Content=""
                                 DockPanel.Dock="Right"
                                 FontFamily="Segoe MDL2 Assets"
-                                FontSize="10"
+                                FontSize="7"
+                                FontWeight="ExtraBold"
                                 ToolTip="Add custom tool"
                                 Visibility="Visible" />
                             <ScrollViewer
@@ -3239,15 +3324,22 @@
                                 Grid.Column="1"
                                 Grid.ColumnSpan="5"
                                 Height="{Binding ElementName=settingRTContent, Path=ActualHeight}"
-                                Margin="0,0,4,0"
-                                HorizontalAlignment="Stretch">
+                                Margin="0,0,0,0"
+                                HorizontalAlignment="Stretch"
+                                HorizontalScrollBarVisibility="Disabled"
+                                VerticalScrollBarVisibility="Visible">
+                                <ScrollViewer.Resources>
+                                    <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
+                                        <Setter Property="Margin" Value="0,6,6,25" />
+                                    </Style>
+                                </ScrollViewer.Resources>
                                 <StackPanel
                                     Name="settingRTPanel"
                                     Width="{Binding ElementName=settingRTContent, Path=ActualWidth}"
                                     HorizontalAlignment="Left"
                                     CanVerticallyScroll="True">
 
-                                    <DockPanel Margin="0,0,15,0" HorizontalAlignment="Stretch">
+                                    <DockPanel Margin="0,0,25,0" HorizontalAlignment="Stretch">
                                         <StackPanel>
                                             <Label Content="RDP Client (MSTSC.exe)" Style="{StaticResource rtHeader}" />
                                             <TextBlock Style="{StaticResource rtSubHeader}" Text="Enables connections to clients using RDP" />
@@ -3260,7 +3352,7 @@
                                             Visibility="Visible" />
                                     </DockPanel>
 
-                                    <DockPanel Margin="0,0,15,0" HorizontalAlignment="Stretch">
+                                    <DockPanel Margin="0,0,25,0" HorizontalAlignment="Stretch">
                                         <StackPanel>
                                             <Label Content="MS Remote Assist (MSRA.exe)" Style="{StaticResource rtHeader}" />
                                             <TextBlock Style="{StaticResource rtSubHeader}" Text="Enables session sharing for remote assistance" />
