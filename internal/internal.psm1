@@ -700,7 +700,9 @@ function Add-CustomToolControls {
                                 $SyncHash.itemToolDialog.IsOpen = $true 
                         
 
-                                if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD -eq $false) {
+                            if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD -eq $false -and
+                                $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU -eq $false -and
+                                $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom -eq $false) {
                                     $SyncHash.ItemToolADSelectionPanel.Visibility = 'Collapsed'
 
                                     $rsVars = @{
@@ -742,6 +744,11 @@ function Add-CustomToolControls {
                                 }
 
                                 else {
+                                  
+                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD) {  $SyncHash.itemToolADSelectionButton.Tag = 'AD' }
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU) {  $SyncHash.itemToolADSelectionButton.Tag = 'OU' }
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {  $SyncHash.itemToolADSelectionButton.Tag = 'Custom' }
+
                                     $SyncHash.ItemToolADSelectionPanel.Visibility = 'Visible'                            
                                     $SyncHash.itemToolListSelect.Visibility = 'Visible'
                                     $SyncHash.itemToolListSelectListBox.ItemsSource = $null
@@ -761,7 +768,8 @@ function Add-CustomToolControls {
                                     targetType = $queryHash[$ConfigHash.currentTabItem].ObjectClass
                                 }
 
-                                if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD -eq $false) {
+                                if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD -eq $false -and $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU -eq $false -and $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom -eq $false) {
+
                                     $SyncHash.itemToolGridADSelectionPanel.Visibility = 'Collapsed'
                             
                                     $rsArgs = @{
@@ -799,6 +807,10 @@ function Add-CustomToolControls {
                                 }
 
                                 else {
+                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD) {  $SyncHash.itemToolGridADSelectionButton.Tag = 'AD' }
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU) {  $SyncHash.itemToolGridADSelectionButton.Tag = 'OU' }
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {  $SyncHash.itemToolGridADSelectionButton.Tag = 'Custom' }
+                                                                     
                                     $SyncHash.ItemToolADSelectionPanel.Visibility = 'Visible'                           
                                     $SyncHash.itemToolGridSelect.Visibility = 'Visible'
                                     $SyncHash.itemToolGridItemsGrid.ItemsSource = $null
@@ -1285,8 +1297,14 @@ function Set-ADItemBox {
         [Parameter(Mandatory)][hashtable]$SyncHash,
         [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
 
-    if ($Control -eq 'Grid') { $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag }
-    else { $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag }
+    if ($Control -eq 'Grid') { 
+        $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag
+        $syncHash.itemToolGridItemText.Content = "AD Object Selection:" 
+    }
+    else { 
+        $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag 
+        $syncHash.itemToolItemText.Content = "AD Object Selection:"
+    }
 
     $rsArgs = @{
         Name            = ('populate' + $Control)
@@ -1305,6 +1323,182 @@ function Set-ADItemBox {
 
         $selectedObject = (Select-ADObject -Type All -MultiSelect $false).FetchedAttributes -replace '$'
      
+        $SyncHash.Window.Dispatcher.Invoke([Action] {
+                if ($Control -eq 'ListBox') { 
+                    $SyncHash.itemToolADSelectedItem.Content = $selectedObject
+                    $SyncHash.itemTooListBoxProgress.Visibility = 'Visible'
+                }
+                else {
+                    $SyncHash.itemToolGridADSelectedItem.Content = $selectedObject
+                    $SyncHash.itemToolGridProgress.Visibility = 'Visible'
+                }
+            })
+     
+        $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+        
+        if ($Control -eq 'ListBox') { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
+        else { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add($_) } }
+
+        $SyncHash.Window.Dispatcher.Invoke([Action] {
+                if ($Control -eq 'ListBox') {
+                    $SyncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list
+                    $SyncHash.itemTooListBoxProgress.Visibility = 'Collapsed'
+
+                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect) {
+                        $SyncHash.itemToolListSelectListBox.SelectionMode = 'Multiple'
+                        $SyncHash.itemToolListSelectAllButton.Visibility = 'Visible'
+                    }
+
+                    else {
+                        $SyncHash.itemToolListSelectListBox.SelectionMode = 'Single'
+                        $SyncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
+                    }
+
+                }
+                else { 
+                    $SyncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list 
+                    $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
+
+                       if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect) {
+                        $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Extended'
+                        $SyncHash.itemToolGridSelectAllButton.Visibility = 'Visible'
+                    }
+
+                    else {
+                        $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Single'
+                        $SyncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
+                    }
+
+
+                }
+            })
+    }      
+}
+
+function Set-OUItemBox {
+    param(
+        [Parameter(Mandatory)][hashtable]$ConfigHash, 
+        [Parameter(Mandatory)][hashtable]$SyncHash,
+        [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
+
+    if ($Control -eq 'Grid') { 
+        $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag 
+        $syncHash.itemToolGridItemText.Content = "OU Selection:"
+    }
+    else { 
+        $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag 
+         $syncHash.itemToolItemText.Content = "OU Selection:"
+    }
+
+    $rsArgs = @{
+        Name            = ('populate' + $Control)
+        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control)
+        ModulesToImport = $configHash.modList
+    }
+
+    Start-RSJob @rsArgs -ScriptBlock {
+        param($ConfigHash, $SyncHash, $toolID, $Control)
+
+
+        $SyncHash.Window.Dispatcher.Invoke([Action] {
+                if ($Control -eq 'ListBox') { $SyncHash.itemToolListSelectListBox.ItemsSource = $null  }
+                else { $SyncHash.itemToolGridItemsGrid.ItemsSource = $null  }
+            })
+
+        $selectedObject = (Choose-ADOrganizationalUnit -HideNewOUFeature $true).DistinguishedName
+     
+        $SyncHash.Window.Dispatcher.Invoke([Action] {
+                if ($Control -eq 'ListBox') { 
+                    $SyncHash.itemToolADSelectedItem.Content = $selectedObject
+                    $SyncHash.itemTooListBoxProgress.Visibility = 'Visible'
+                }
+                else {
+                    $SyncHash.itemToolGridADSelectedItem.Content = $selectedObject
+                    $SyncHash.itemToolGridProgress.Visibility = 'Visible'
+                }
+            })
+     
+        $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+        
+        if ($Control -eq 'ListBox') { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
+        else { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add($_) } }
+
+        $SyncHash.Window.Dispatcher.Invoke([Action] {
+                if ($Control -eq 'ListBox') {
+                    $SyncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list
+                    $SyncHash.itemTooListBoxProgress.Visibility = 'Collapsed'
+
+                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect) {
+                        $SyncHash.itemToolListSelectListBox.SelectionMode = 'Multiple'
+                        $SyncHash.itemToolListSelectAllButton.Visibility = 'Visible'
+                    }
+
+                    else {
+                        $SyncHash.itemToolListSelectListBox.SelectionMode = 'Single'
+                        $SyncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
+                    }
+
+                }
+                else { 
+                    $SyncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list 
+                    $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
+
+                       if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect) {
+                        $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Extended'
+                        $SyncHash.itemToolGridSelectAllButton.Visibility = 'Visible'
+                    }
+
+                    else {
+                        $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Single'
+                        $SyncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
+                    }
+
+
+                }
+            })
+    }      
+}
+
+function Set-CustomItemBox {
+    param(
+        [Parameter(Mandatory)][hashtable]$ConfigHash, 
+        [Parameter(Mandatory)][hashtable]$SyncHash,
+        [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
+
+    if ($Control -eq 'Grid') { 
+        $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag 
+        $syncHash.itemToolGridItemText.Content = "Custom Item Selection:"   
+    }
+    else {
+        $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag 
+        $syncHash.itemToolItemText.Content = "Custom Item Selection:" 
+    }
+
+    $rsArgs = @{
+        Name            = ('populate' + $Control)
+        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control)
+        ModulesToImport = $configHash.modList
+    }
+
+    Start-RSJob @rsArgs -ScriptBlock {
+        param($ConfigHash, $SyncHash, $toolID, $Control)
+
+        $configHash.customDialogClosed = $false
+        $configHash.customInput = $null
+
+        $SyncHash.Window.Dispatcher.Invoke([Action] {
+                if ($Control -eq 'ListBox') { $SyncHash.itemToolListSelectListBox.ItemsSource = $null }
+                else { $SyncHash.itemToolGridItemsGrid.ItemsSource = $null }
+                $syncHash.itemToolCustomContent.Text = $null
+                $syncHash.itemToolCustomDialog.IsOpen = $true
+            })
+
+        
+        do { } until ($configHash.customDialogClosed -eq $true)
+        
+        $SyncHash.Window.Dispatcher.Invoke([Action] {$syncHash.itemToolCustomDialog.IsOpen = $false})
+        $selectedObject = $configHash.customInput
+
         $SyncHash.Window.Dispatcher.Invoke([Action] {
                 if ($Control -eq 'ListBox') { 
                     $SyncHash.itemToolADSelectedItem.Content = $selectedObject
@@ -1504,6 +1698,7 @@ function Set-StaticRTContent {
         [ValidateSet('MSRA', 'MSTSC')][string]$tool
     )
 
+    $syncHash.settingChildWindow.ShowCloseButton = $false
     Set-CurrentPane -SyncHash $syncHash -Panel "rtConfigFlyout"
 
     $SyncHash.settingRtExeSelect.Visibility = 'Hidden'
@@ -1513,6 +1708,7 @@ function Set-StaticRTContent {
     $SyncHash.rtDock.DataContext = $ConfigHash.rtConfig.$tool
     $SyncHash.settingRemoteFlyout.isOpen = $true
     Set-ChildWindow -SyncHash $SyncHash -Title "Remote Tool Options ($tool)" -Background Flyout
+    $syncHash.settingChildWindow.ShowCloseButton = $false
 }
 
 function Get-RTExePath {
@@ -1618,7 +1814,7 @@ function New-CustomRTConfigControls {
 
     $SyncHash.customRt.$rtID.ConfigureButton.Add_Click( {
             param([Parameter(Mandatory)][Object]$sender)
-            $rtID = $sender.Name
+            $rtID = $sender.Name           
             $SyncHash.settingRtExeSelect.Visibility = 'Visible'
             $SyncHash.settingRtPathSelect.Visibility = 'Visible'
             $SyncHash.rtSettingRequiresOnline.Visibility = 'Visible'
@@ -1626,6 +1822,7 @@ function New-CustomRTConfigControls {
             $SyncHash.rtDock.DataContext = $ConfigHash.rtConfig.$rtID
             Set-ChildWindow -SyncHash $SyncHash -Title "Remote Tool Options ($rtID)" -Background Flyout
             $SyncHash.settingRemoteFlyout.isOpen = $true
+            $syncHash.settingChildWindow.ShowCloseButton = $false
         })
 }
 

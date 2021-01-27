@@ -1457,127 +1457,227 @@
                 CloseByEscape="True"
                 EnableDropShadow="False"
                 IsOpen="False"
-                ShowCloseButton="True">
+                ShowCloseButton="False">
                 <simpleChildWindow:ChildWindow.OverlayBrush>
                     <SolidColorBrush Color="Transparent" />
                 </simpleChildWindow:ChildWindow.OverlayBrush>
-                <DockPanel>
-                    <DockPanel
-                        Name="itemToolDialogConfirm"
-                        Width="250"
-                        HorizontalAlignment="Center"
-                        Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Collapsed">
-                        <TextBlock
-                            Name="itemToolDialogConfirmText"
-                            Margin="10"
-                            HorizontalAlignment="Center"
-                            DockPanel.Dock="Top"
-                            Style="{StaticResource MaterialDesignCaptionTextBlock}"
-                            TextWrapping="Wrap">
-                            <Run Text="Run " />
-                            <Run
-                                Name="itemToolDialogConfirmActionName"
-                                Foreground="{StaticResource MahApps.Brushes.AccentBase}"
-                                Text="ACTIONNAME" />
-                            <Run Text=" on " />
-                            <Run
-                                Name="itemToolDialogConfirmObjectName"
-                                Foreground="{StaticResource MahApps.Brushes.AccentBase}"
-                                Text="ITEMNAME" />
-                            <Run Text=" ?" />
-                        </TextBlock>
-                        <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
-                            <Button
-                                Name="itemToolDialogConfirmButton"
-                                Width="60"
-                                Height="40"
-                                Margin="0,0,15,10"
-                                Content="Confirm"
-                                DockPanel.Dock="Left"
-                                FontFamily="Segoe UI Light"
-                                Style="{StaticResource itemButton}" />
-                            <Button
-                                Name="itemToolDialogConfirmCancel"
-                                Width="60"
-                                Height="40"
-                                Margin="15,0,0,10"
-                                Content="Cancel"
-                                DockPanel.Dock="Right"
-                                FontFamily="Segoe UI Light"
-                                Style="{StaticResource itemButton}" />
-                        </DockPanel>
-                    </DockPanel>
-                    <DockPanel
-                        Name="itemToolListSelect"
-                        Width="350"
-                        HorizontalAlignment="Center"
-                        Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Collapsed">
 
-                        <TextBlock
-                            Name="itemToolListSelectText"
-                            Margin="10,10,10,35"
-                            HorizontalAlignment="Center"
-                            DockPanel.Dock="Top"
-                            FontFamily="Segoe UI Light"
-                            Style="{StaticResource MaterialDesignCaptionTextBlock}"
-                            Text="Select item"
-                            TextWrapping="Wrap" />
+                <Grid Name="itemToolDialogContent">
+                    <Controls:Flyout
+                        x:Name="itemToolCustomDialog"
+                        Width="{Binding ElementName=itemToolDialogContent, Path=ActualWidth}"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Panel.ZIndex="5"
+                        BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
+                        BorderThickness="1"
+                        CloseButtonVisibility="Collapsed"
+                        DockPanel.Dock="Top"
+                        IsOpen="False">
+
                         <DockPanel
-                            Name="ItemToolADSelectionPanel"
-                            Margin="0,0,0,15"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            DockPanel.Dock="Top">
-                            <StackPanel Margin="0,0,0,-25">
-                                <Label Margin="0,5,0,0" Content="AD Object Selection:" />
-                                <Label
-                                    Name="itemToolADSelectedItem"
-                                    Margin="15,-5,0,0"
-                                    Content=""
-                                    FontSize="10"
-                                    Foreground="{StaticResource MahApps.Brushes.Accent}" />
-                            </StackPanel>
+                            Margin="0,-50,0,0"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center">
+                            <Label
+                                HorizontalAlignment="Center"
+                                Content="Paste or insert required content to proceed"
+                                DockPanel.Dock="Top" />
+                            <TextBox
+                                Name="itemToolCustomContent"
+                                Width="225"
+                                Height="25"
+                                Padding="-5"
+                                DockPanel.Dock="Top"
+                                FontSize="10"
+                                Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}" />
                             <Button
-                                Name="ItemToolADSelectionButton"
-                                Width="35"
-                                Height="35"
-                                Margin="10,6,0,0"
-                                Content=""
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="18"
-                                IsEnabled="True"
-                                Style="{StaticResource actiontoolbtn}" />
+                                Name="itemToolCustomConfirm"
+                                Width="60"
+                                Height="40"
+                                Margin="0,10,0,0"
+                                Content="Confirm"
+                                DockPanel.Dock="Top"
+                                FontFamily="Segoe UI Light"
+                                Style="{StaticResource itemButton}" />
+                        </DockPanel>
+
+                    </Controls:Flyout>
+                    <DockPanel>
+
+                        <DockPanel
+                            Name="itemToolDialogConfirm"
+                            Width="250"
+                            HorizontalAlignment="Center"
+                            Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
+                            Visibility="Collapsed">
+                            <TextBlock
+                                Name="itemToolDialogConfirmText"
+                                Margin="10"
+                                HorizontalAlignment="Center"
+                                DockPanel.Dock="Top"
+                                Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                                TextWrapping="Wrap">
+                                <Run Text="Run " />
+                                <Run
+                                    Name="itemToolDialogConfirmActionName"
+                                    Foreground="{StaticResource MahApps.Brushes.AccentBase}"
+                                    Text="ACTIONNAME" />
+                                <Run Text=" on " />
+                                <Run
+                                    Name="itemToolDialogConfirmObjectName"
+                                    Foreground="{StaticResource MahApps.Brushes.AccentBase}"
+                                    Text="ITEMNAME" />
+                                <Run Text=" ?" />
+                            </TextBlock>
+                            <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
+                                <Button
+                                    Name="itemToolDialogConfirmButton"
+                                    Width="60"
+                                    Height="40"
+                                    Margin="0,0,15,10"
+                                    Content="Confirm"
+                                    DockPanel.Dock="Left"
+                                    FontFamily="Segoe UI Light"
+                                    Style="{StaticResource itemButton}" />
+                                <Button
+                                    Name="itemToolDialogConfirmCancel"
+                                    Width="60"
+                                    Height="40"
+                                    Margin="15,0,0,10"
+                                    Content="Cancel"
+                                    DockPanel.Dock="Right"
+                                    FontFamily="Segoe UI Light"
+                                    Style="{StaticResource itemButton}" />
+                            </DockPanel>
                         </DockPanel>
                         <DockPanel
-                            Margin="15,-15,15,35"
+                            Name="itemToolListSelect"
+                            Width="350"
                             HorizontalAlignment="Center"
-                            DockPanel.Dock="Top">
-                            <ProgressBar
-                                Name="itemTooListBoxProgress"
-                                Width="175"
-                                Margin="40,0,0,0"
-                                IsIndeterminate="True"
-                                Style="{StaticResource MaterialDesignLinearProgressBar}"
-                                Visibility="Collapsed" />
-                            <TextBox
-                                Name="itemToolListSearchBox"
-                                Width="150"
-                                Height="45"
-                                VerticalContentAlignment="Center"
-                                Controls:TextBoxHelper.ClearTextButton="True"
-                                md:HintAssist.Foreground="White"
-                                md:HintAssist.Hint="Search"
-                                DockPanel.Dock="Left"
-                                FontSize="12">
-                                <TextBox.Style>
-                                    <Style BasedOn="{StaticResource MaterialDesignFloatingHintTextBox}" TargetType="TextBox">
+                            Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
+                            Visibility="Collapsed">
+
+                            <TextBlock
+                                Name="itemToolListSelectText"
+                                Margin="10,10,10,35"
+                                HorizontalAlignment="Center"
+                                DockPanel.Dock="Top"
+                                FontFamily="Segoe UI Light"
+                                Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                                Text="Select item"
+                                TextWrapping="Wrap" />
+                            <DockPanel
+                                Name="ItemToolADSelectionPanel"
+                                Margin="0,0,0,15"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                DockPanel.Dock="Top">
+                                <StackPanel Margin="0,0,0,-25">
+                                    <Label
+                                        Name="itemToolItemText"
+                                        Margin="0,5,0,0"
+                                        Content="AD Object Selection:" />
+                                    <Label
+                                        Name="itemToolADSelectedItem"
+                                        Margin="15,-5,0,0"
+                                        Content=""
+                                        FontSize="10"
+                                        Foreground="{StaticResource MahApps.Brushes.Accent}" />
+                                </StackPanel>
+                                <Button
+                                    Name="ItemToolADSelectionButton"
+                                    Width="35"
+                                    Height="35"
+                                    Margin="10,6,0,0"
+                                    Content=""
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="18"
+                                    IsEnabled="True"
+                                    Style="{StaticResource actiontoolbtn}" />
+                            </DockPanel>
+                            <DockPanel
+                                Margin="15,-15,15,35"
+                                HorizontalAlignment="Center"
+                                DockPanel.Dock="Top">
+                                <ProgressBar
+                                    Name="itemTooListBoxProgress"
+                                    Width="175"
+                                    Margin="40,20,0,0"
+                                    IsIndeterminate="True"
+                                    Style="{StaticResource MaterialDesignLinearProgressBar}"
+                                    Visibility="Collapsed" />
+                                <TextBox
+                                    Name="itemToolListSearchBox"
+                                    Width="150"
+                                    Height="45"
+                                    VerticalContentAlignment="Center"
+                                    Controls:TextBoxHelper.ClearTextButton="True"
+                                    md:HintAssist.Foreground="White"
+                                    md:HintAssist.Hint="Search"
+                                    DockPanel.Dock="Left"
+                                    FontSize="12">
+                                    <TextBox.Style>
+                                        <Style BasedOn="{StaticResource MaterialDesignFloatingHintTextBox}" TargetType="TextBox">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding ElementName=itemToolListSearchBox, Path=Text.Length}" Value="0" />
+                                                        <Condition Binding="{Binding ElementName=itemToolListSelectListBox, Path=Items.Count}" Value="0" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <MultiDataTrigger.Setters>
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </MultiDataTrigger.Setters>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                                <Button
+                                    Name="itemToolListSelectAllButton"
+                                    Width="25"
+                                    Height="25"
+                                    Margin="10,22.5,0,0"
+                                    Content=""
+                                    DockPanel.Dock="Left"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="12"
+                                    IsEnabled="True"
+                                    Visibility="Collapsed" />
+                            </DockPanel>
+                            <ListBox
+                                Name="itemToolListSelectListBox"
+                                Width="300"
+                                Height="300"
+                                Margin="15,-25,15,15"
+                                BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
+                                BorderThickness="1"
+                                DockPanel.Dock="Top"
+                                ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox
+                                            Foreground="White"
+                                            IsChecked="{Binding Path=IsSelected, RelativeSource={RelativeSource AncestorLevel=1, AncestorType={x:Type ListBoxItem}, Mode=FindAncestor}}"
+                                            IsThreeState="False"
+                                            Style="{StaticResource MaterialDesignAccentCheckBox}">
+                                            <CheckBox.Content>
+                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                    <Label Content="{Binding Name}" />
+                                                </Viewbox>
+                                            </CheckBox.Content>
+                                        </CheckBox>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.Style>
+                                    <Style BasedOn="{StaticResource MaterialDesignListBox}" TargetType="ListBox">
                                         <Setter Property="Visibility" Value="Visible" />
                                         <Style.Triggers>
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ElementName=itemToolListSearchBox, Path=Text.Length}" Value="0" />
+                                                    <Condition Binding="{Binding ElementName=itemToolListSearchBox, Path=Visibility}" Value="Collapsed" />
                                                     <Condition Binding="{Binding ElementName=itemToolListSelectListBox, Path=Items.Count}" Value="0" />
                                                 </MultiDataTrigger.Conditions>
                                                 <MultiDataTrigger.Setters>
@@ -1586,166 +1686,192 @@
                                             </MultiDataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </TextBox.Style>
-                            </TextBox>
-                            <Button
-                                Name="itemToolListSelectAllButton"
-                                Width="25"
-                                Height="25"
-                                Margin="10,22.5,0,0"
-                                Content=""
-                                DockPanel.Dock="Left"
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="12"
-                                IsEnabled="True"
-                                Visibility="Collapsed" />
+                                </ListBox.Style>
+                            </ListBox>
+
+                            <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
+                                <Button
+                                    Name="itemToolListSelectConfirmButton"
+                                    Width="60"
+                                    Height="40"
+                                    Margin="0,0,15,10"
+                                    Content="Start"
+                                    DockPanel.Dock="Left"
+                                    FontFamily="Segoe UI Light">
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource itemButton}" TargetType="Button">
+                                            <Setter Property="IsEnabled" Value="True" />
+                                            <Style.Triggers>
+
+                                                <DataTrigger Binding="{Binding ElementName=itemToolListSelectListBox, Path=SelectedItems.Count}" Value="0">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button
+                                    Name="itemToolListSelectConfirmCancel"
+                                    Width="60"
+                                    Height="40"
+                                    Margin="15,0,0,10"
+                                    Content="Cancel"
+                                    DockPanel.Dock="Right"
+                                    FontFamily="Segoe UI Light"
+                                    Style="{StaticResource itemButton}" />
+                            </DockPanel>
                         </DockPanel>
-                        <ListBox
-                            Name="itemToolListSelectListBox"
-                            Width="300"
-                            Height="300"
-                            Margin="15,-25,15,15"
-                            BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
-                            BorderThickness="1"
-                            DockPanel.Dock="Top"
-                            ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <DockPanel
+                            Name="itemToolGridSelect"
+                            MinWidth="300"
+                            MaxWidth="750"
+                            HorizontalAlignment="Stretch"
+                            Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
+                            Visibility="Collapsed">
 
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <CheckBox
-                                        Foreground="White"
-                                        IsChecked="{Binding Path=IsSelected, RelativeSource={RelativeSource AncestorLevel=1, AncestorType={x:Type ListBoxItem}, Mode=FindAncestor}}"
-                                        IsThreeState="False"
-                                        Style="{StaticResource MaterialDesignAccentCheckBox}">
-                                        <CheckBox.Content>
-                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                <Label Content="{Binding Name}" />
-                                            </Viewbox>
-                                        </CheckBox.Content>
-                                    </CheckBox>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                            <ListBox.Style>
-                                <Style BasedOn="{StaticResource MaterialDesignListBox}" TargetType="ListBox">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding ElementName=itemToolListSearchBox, Path=Visibility}" Value="Collapsed" />
-                                                <Condition Binding="{Binding ElementName=itemToolListSelectListBox, Path=Items.Count}" Value="0" />
-                                            </MultiDataTrigger.Conditions>
-                                            <MultiDataTrigger.Setters>
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </MultiDataTrigger.Setters>
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ListBox.Style>
-                        </ListBox>
-
-                        <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
-                            <Button
-                                Name="itemToolListSelectConfirmButton"
-                                Width="60"
-                                Height="40"
-                                Margin="0,0,15,10"
-                                Content="Start"
-                                DockPanel.Dock="Left"
-                                FontFamily="Segoe UI Light">
-                                <Button.Style>
-                                    <Style BasedOn="{StaticResource itemButton}" TargetType="Button">
-                                        <Setter Property="IsEnabled" Value="True" />
-                                        <Style.Triggers>
-
-                                            <DataTrigger Binding="{Binding ElementName=itemToolListSelectListBox, Path=SelectedItems.Count}" Value="0">
-                                                <Setter Property="IsEnabled" Value="False" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button
-                                Name="itemToolListSelectConfirmCancel"
-                                Width="60"
-                                Height="40"
-                                Margin="15,0,0,10"
-                                Content="Cancel"
-                                DockPanel.Dock="Right"
+                            <TextBlock
+                                Name="itemToolGridSelectText"
+                                Margin="10,10,10,35"
+                                HorizontalAlignment="Center"
+                                DockPanel.Dock="Top"
                                 FontFamily="Segoe UI Light"
-                                Style="{StaticResource itemButton}" />
-                        </DockPanel>
-                    </DockPanel>
-                    <DockPanel
-                        Name="itemToolGridSelect"
-                        MinWidth="300"
-                        MaxWidth="750"
-                        HorizontalAlignment="Stretch"
-                        Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Collapsed">
+                                Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                                Text="Select item"
+                                TextWrapping="Wrap" />
+                            <DockPanel
+                                Name="itemToolGridADSelectionPanel"
+                                Margin="0,0,0,15"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                DockPanel.Dock="Top">
+                                <StackPanel Margin="0,0,0,-25">
+                                    <Label
+                                        Name="itemToolGridItemText"
+                                        Margin="0,5,0,0"
+                                        Content="AD Object Selection:" />
+                                    <Label
+                                        Name="itemToolGridADSelectedItem"
+                                        Margin="15,-5,0,0"
+                                        Content=""
+                                        FontSize="10"
+                                        Foreground="{StaticResource MahApps.Brushes.Accent}" />
+                                </StackPanel>
+                                <Button
+                                    Name="itemToolGridADSelectionButton"
+                                    Width="35"
+                                    Height="35"
+                                    Margin="10,6,0,0"
+                                    Content=""
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="18"
+                                    IsEnabled="True"
+                                    Style="{StaticResource actiontoolbtn}" />
+                            </DockPanel>
+                            <DockPanel
+                                Margin="15,-15,15,35"
+                                HorizontalAlignment="Center"
+                                DockPanel.Dock="Top">
+                                <ProgressBar
+                                    Name="itemToolGridProgress"
+                                    Width="175"
+                                    Margin="40,20,0,0"
+                                    IsIndeterminate="True"
+                                    Style="{StaticResource MaterialDesignLinearProgressBar}"
+                                    Visibility="Collapsed" />
+                                <TextBox
+                                    Name="itemToolGridSearchBox"
+                                    Width="150"
+                                    Height="45"
+                                    VerticalContentAlignment="Center"
+                                    Controls:TextBoxHelper.ClearTextButton="True"
+                                    md:HintAssist.Foreground="White"
+                                    md:HintAssist.Hint="Search"
+                                    DockPanel.Dock="Left"
+                                    FontSize="12">
+                                    <TextBox.Style>
+                                        <Style BasedOn="{StaticResource MaterialDesignFloatingHintTextBox}" TargetType="TextBox">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding ElementName=itemToolGridSearchBox, Path=Text.Length}" Value="0" />
+                                                        <Condition Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <MultiDataTrigger.Setters>
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </MultiDataTrigger.Setters>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                                <Button
+                                    Name="itemToolGridSelectAllButton"
+                                    Width="25"
+                                    Height="25"
+                                    Margin="10,22.5,0,0"
+                                    Content=""
+                                    DockPanel.Dock="Left"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="12"
+                                    IsEnabled="True"
+                                    Visibility="Collapsed" />
+                                <Border
+                                    Name="itemToolImageBorder"
+                                    Margin="10,22.5,0,0"
+                                    BorderBrush="{StaticResource MahApps.Brushes.Accent}"
+                                    BorderThickness="1"
+                                    DockPanel.Dock="Left"
+                                    Visibility="Collapsed">
 
-                        <TextBlock
-                            Name="itemToolGridSelectText"
-                            Margin="10,10,10,35"
-                            HorizontalAlignment="Center"
-                            DockPanel.Dock="Top"
-                            FontFamily="Segoe UI Light"
-                            Style="{StaticResource MaterialDesignCaptionTextBlock}"
-                            Text="Select item"
-                            TextWrapping="Wrap" />
-                        <DockPanel
-                            Name="itemToolGridADSelectionPanel"
-                            Margin="0,0,0,15"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            DockPanel.Dock="Top">
-                            <StackPanel Margin="0,0,0,-25">
-                                <Label Margin="0,5,0,0" Content="AD Object Selection:" />
-                                <Label
-                                    Name="itemToolGridADSelectedItem"
-                                    Margin="15,-5,0,0"
-                                    Content=""
-                                    FontSize="10"
-                                    Foreground="{StaticResource MahApps.Brushes.Accent}" />
-                            </StackPanel>
-                            <Button
-                                Name="itemToolGridADSelectionButton"
-                                Width="35"
-                                Height="35"
-                                Margin="10,6,0,0"
-                                Content=""
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="18"
-                                IsEnabled="True"
-                                Style="{StaticResource actiontoolbtn}" />
-                        </DockPanel>
-                        <DockPanel
-                            Margin="15,-15,15,35"
-                            HorizontalAlignment="Center"
-                            DockPanel.Dock="Top">
-                            <ProgressBar
-                                Name="itemToolGridProgress"
-                                Width="175"
-                                Margin="40,0,0,0"
-                                IsIndeterminate="True"
-                                Style="{StaticResource MaterialDesignLinearProgressBar}"
-                                Visibility="Collapsed" />
-                            <TextBox
-                                Name="itemToolGridSearchBox"
-                                Width="150"
-                                Height="45"
-                                VerticalContentAlignment="Center"
-                                Controls:TextBoxHelper.ClearTextButton="True"
-                                md:HintAssist.Foreground="White"
-                                md:HintAssist.Hint="Search"
-                                DockPanel.Dock="Left"
-                                FontSize="12">
-                                <TextBox.Style>
-                                    <Style BasedOn="{StaticResource MaterialDesignFloatingHintTextBox}" TargetType="TextBox">
+                                    <Image
+                                        Name="itemToolImageSource"
+                                        Width="30"
+                                        Height="30" />
+                                </Border>
+                            </DockPanel>
+
+                            <DataGrid
+                                Name="itemToolGridItemsGrid"
+                                Height="315"
+                                MaxWidth="600"
+                                Margin="25,-5,25,15"
+                                Padding="0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top"
+                                HorizontalContentAlignment="Stretch"
+                                Panel.ZIndex="0"
+                                Controls:DataGridHelper.CellPadding="2"
+                                Controls:DataGridHelper.SelectionUnit="FullRow"
+                                AutoGenerateColumns="True"
+                                BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
+                                BorderThickness="1"
+                                CanUserAddRows="False"
+                                CanUserDeleteRows="False"
+                                CanUserResizeColumns="True"
+                                CellStyle="{StaticResource MahApps.Styles.DataGridCell}"
+                                ColumnHeaderStyle="{StaticResource MahApps.Styles.DataGridColumnHeader}"
+                                DockPanel.Dock="Top"
+                                Focusable="True"
+                                GridLinesVisibility="All"
+                                HorizontalScrollBarVisibility="Disabled"
+                                IsReadOnly="True"
+                                KeyboardNavigation.TabNavigation="Cycle"
+                                RowHeaderStyle="{StaticResource MaterialDesignDataGridRowHeader}"
+                                RowHeaderWidth="0"
+                                RowHeight="36"
+                                RowStyle="{StaticResource MahApps.Styles.DataGridRow}"
+                                ScrollViewer.CanContentScroll="False"
+                                SelectionMode="Single"
+                                SelectionUnit="FullRow"
+                                VerticalScrollBarVisibility="Auto">
+                                <DataGrid.Style>
+                                    <Style BasedOn="{StaticResource MaterialDesignDataGrid}" TargetType="DataGrid">
                                         <Setter Property="Visibility" Value="Visible" />
                                         <Style.Triggers>
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ElementName=itemToolGridSearchBox, Path=Text.Length}" Value="0" />
+                                                    <Condition Binding="{Binding ElementName=itemToolGridSearchBox, Path=Visibility}" Value="Collapsed" />
                                                     <Condition Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0" />
                                                 </MultiDataTrigger.Conditions>
                                                 <MultiDataTrigger.Setters>
@@ -1754,345 +1880,269 @@
                                             </MultiDataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </TextBox.Style>
-                            </TextBox>
-                            <Button
-                                Name="itemToolGridSelectAllButton"
-                                Width="25"
-                                Height="25"
-                                Margin="10,22.5,0,0"
-                                Content=""
-                                DockPanel.Dock="Left"
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="12"
-                                IsEnabled="True"
-                                Visibility="Collapsed" />
-                            <Border
-                                Name="itemToolImageBorder"
-                                Margin="10,22.5,0,0"
-                                BorderBrush="{StaticResource MahApps.Brushes.Accent}"
-                                BorderThickness="1"
-                                DockPanel.Dock="Left"
-                                Visibility="Collapsed">
+                                </DataGrid.Style>
+                            </DataGrid>
 
-                                <Image
-                                    Name="itemToolImageSource"
-                                    Width="30"
-                                    Height="30" />
-                            </Border>
+                            <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
+                                <Button
+                                    Name="itemToolGridSelectConfirmButton"
+                                    Width="60"
+                                    Height="40"
+                                    Margin="0,0,15,10"
+                                    Content="Start"
+                                    DockPanel.Dock="Left"
+                                    FontFamily="Segoe UI Light">
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource itemButton}" TargetType="Button">
+                                            <Setter Property="IsEnabled" Value="True" />
+                                            <Style.Triggers>
+
+                                                <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=SelectedItems.Count}" Value="0">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button
+                                    Name="itemToolGridSelectConfirmCancel"
+                                    Width="60"
+                                    Height="40"
+                                    Margin="15,0,0,10"
+                                    Content="Cancel"
+                                    DockPanel.Dock="Right"
+                                    FontFamily="Segoe UI Light"
+                                    Style="{StaticResource itemButton}" />
+                            </DockPanel>
                         </DockPanel>
 
-                        <DataGrid
-                            Name="itemToolGridItemsGrid"
-                            Height="315"
-                            MaxWidth="600"
-                            Margin="25,-5,25,15"
-                            Padding="0"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Top"
-                            HorizontalContentAlignment="Stretch"
-                            Panel.ZIndex="0"
-                            Controls:DataGridHelper.CellPadding="2"
-                            Controls:DataGridHelper.SelectionUnit="FullRow"
-                            AutoGenerateColumns="True"
-                            BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
-                            BorderThickness="1"
-                            CanUserAddRows="False"
-                            CanUserDeleteRows="False"
-                            CanUserResizeColumns="True"
-                            CellStyle="{StaticResource MahApps.Styles.DataGridCell}"
-                            ColumnHeaderStyle="{StaticResource MahApps.Styles.DataGridColumnHeader}"
-                            DockPanel.Dock="Top"
-                            Focusable="True"
-                            GridLinesVisibility="All"
-                            HorizontalScrollBarVisibility="Disabled"
-                            IsReadOnly="True"
-                            KeyboardNavigation.TabNavigation="Cycle"
-                            RowHeaderStyle="{StaticResource MaterialDesignDataGridRowHeader}"
-                            RowHeaderWidth="0"
-                            RowHeight="36"
-                            RowStyle="{StaticResource MahApps.Styles.DataGridRow}"
-                            ScrollViewer.CanContentScroll="False"
-                            SelectionMode="Single"
-                            SelectionUnit="FullRow"
-                            VerticalScrollBarVisibility="Auto">
-                            <DataGrid.Style>
-                                <Style BasedOn="{StaticResource MaterialDesignDataGrid}" TargetType="DataGrid">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding ElementName=itemToolGridSearchBox, Path=Visibility}" Value="Collapsed" />
-                                                <Condition Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0" />
-                                            </MultiDataTrigger.Conditions>
-                                            <MultiDataTrigger.Setters>
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </MultiDataTrigger.Setters>
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Style>
-                        </DataGrid>
-
-                        <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
-                            <Button
-                                Name="itemToolGridSelectConfirmButton"
-                                Width="60"
-                                Height="40"
-                                Margin="0,0,15,10"
-                                Content="Start"
-                                DockPanel.Dock="Left"
-                                FontFamily="Segoe UI Light">
-                                <Button.Style>
-                                    <Style BasedOn="{StaticResource itemButton}" TargetType="Button">
-                                        <Setter Property="IsEnabled" Value="True" />
-                                        <Style.Triggers>
-
-                                            <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=SelectedItems.Count}" Value="0">
-                                                <Setter Property="IsEnabled" Value="False" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button
-                                Name="itemToolGridSelectConfirmCancel"
-                                Width="60"
-                                Height="40"
-                                Margin="15,0,0,10"
-                                Content="Cancel"
-                                DockPanel.Dock="Right"
-                                FontFamily="Segoe UI Light"
-                                Style="{StaticResource itemButton}" />
-                        </DockPanel>
-                    </DockPanel>
-
-
-
-                    <DockPanel
-                        Name="itemToolCommandGridPanel"
-                        MinWidth="300"
-                        MaxWidth="750"
-                        HorizontalAlignment="Stretch"
-                        Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
-                        Visibility="Collapsed">
-                        <TextBlock
-                            Name="itemCommandGridText"
-                            Margin="10,10,10,15"
-                            HorizontalAlignment="Center"
-                            DockPanel.Dock="Top"
-                            FontFamily="Segoe UI Light"
-                            Style="{StaticResource MaterialDesignCaptionTextBlock}"
-                            Text="Select item"
-                            TextWrapping="Wrap" />
-                        <ProgressBar
-                            Name="itemCommandGridProgress"
-                            Width="175"
-                            Margin="0,0,0,15"
-                            DockPanel.Dock="Top"
-                            IsIndeterminate="True"
-                            Style="{StaticResource MaterialDesignLinearProgressBar}"
-                            Visibility="Collapsed" />
-
-                        <DataGrid
-                            Name="itemToolCommandGridDataGrid"
-                            Width="350"
-                            MaxHeight="200"
-                            Margin="10,0,10,10"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Top"
-                            HorizontalContentAlignment="Stretch"
-                            md:DataGridAssist.CellPadding="0"
-                            md:ListViewAssist.ListViewItemPadding="1"
-                            AutoGenerateColumns="False"
-                            Background="#FF363333"
-                            BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
-                            BorderThickness="1"
-                            CanUserAddRows="False"
-                            CanUserDeleteRows="False"
-                            CanUserResizeColumns="False"
-                            CanUserResizeRows="False"
-                            CanUserSortColumns="True"
-                            CellStyle="{StaticResource dataGridCellLog}"
-                            ColumnHeaderHeight="0"
-                            DockPanel.Dock="Top"
-                            Focusable="True"
-                            HorizontalScrollBarVisibility="Disabled"
-                            KeyboardNavigation.TabNavigation="Contained"
-                            RowHeaderWidth="0"
-                            RowHeight="40"
-                            RowStyle="{StaticResource dataGridRowStyle}"
-                            ScrollViewer.CanContentScroll="False"
-                            SelectionMode="Single"
-                            VerticalScrollBarVisibility="Auto">
-                            <DataGrid.Style>
-                                <Style BasedOn="{StaticResource MaterialDesignDataGrid}" TargetType="DataGrid">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding ElementName=itemToolCommandGridDataGrid, Path=Items.Count}" Value="0" />
-                                            </MultiDataTrigger.Conditions>
-                                            <MultiDataTrigger.Setters>
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </MultiDataTrigger.Setters>
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Style>
-                            <DataGrid.Columns>
-                                <DataGridTemplateColumn
-                                    Width="125"
-                                    Header=""
-                                    HeaderStyle="{StaticResource datagridColumnNoTab}">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-
-                                            <TextBox
-                                                Padding="0"
-                                                VerticalAlignment="Center"
-                                                Background="Transparent"
-                                                BorderBrush="Transparent"
-                                                BorderThickness="0"
-                                                Foreground="WhiteSmoke"
-                                                Style="{StaticResource gridTextItem}"
-                                                Text="{Binding ItemName}"
-                                                TextWrapping="Wrap" />
-
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn
-                                    Width="125"
-                                    Header=""
-                                    HeaderStyle="{StaticResource datagridColumnNoTab}">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-
-                                            <TextBox
-                                                Width="125"
-                                                Margin="0,-12,0,-12"
-                                                Padding="0,2.5,0,2.5"
-                                                VerticalAlignment="Center"
-                                                HorizontalContentAlignment="Center"
-                                                Background="Transparent"
-                                                BorderBrush="Transparent"
-                                                BorderThickness="0"
-                                                Tag="{Binding Result, UpdateSourceTrigger=PropertyChanged}"
-                                                TextWrapping="Wrap">
-
-                                                <TextBox.Style>
-                                                    <Style BasedOn="{StaticResource gridTextItem}" TargetType="TextBox">
-                                                        <Setter Property="Text" Value="{Binding Result}" />
-                                                        <Setter Property="Foreground" Value="WhiteSmoke" />
-                                                        <Style.Triggers>
-                                                            <Trigger Property="Tag" Value="True">
-                                                                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-                                                                <Setter Property="Foreground" Value="LightGreen" />
-                                                                <Setter Property="Text" Value="" />
-                                                                <Setter Property="ToolTip" Value="Query passed" />
-                                                            </Trigger>
-                                                            <Trigger Property="Tag" Value="False">
-                                                                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-                                                                <Setter Property="Foreground" Value="IndianRed" />
-                                                                <Setter Property="Text" Value="" />
-                                                                <Setter Property="ToolTip" Value="Query failed" />
-                                                            </Trigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBox.Style>
-                                            </TextBox>
-
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn
-                                    Width="100"
-                                    Header=""
-                                    HeaderStyle="{StaticResource datagridColumnNoTab}">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-
-                                            <Button
-                                                x:Name="toolsCommandGridExecute"
-                                                Width="40"
-                                                Height="25"
-                                                Margin="-8,-7,-8,-7"
-                                                Padding="0"
-                                                Content=""
-                                                FontFamily="Segoe MDL2 Assets"
-                                                FontSize="14"
-                                                Tag="{Binding Result}">
-                                                <Button.Style>
-                                                    <Style BasedOn="{StaticResource actiontoolbtn}" TargetType="Button">
-                                                        <Setter Property="IsEnabled" Value="True" />
-                                                        <Style.Triggers>
-                                                            <Trigger Property="Tag" Value="True">
-                                                                <Setter Property="IsEnabled" Value="False" />
-                                                            </Trigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Button.Style>
-                                            </Button>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <StackPanel
-                            Name="toolsCommandGridExecuteAllPanel"
-                            Margin="0,-10,37.5,0"
-                            HorizontalAlignment="Right"
-                            DockPanel.Dock="Top">
-                            <Label
-                                Content="Run All"
-                                FontSize="8"
-                                Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
-                            <Button
-                                Name="toolsCommandGridExecuteAll"
-                                Width="40"
-                                Height="25"
-                                Margin="0,-3.5,0,0"
-                                Padding="0"
-                                Content=""
-                                FontFamily="Segoe MDL2 Assets"
-                                FontSize="14">
-                                <Button.Style>
-                                    <Style BasedOn="{StaticResource actiontoolbtn}" TargetType="Button">
-                                        <Setter Property="IsEnabled" Value="False" />
-                                        <Style.Triggers>
-                                            <Trigger Property="Tag" Value="True">
-                                                <Setter Property="IsEnabled" Value="True" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                        </StackPanel>
 
 
                         <DockPanel
-                            Margin="0,10,0,0"
-                            HorizontalAlignment="Center"
-                            DockPanel.Dock="Top">
-
-                            <Button
-                                Name="itemToolCommandGridClose"
-                                Width="60"
-                                Height="40"
-                                Margin="15,0,0,10"
-                                Content="Close"
-                                DockPanel.Dock="Right"
+                            Name="itemToolCommandGridPanel"
+                            MinWidth="300"
+                            MaxWidth="750"
+                            HorizontalAlignment="Stretch"
+                            Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
+                            Visibility="Collapsed">
+                            <TextBlock
+                                Name="itemCommandGridText"
+                                Margin="10,10,10,15"
+                                HorizontalAlignment="Center"
+                                DockPanel.Dock="Top"
                                 FontFamily="Segoe UI Light"
-                                Style="{StaticResource itemButton}" />
+                                Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                                Text="Select item"
+                                TextWrapping="Wrap" />
+                            <ProgressBar
+                                Name="itemCommandGridProgress"
+                                Width="175"
+                                Margin="0,0,0,15"
+                                DockPanel.Dock="Top"
+                                IsIndeterminate="True"
+                                Style="{StaticResource MaterialDesignLinearProgressBar}"
+                                Visibility="Collapsed" />
+
+                            <DataGrid
+                                Name="itemToolCommandGridDataGrid"
+                                Width="350"
+                                MaxHeight="200"
+                                Margin="10,0,10,10"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                HorizontalContentAlignment="Stretch"
+                                md:DataGridAssist.CellPadding="0"
+                                md:ListViewAssist.ListViewItemPadding="1"
+                                AutoGenerateColumns="False"
+                                Background="#FF363333"
+                                BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
+                                BorderThickness="1"
+                                CanUserAddRows="False"
+                                CanUserDeleteRows="False"
+                                CanUserResizeColumns="False"
+                                CanUserResizeRows="False"
+                                CanUserSortColumns="True"
+                                CellStyle="{StaticResource dataGridCellLog}"
+                                ColumnHeaderHeight="0"
+                                DockPanel.Dock="Top"
+                                Focusable="True"
+                                HorizontalScrollBarVisibility="Disabled"
+                                KeyboardNavigation.TabNavigation="Contained"
+                                RowHeaderWidth="0"
+                                RowHeight="40"
+                                RowStyle="{StaticResource dataGridRowStyle}"
+                                ScrollViewer.CanContentScroll="False"
+                                SelectionMode="Single"
+                                VerticalScrollBarVisibility="Auto">
+                                <DataGrid.Style>
+                                    <Style BasedOn="{StaticResource MaterialDesignDataGrid}" TargetType="DataGrid">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding ElementName=itemToolCommandGridDataGrid, Path=Items.Count}" Value="0" />
+                                                </MultiDataTrigger.Conditions>
+                                                <MultiDataTrigger.Setters>
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </MultiDataTrigger.Setters>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGrid.Style>
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn
+                                        Width="125"
+                                        Header=""
+                                        HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+
+                                                <TextBox
+                                                    Padding="0"
+                                                    VerticalAlignment="Center"
+                                                    Background="Transparent"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="0"
+                                                    Foreground="WhiteSmoke"
+                                                    Style="{StaticResource gridTextItem}"
+                                                    Text="{Binding ItemName}"
+                                                    TextWrapping="Wrap" />
+
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn
+                                        Width="125"
+                                        Header=""
+                                        HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+
+                                                <TextBox
+                                                    Width="125"
+                                                    Margin="0,-12,0,-12"
+                                                    Padding="0,2.5,0,2.5"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Center"
+                                                    Background="Transparent"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="0"
+                                                    Tag="{Binding Result, UpdateSourceTrigger=PropertyChanged}"
+                                                    TextWrapping="Wrap">
+
+                                                    <TextBox.Style>
+                                                        <Style BasedOn="{StaticResource gridTextItem}" TargetType="TextBox">
+                                                            <Setter Property="Text" Value="{Binding Result}" />
+                                                            <Setter Property="Foreground" Value="WhiteSmoke" />
+                                                            <Style.Triggers>
+                                                                <Trigger Property="Tag" Value="True">
+                                                                    <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                                                                    <Setter Property="Foreground" Value="LightGreen" />
+                                                                    <Setter Property="Text" Value="" />
+                                                                    <Setter Property="ToolTip" Value="Query passed" />
+                                                                </Trigger>
+                                                                <Trigger Property="Tag" Value="False">
+                                                                    <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                                                                    <Setter Property="Foreground" Value="IndianRed" />
+                                                                    <Setter Property="Text" Value="" />
+                                                                    <Setter Property="ToolTip" Value="Query failed" />
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
+
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn
+                                        Width="100"
+                                        Header=""
+                                        HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+
+                                                <Button
+                                                    x:Name="toolsCommandGridExecute"
+                                                    Width="40"
+                                                    Height="25"
+                                                    Margin="-8,-7,-8,-7"
+                                                    Padding="0"
+                                                    Content=""
+                                                    FontFamily="Segoe MDL2 Assets"
+                                                    FontSize="14"
+                                                    Tag="{Binding Result}">
+                                                    <Button.Style>
+                                                        <Style BasedOn="{StaticResource actiontoolbtn}" TargetType="Button">
+                                                            <Setter Property="IsEnabled" Value="True" />
+                                                            <Style.Triggers>
+                                                                <Trigger Property="Tag" Value="True">
+                                                                    <Setter Property="IsEnabled" Value="False" />
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <StackPanel
+                                Name="toolsCommandGridExecuteAllPanel"
+                                Margin="0,-10,37.5,0"
+                                HorizontalAlignment="Right"
+                                DockPanel.Dock="Top">
+                                <Label
+                                    Content="Run All"
+                                    FontSize="8"
+                                    Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
+                                <Button
+                                    Name="toolsCommandGridExecuteAll"
+                                    Width="40"
+                                    Height="25"
+                                    Margin="0,-3.5,0,0"
+                                    Padding="0"
+                                    Content=""
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="14">
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource actiontoolbtn}" TargetType="Button">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                            <Style.Triggers>
+                                                <Trigger Property="Tag" Value="True">
+                                                    <Setter Property="IsEnabled" Value="True" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </StackPanel>
+
+
+                            <DockPanel
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Center"
+                                DockPanel.Dock="Top">
+
+                                <Button
+                                    Name="itemToolCommandGridClose"
+                                    Width="60"
+                                    Height="40"
+                                    Margin="15,0,0,10"
+                                    Content="Close"
+                                    DockPanel.Dock="Right"
+                                    FontFamily="Segoe UI Light"
+                                    Style="{StaticResource itemButton}" />
+                            </DockPanel>
+
                         </DockPanel>
 
+
                     </DockPanel>
-
-
-                </DockPanel>
+                </Grid>
             </simpleChildWindow:ChildWindow>
 
             <simpleChildWindow:ChildWindow
@@ -2251,6 +2301,7 @@
                                                     FontFamily="Segoe Light UI"
                                                     FontSize="12"
                                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                    Style="{StaticResource MaterialDesignBody1TextBlock}"
                                                     Text="{Binding Body}"
                                                     TextWrapping="Wrap" />
                                                 <StackPanel Name="infoPaneVars">
@@ -3178,7 +3229,7 @@
 
                                             <ListBox
                                                 Name="settingRemoteListTypes"
-                                                Height="65"
+                                                Height="60"
                                                 Margin="0,-4,0,0"
                                                 md:ListViewAssist.ListViewItemPadding="0"
                                                 Background="#FF363333"
@@ -3192,6 +3243,13 @@
                                                 ScrollViewer.VerticalScrollBarVisibility="Visible"
                                                 SelectionMode="Multiple"
                                                 Style="{StaticResource MaterialDesignListBox}">
+                                                <ListBox.Resources>
+
+                                                    <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
+                                                        <Setter Property="Width" Value="10" />
+                                                    </Style>
+                                                </ListBox.Resources>
+
                                                 <ListBox.ItemContainerStyle>
                                                     <Style BasedOn="{StaticResource MaterialDesignListBoxItem}" TargetType="ListBoxItem">
                                                         <Setter Property="Padding" Value="2,0,2,0" />
@@ -6310,26 +6368,71 @@
                                                         Content="Action"
                                                         Foreground="White"
                                                         Style="{DynamicResource MaterialDesignLabel}" />
-                                                    <CheckBox
-                                                        Name="settingSelectADOption"
+                                                    <StackPanel
                                                         Margin="0,0,30,0"
                                                         HorizontalAlignment="Right"
-                                                        md:CheckBoxAssist.CheckBoxSize="15"
-                                                        Content="Select item from AD"
-                                                        FontSize="10"
-                                                        IsChecked="{Binding toolActionSelectAD, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                        IsEnabled="True">
-                                                        <CheckBox.Style>
-                                                            <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
-                                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </CheckBox.Style>
-                                                    </CheckBox>
+                                                        DockPanel.Dock="Right"
+                                                        Orientation="Horizontal">
+                                                        <CheckBox
+                                                            Name="settingSelectADOption"
+                                                            Margin="0,0,5,0"
+                                                            HorizontalAlignment="Right"
+                                                            md:CheckBoxAssist.CheckBoxSize="15"
+                                                            Content="Choose AD object"
+                                                            FontSize="10"
+                                                            IsChecked="{Binding toolActionSelectAD, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            IsEnabled="True">
+                                                            <CheckBox.Style>
+                                                                <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </CheckBox.Style>
+                                                        </CheckBox>
+                                                        <CheckBox
+                                                            Name="settingSelectOUOption"
+                                                            Margin="0,0,5,0"
+                                                            HorizontalAlignment="Right"
+                                                            md:CheckBoxAssist.CheckBoxSize="15"
+                                                            Content="Choose OU"
+                                                            FontSize="10"
+                                                            IsChecked="{Binding toolActionSelectOU, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            IsEnabled="True">
+                                                            <CheckBox.Style>
+                                                                <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </CheckBox.Style>
+                                                        </CheckBox>
+                                                        <CheckBox
+                                                            Name="settingSelectTextOption"
+                                                            HorizontalAlignment="Right"
+                                                            md:CheckBoxAssist.CheckBoxSize="15"
+                                                            Content="Prompt custom input"
+                                                            FontSize="10"
+                                                            IsChecked="{Binding toolActionSelectCustom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            IsEnabled="True">
+                                                            <CheckBox.Style>
+                                                                <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </CheckBox.Style>
+                                                        </CheckBox>
+                                                    </StackPanel>
                                                 </DockPanel>
                                                 <StackPanel Margin="15,0,32.5,0">
 

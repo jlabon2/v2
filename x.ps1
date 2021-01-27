@@ -268,11 +268,24 @@ $sysCheckHash.missingCheckFail = $false
 
 #region Item Tool Events
 #region Item Tools - Grid
-$syncHash.ItemToolGridADSelectionButton.Add_Click( { Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control Grid })
+$syncHash.ItemToolGridADSelectionButton.Add_Click( { 
+    switch ($syncHash.ItemToolGridADSelectionButton.Tag) {
+        'AD' { Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control Grid }
+        'OU' { Set-OUItemBox -ConfigHash $configHash -SyncHash $syncHash -Control Grid }
+        'Custom' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control Grid }
+    }
+
+})
 
 $syncHash.itemToolGridItemsGrid.Add_SelectionChanged( {
         if ($syncHash.itemToolGridItemsGrid.SelectedItem.Image) { $syncHash.itemToolImageSource.Source = [byte[]]($syncHash.itemToolGridItemsGrid.SelectedItem.Image) }
     })
+
+$syncHash.itemToolCustomConfirm.Add_Click({
+$configHash.customDialogClosed = $true
+$configHash.customInput = $syncHash.itemToolCustomContent.Text
+
+})
 
 $syncHash.itemToolGridItemsGrid.Add_AutoGeneratingColumn( {
         if ($_.Column.Header -eq 'Image') {
@@ -296,7 +309,15 @@ $syncHash.itemToolGridSelectAllButton.Add_Click( {
 #endregion
 
 #region Item Tools - List
-$syncHash.ItemToolADSelectionButton.Add_Click( { Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox })
+$syncHash.ItemToolADSelectionButton.Add_Click( {
+    switch ($syncHash.ItemToolADSelectionButton.Tag) {
+        'AD' { Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox }
+        'OU' { Set-OUItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox }
+        'Custom' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox }
+    }
+})
+
+
 
 $syncHash.itemToolListSearchBox.Add_TextChanged( {
         $syncHash.itemToolListSelectListBox.ItemsSource.Filter = $null
@@ -443,9 +464,12 @@ $syncHash.settingRtRDPClick.Add_Click( { Set-StaticRTContent -SyncHash $syncHash
 
 $syncHash.settingRtMSRAClick.Add_Click( { Set-StaticRTContent -SyncHash $syncHash -ConfigHash $configHash -Tool MSRA })
 
-$syncHash.settingRemoteFlyout.Add_OpeningFinished( { Get-RTFlyoutContent -ConfigHash $configHash -SyncHash $syncHash })
+$syncHash.settingRemoteFlyout.Add_OpeningFinished( { 
+$syncHash.settingChildWindow.ShowCloseButton = $false
+Get-RTFlyoutContent -ConfigHash $configHash -SyncHash $syncHash })
 
 $syncHash.settingRemoteFlyoutExit.Add_Click( {
+        $syncHash.settingChildWindow.ShowCloseButton = $true
         Reset-ChildWindow -SyncHash $syncHash -Title 'Configure Remote Connection Clients' -SkipContentPaneReset -SkipResize
         Set-SelectedRTTypes -SyncHash $syncHash -ConfigHash $configHash
         Set-CurrentPane -SyncHash $syncHash -Panel 'settingRTContent'
@@ -2495,6 +2519,28 @@ $syncHash.settingObjectToolExecute.Add_Click( {
         }
     })
 
+    
+$syncHash.settingSelectTextOption.Add_Click({
+     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectAD = $false
+     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectOU = $false
+     $syncHash.settingSelectOUOption.IsChecked = $false
+     $syncHash.settingSelectADOption.IsChecked = $false
+})
+
+$syncHash.settingSelectOUOption.Add_Click({
+     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectAD = $false
+     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectCustom = $false
+     $syncHash.settingSelectTextOption.IsChecked = $false
+     $syncHash.settingSelectADOption.IsChecked = $false
+})
+
+$syncHash.settingSelectADOption.Add_Click({
+     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectCustom = $false
+     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectOU = $false
+     $syncHash.settingSelectOUOption.IsChecked = $false
+     $syncHash.settingSelectTextOption.IsChecked = $false
+})
+
 [System.Windows.RoutedEventHandler]$addItemClick = {
     if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') { $type = 'User' }
 
@@ -2545,23 +2591,25 @@ $syncHash.settingObjectToolExecute.Add_Click( {
                 Select-Object -First 1) + 1
 
     $configHash.objectToolConfig.Add([PSCustomObject]@{
-            ToolID                = $i
-            ToolName              = $null
-            toolTypeList          = @('Execute', 'Select', 'Grid', 'CommandGrid')
-            toolCommandGridConfig = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-            toolType              = 'null'
-            objectList            = @('Comp', 'User', 'Both', 'Standalone')
-            objectType            = $null
-            toolAction            = 'Do-Something -UserName $user'
-            toolActionValid       = $false
-            toolActionConfirm     = $true
-            toolActionToolTip     = $null
-            toolActionIcon        = $null
-            toolActionSelectAD    = $false
-            toolFetchCmd          = 'Get-Something'
-            toolActionMultiSelect = $false
-            toolDescription       = 'Generic tool description'
-            toolTargetFetchCmd    = 'Get-Something -Identity $target'
+            ToolID                 = $i
+            ToolName               = $null
+            toolTypeList           = @('Execute', 'Select', 'Grid', 'CommandGrid')
+            toolCommandGridConfig  = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+            toolType               = 'null'
+            objectList             = @('Comp', 'User', 'Both', 'Standalone')
+            objectType             = $null
+            toolAction             = 'Do-Something -UserName $user'
+            toolActionValid        = $false
+            toolActionConfirm      = $true
+            toolActionToolTip      = $null
+            toolActionIcon         = $null
+            toolActionSelectAD     = $false
+            toolActionSelectOU     = $false
+            toolActionSelectCustom = $false
+            toolFetchCmd           = 'Get-Something'
+            toolActionMultiSelect  = $false
+            toolDescription        = 'Generic tool description'
+            toolTargetFetchCmd     = 'Get-Something -Identity $target'
         })
     
     $temp = Get-InitialValues -GroupName 'toolCommandGridConfig'
