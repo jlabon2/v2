@@ -24,6 +24,78 @@ function Set-CurrentPane {
     $SyncHash.infoPaneContent.Tag = $Panel
 }
 
+
+function Get-RelatedClass {
+    param( [string]$ClassName )
+  
+    $Classes = @($ClassName)
+  
+    $SubClass = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties subClassOf | Select-Object -ExpandProperty subClassOf
+    if ( $SubClass -and $SubClass -ne $ClassName ) { $Classes += Get-RelatedClass $SubClass }
+  
+    $auxiliaryClasses = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties auxiliaryClass | Select-Object -ExpandProperty auxiliaryClass
+    foreach ( $auxiliaryClass in $auxiliaryClasses ) { $Classes += Get-RelatedClass $auxiliaryClass }
+
+    $systemAuxiliaryClasses = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties systemAuxiliaryClass | Select-Object -ExpandProperty systemAuxiliaryClass
+    foreach ( $systemAuxiliaryClass in $systemAuxiliaryClasses ) { $Classes += Get-RelatedClass $systemAuxiliaryClass }
+    Return $Classes  
+}
+
+function Get-AllUserAttributes {
+    $ADUser = Get-ADUser -ResultSetSize 1 -Filter * -Properties objectClass
+    $AllClasses = ( Get-RelatedClass $ADUser.ObjectClass | Sort-Object -Unique )
+
+    $AllAttributes = @()
+    Foreach ( $Class in $AllClasses ) {
+        $attributeTypes = 'MayContain', 'MustContain', 'systemMayContain', 'systemMustContain'
+        $ClassInfo = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $Class } -Properties $attributeTypes 
+        ForEach ($attribute in $attributeTypes) { $AllAttributes += $ClassInfo.$attribute }
+    }
+    $AllAttributes | Sort-Object -Unique
+}
+
+function Get-AllCompAttributes {
+    $ADUser = Get-ADComputer -ResultSetSize 1 -Filter * -Properties objectClass
+    $AllClasses = ( Get-RelatedClass $ADUser.ObjectClass | Sort-Object -Unique )
+
+    $AllAttributes = @()
+    Foreach ( $Class in $AllClasses ) {
+        $attributeTypes = 'MayContain', 'MustContain', 'systemMayContain', 'systemMustContain'
+        $ClassInfo = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $Class } -Properties $attributeTypes 
+        ForEach ($attribute in $attributeTypes) { $AllAttributes += $ClassInfo.$attribute }
+    }
+    $AllAttributes | Sort-Object -Unique
+}
+
+function Create-AttributeList {
+    param ([Parameter(Mandatory)][ValidateSet('User', 'Computer')]$Type, $ConfigHash)
+
+    $masterList = @()
+    if ($type -eq 'User')  { 
+        $masterList += Get-AllUserAttributes
+        $masterList += (Get-AdUser -Identity $env:USERNAME -Properties *).PsObject.Properties.Name
+    }
+    else { 
+        $masterList += Get-AllCompAttributes 
+        $masterList += (Get-ADComputer -Identity $env:COMPUTERNAME -Properties *).PsObject.Properties.Name    
+    }
+
+    $attributeList = [System.Collections.ArrayList]@()
+
+    foreach ($object in ($masterList | Sort-Object -Unique )) {
+        if ($type -eq 'User') { 
+           #convert to friendly name from ldap name - if possible
+           if  ($configHash.adPropertyMapInverse[$object]) { $object = $configHash.adPropertyMapInverse[$object]}
+                $attributeList.Add(((Get-ADUser -ResultSetSize 1 -filter * -Properties $object -ErrorAction SilentlyContinue | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
+        else  { 
+           if  ($configHash.adPropertyMapInverse[$object]) { $object = $configHash.adPropertyMapInverse[$object]}
+            $attributeList.Add(((Get-ADComputer -ResultSetSize 1 -filter * -Properties $object -ErrorAction SilentlyContinue | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
+    }
+
+    $attributeList
+}
+  
+
 function Set-InfoPaneContent {
     param ($SyncHash , $settingInfoHash) 
     
@@ -154,6 +226,7 @@ function Set-Config {
                 $ConfigHash.($_ + 'PropListSelection') = $null
                 $ConfigHash.($_ + 'PropPullListNames') = $null
                 $ConfigHash.($_ + 'PropPullList') = $null
+                
             }
 
             $ConfigHash.buttonGlyphs = $null
@@ -161,6 +234,10 @@ function Set-Config {
             $ConfigHash.queryProps = $null
             $ConfigHash.actionLog = $null
             $ConfigHash.modList = $null
+            $configHash.adPropertyMapInverse = $null
+            $configHash.QueryADValues = $null
+            $configHash.rawADValues = $null
+            $configHash.currentTabItem = $null
 
             $ConfigHash |
                 ConvertTo-Json -Depth 8 |
@@ -315,6 +392,8 @@ function Set-InitialValues {
         $ConfigHash.UserboxCount = ($ConfigHash.userPropList | Measure-Object).Count
         $ConfigHash.CompboxCount = ($ConfigHash.compPropList | Measure-Object).Count
         $ConfigHash.boxMax = ($ConfigHash.UserboxCount, $ConfigHash.compPropList | Measure-Object -Maximum).Maximum
+
+        if (!$configHash.searchDays) { $ConfigHash.searchDays = 60 }
 
     }
 }
@@ -663,7 +742,7 @@ function Add-CustomToolControls {
 
                                         $item = ($ConfigHash.currentTabItem).toLower()
                                         $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
-                                        $toolName = ($ConfigHash.objectToolConfig[$toolID - 1].toolActionToolTip).ToUpper()
+                                        $toolName = ($ConfigHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
 
                                         try {                     
                                             Invoke-Expression $ConfigHash.objectToolConfig[$toolID - 1].toolAction
@@ -745,9 +824,18 @@ function Add-CustomToolControls {
 
                                 else {
                                   
-                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD) {  $SyncHash.itemToolADSelectionButton.Tag = 'AD' }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU) {  $SyncHash.itemToolADSelectionButton.Tag = 'OU' }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {  $SyncHash.itemToolADSelectionButton.Tag = 'Custom' }
+                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD) {
+                                        $syncHash.itemToolADSelectionButton.Tag = 'AD' 
+                                        $syncHash.itemToolItemText.Content = "AD Object Selection:" 
+                                    }
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU) {
+                                        $syncHash.itemToolADSelectionButton.Tag = 'OU' 
+                                        $syncHash.itemToolItemText.Content = "OU Selection:"
+                                    }
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {
+                                        $syncHash.itemToolADSelectionButton.Tag = 'Custom' 
+                                        $syncHash.itemToolItemText.Content = "Custom Item Selection:"
+                                    }
 
                                     $SyncHash.ItemToolADSelectionPanel.Visibility = 'Visible'                            
                                     $SyncHash.itemToolListSelect.Visibility = 'Visible'
@@ -807,10 +895,19 @@ function Add-CustomToolControls {
                                 }
 
                                 else {
-                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD) {  $SyncHash.itemToolGridADSelectionButton.Tag = 'AD' }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU) {  $SyncHash.itemToolGridADSelectionButton.Tag = 'OU' }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {  $SyncHash.itemToolGridADSelectionButton.Tag = 'Custom' }
-                                                                     
+                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD) {
+                                        $SyncHash.itemToolGridADSelectionButton.Tag = 'AD' 
+                                        $syncHash.itemToolGridItemText.Content = "AD Object Selection:" 
+                                    }
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU) {  
+                                        $SyncHash.itemToolGridADSelectionButton.Tag = 'OU' 
+                                        $syncHash.itemToolGridItemText.Content = "OU Selection:"
+                                    }
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {
+                                        $SyncHash.itemToolGridADSelectionButton.Tag = 'Custom' 
+                                        $syncHash.itemToolGridItemText.Content = "Custom Item Selection:" 
+                                    }
+                                                                            
                                     $SyncHash.ItemToolADSelectionPanel.Visibility = 'Visible'                           
                                     $SyncHash.itemToolGridSelect.Visibility = 'Visible'
                                     $SyncHash.itemToolGridItemsGrid.ItemsSource = $null
@@ -886,9 +983,14 @@ function Start-BasicADCheck {
                 try {
                     $adEntity = [Microsoft.ActiveDirectory.Management.ADEntity].Assembly
                     $adFields = $adEntity.GetType('Microsoft.ActiveDirectory.Management.Commands.LdapAttributes').GetFields('Static,NonPublic') | Where-Object -FilterScript { $_.IsLiteral }
-                    $ConfigHash.adPropertyMap = @{ }
-                            
+                    $ConfigHash.adPropertyMap = @{ }     
                     $adFields | ForEach-Object -Process { $ConfigHash.adPropertyMap[$_.Name] = $_.GetRawConstantValue() }
+                    
+                    # create inverse hash
+
+                    $configHash.adPropertyMapInverse = @{}
+                    foreach ($key in $configHash.adPropertyMap.Keys) { $configHash.adPropertyMapInverse[$configHash.adPropertyMap.$key] = $key }
+
                 } 
 
                 catch { $ConfigHash.Remove('adPropertyMap') }
@@ -934,12 +1036,37 @@ function Get-AdObjectPropertyList {
     $ConfigHash.QueryADValues = ($ConfigHash.QueryADValues.GetEnumerator().Where( { $_.Key }))
 }
 
+function Remove-SavedPropertyLists {
+    param ($savedConfig)
+    $configRoot = Split-Path $savedConfig 
+    if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)user.json")) { Remove-Item  (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)user.json")}
+    if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)comp.json")) { Remove-Item  (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)comp.json")}
+}
+
 function Get-PropertyLists {
-    param ($ConfigHash) 
+    param ($ConfigHash, $savedConfig) 
  
+    $configRoot = Split-Path $savedConfig 
+
     foreach ($type in ('user', 'comp')) {
-        if ($type -eq 'user') { $ConfigHash.userPropPullList = (Get-ADUser -Identity $env:USERNAME -Properties *).PSObject.Properties | Select-Object -Property Name, TypeNameofValue }
-        else { $ConfigHash.compPropPullList = (Get-ADComputer -Identity $env:ComputerName -Properties *).PSObject.Properties | Select-Object -Property Name, TypeNameofValue }
+        if ($type -eq 'user') {  
+            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json")) {
+                $ConfigHash.userPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json") | ConvertFrom-Json
+            }
+            else { 
+                $ConfigHash.userPropPullList = Create-AttributeList -Type User -ConfigHash $configHash
+                $ConfigHash.userPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json")
+            }
+        }
+
+        else { 
+            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json")) {
+                $ConfigHash.compPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json") | ConvertFrom-Json
+            }
+            else { $ConfigHash.compPropPullList = Create-AttributeList -Type Computer -ConfigHash $configHash
+                   $ConfigHash.compPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json")
+            }
+        }
         
         Get-AdObjectPropertyList -ConfigHash $ConfigHash        
                 
@@ -958,9 +1085,9 @@ function Set-ADGenericQueryNames {
 
 
 function Start-PropBoxPopulate {
-    param ($ConfigHash)
+    param ($ConfigHash, $savedConfig)
 
-    Get-PropertyLists -ConfigHash $ConfigHash
+    Get-PropertyLists -ConfigHash $ConfigHash -SavedConfig $savedConfig
 
     foreach ($type in @('User', 'Comp')) {
         $tempList = $ConfigHash.($type + 'PropList')
@@ -1242,6 +1369,13 @@ Function Set-ChildWindow {
                 $SyncHash.settingGeneralAddClick.Tag = 'null'
                 $SyncHash.settingMiscGrid.Visibility = 'Visible'
             } 
+
+            'settingMiscGrid' {
+             
+               $syncHash.settingSearchDaySpan.Value = $ConfigHash.searchDays
+               
+
+            }
         }
     }
 
@@ -1297,14 +1431,8 @@ function Set-ADItemBox {
         [Parameter(Mandatory)][hashtable]$SyncHash,
         [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
 
-    if ($Control -eq 'Grid') { 
-        $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag
-        $syncHash.itemToolGridItemText.Content = "AD Object Selection:" 
-    }
-    else { 
-        $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag 
-        $syncHash.itemToolItemText.Content = "AD Object Selection:"
-    }
+    if ($Control -eq 'Grid') { $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag }
+    else { $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag  }
 
     $rsArgs = @{
         Name            = ('populate' + $Control)
@@ -1381,14 +1509,8 @@ function Set-OUItemBox {
         [Parameter(Mandatory)][hashtable]$SyncHash,
         [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
 
-    if ($Control -eq 'Grid') { 
-        $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag 
-        $syncHash.itemToolGridItemText.Content = "OU Selection:"
-    }
-    else { 
-        $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag 
-         $syncHash.itemToolItemText.Content = "OU Selection:"
-    }
+    if ($Control -eq 'Grid') {  $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag  }
+    else { $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag }
 
     $rsArgs = @{
         Name            = ('populate' + $Control)
@@ -1465,14 +1587,8 @@ function Set-CustomItemBox {
         [Parameter(Mandatory)][hashtable]$SyncHash,
         [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
 
-    if ($Control -eq 'Grid') { 
-        $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag 
-        $syncHash.itemToolGridItemText.Content = "Custom Item Selection:"   
-    }
-    else {
-        $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag 
-        $syncHash.itemToolItemText.Content = "Custom Item Selection:" 
-    }
+    if ($Control -eq 'Grid') { $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag }
+    else { $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag }
 
     $rsArgs = @{
         Name            = ('populate' + $Control)
@@ -1490,13 +1606,15 @@ function Set-CustomItemBox {
                 if ($Control -eq 'ListBox') { $SyncHash.itemToolListSelectListBox.ItemsSource = $null }
                 else { $SyncHash.itemToolGridItemsGrid.ItemsSource = $null }
                 $syncHash.itemToolCustomContent.Text = $null
+                $syncHash.itemToolCustomDialog.Visibility = 'Visible'
                 $syncHash.itemToolCustomDialog.IsOpen = $true
             })
 
         
         do { } until ($configHash.customDialogClosed -eq $true)
         
-        $SyncHash.Window.Dispatcher.Invoke([Action] {$syncHash.itemToolCustomDialog.IsOpen = $false})
+        $SyncHash.Window.Dispatcher.Invoke([Action] {$syncHash.itemToolCustomDialog.IsOpen = $false })
+        Start-Sleep -Seconds 1
         $selectedObject = $configHash.customInput
 
         $SyncHash.Window.Dispatcher.Invoke([Action] {
@@ -1534,6 +1652,7 @@ function Set-CustomItemBox {
                 else { 
                     $SyncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list 
                     $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
+                    $syncHash.itemToolCustomDialog.Visibility = 'Collapsed'
 
                        if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect) {
                         $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Extended'
@@ -1567,7 +1686,7 @@ function Start-ItemToolAction {
     Start-RSJob @rsArgs -ScriptBlock {
         param($ConfigHash, $ItemList, $queue, $toolID, $window, $queryHash) 
 
-        $toolName = $ConfigHash.objectToolConfig[$toolID - 1].toolActionToolTip
+        $toolName = $ConfigHash.objectToolConfig[$toolID - 1].toolName
         $target = $ConfigHash.currentTabItem
         $targetType = $queryHash[$target].ObjectClass -replace 'u', 'U' -replace 'c', 'C'
 
@@ -2153,11 +2272,12 @@ function Find-ObjectLogs {
             Start-Sleep -Milliseconds 1250
         
             if ($ConfigHash.UserLogPath -and (Test-Path (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt"))) {
+                $queryHash.$($match.SamAccountName).LoginLogPath = (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt")
                 $queryHash.$($match.SamAccountName).LoginLogRaw = Get-Content (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt") |
                     Select-Object -Last 100 | 
                         ConvertFrom-Csv -Header $ConfigHash.userLogMapping.Header |
                             Select-Object *, @{Label = 'DateTime'; Expression = { $_.DateRaw -as [datetime] } } -ExcludeProperty DateRaw |
-                                Where-Object { $_.DateTime -gt (Get-Date).AddDays(-60) } |
+                                Where-Object { $_.DateTime -gt (Get-Date).AddDays(-($ConfigHash.searchDays)) } |
                                     Sort-Object DateTime -Descending 
                                     
                 if ($queryHash.$($match.SamAccountName).LoginLogRaw) {
@@ -2288,11 +2408,12 @@ function Find-ObjectLogs {
             Start-Sleep -Milliseconds 1250                               
 
             if ($ConfigHash.compLogPath -and (Test-Path (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt"))) {
+                $queryHash.$($match.Name).LoginLogPath = (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt")
                 $queryHash.$($match.Name).LoginLogRaw = Get-Content (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt") | 
                     Select-Object -Last 100 |
                         ConvertFrom-Csv -Header $ConfigHash.compLogMapping.Header |
                             Select-Object *, @{Label = 'DateTime'; Expression = { $_.DateRaw -as [datetime] } } -ExcludeProperty DateRaw |
-                                Where-Object { $_.DateTime -gt (Get-Date).AddDays(-60) } |
+                                Where-Object { $_.DateTime -gt (Get-Date).AddDays(-($ConfigHash.searchDays)) } |
                                     Sort-Object DateTime -Descending 
                                         
                 if ($queryHash.$($match.Name).LoginLogRaw) {

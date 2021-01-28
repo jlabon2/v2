@@ -1462,18 +1462,24 @@
                     <SolidColorBrush Color="Transparent" />
                 </simpleChildWindow:ChildWindow.OverlayBrush>
 
-                <Grid Name="itemToolDialogContent">
+                <Grid
+                    Name="itemToolDialogContent"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <Controls:Flyout
-                        x:Name="itemToolCustomDialog"
+                        Name="itemToolCustomDialog"
                         Width="{Binding ElementName=itemToolDialogContent, Path=ActualWidth}"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Panel.ZIndex="5"
+                        AnimateOpacity="True"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
                         BorderThickness="1"
                         CloseButtonVisibility="Collapsed"
                         DockPanel.Dock="Top"
                         IsOpen="False">
+
 
                         <DockPanel
                             Margin="0,-50,0,0"
@@ -1612,9 +1618,9 @@
                                     Width="150"
                                     Height="45"
                                     VerticalContentAlignment="Center"
-                                    Controls:TextBoxHelper.ClearTextButton="True"
                                     md:HintAssist.Foreground="White"
                                     md:HintAssist.Hint="Search"
+                                    md:TextFieldAssist.HasClearButton="True"
                                     DockPanel.Dock="Left"
                                     FontSize="12">
                                     <TextBox.Style>
@@ -1634,6 +1640,35 @@
                                         </Style>
                                     </TextBox.Style>
                                 </TextBox>
+                                <Button
+                                    x:Name="itemToolSearchBoxClear"
+                                    Width="15"
+                                    Height="15"
+                                    Margin="-20,0,0,-15"
+                                    Padding="0"
+                                    Panel.ZIndex="5"
+                                    md:RippleAssist.IsCentered="True"
+                                    md:RippleAssist.RippleOnTop="True"
+                                    md:RippleAssist.RippleSizeMultiplier="5"
+                                    Content=""
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="14"
+                                    Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                    IsTabStop="False">
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource MaterialDesignIconButton}" TargetType="Button">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ElementName=itemToolListSearchBox, Path=Text.Length}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ElementName=itemToolListSelectListBox, Path=Items.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                                 <Button
                                     Name="itemToolListSelectAllButton"
                                     Width="25"
@@ -1724,7 +1759,7 @@
                         <DockPanel
                             Name="itemToolGridSelect"
                             MinWidth="300"
-                            MaxWidth="750"
+                            MaxWidth="850"
                             HorizontalAlignment="Stretch"
                             Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
                             Visibility="Collapsed">
@@ -1778,16 +1813,17 @@
                                     IsIndeterminate="True"
                                     Style="{StaticResource MaterialDesignLinearProgressBar}"
                                     Visibility="Collapsed" />
+                                <Canvas />
                                 <TextBox
                                     Name="itemToolGridSearchBox"
                                     Width="150"
                                     Height="45"
                                     VerticalContentAlignment="Center"
-                                    Controls:TextBoxHelper.ClearTextButton="True"
                                     md:HintAssist.Foreground="White"
                                     md:HintAssist.Hint="Search"
                                     DockPanel.Dock="Left"
                                     FontSize="12">
+
                                     <TextBox.Style>
                                         <Style BasedOn="{StaticResource MaterialDesignFloatingHintTextBox}" TargetType="TextBox">
                                             <Setter Property="Visibility" Value="Visible" />
@@ -1805,6 +1841,35 @@
                                         </Style>
                                     </TextBox.Style>
                                 </TextBox>
+                                <Button
+                                    x:Name="itemToolGridSearchBoxClear"
+                                    Width="15"
+                                    Height="15"
+                                    Margin="-20,0,0,-15"
+                                    Padding="0"
+                                    Panel.ZIndex="5"
+                                    md:RippleAssist.IsCentered="True"
+                                    md:RippleAssist.RippleOnTop="True"
+                                    md:RippleAssist.RippleSizeMultiplier="5"
+                                    Content=""
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="14"
+                                    Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                    IsTabStop="False">
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource MaterialDesignIconButton}" TargetType="Button">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ElementName=itemToolGridSearchBox, Path=Text.Length}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                                 <Button
                                     Name="itemToolGridSelectAllButton"
                                     Width="25"
@@ -1834,7 +1899,7 @@
                             <DataGrid
                                 Name="itemToolGridItemsGrid"
                                 Height="315"
-                                MaxWidth="600"
+                                MaxWidth="800"
                                 Margin="25,-5,25,15"
                                 Padding="0"
                                 HorizontalAlignment="Center"
@@ -1850,21 +1915,30 @@
                                 CanUserDeleteRows="False"
                                 CanUserResizeColumns="True"
                                 CellStyle="{StaticResource MahApps.Styles.DataGridCell}"
-                                ColumnHeaderStyle="{StaticResource MahApps.Styles.DataGridColumnHeader}"
                                 DockPanel.Dock="Top"
                                 Focusable="True"
                                 GridLinesVisibility="All"
-                                HorizontalScrollBarVisibility="Disabled"
+                                HorizontalScrollBarVisibility="Auto"
                                 IsReadOnly="True"
                                 KeyboardNavigation.TabNavigation="Cycle"
                                 RowHeaderStyle="{StaticResource MaterialDesignDataGridRowHeader}"
                                 RowHeaderWidth="0"
                                 RowHeight="36"
                                 RowStyle="{StaticResource MahApps.Styles.DataGridRow}"
-                                ScrollViewer.CanContentScroll="False"
+                                ScrollViewer.CanContentScroll="True"
                                 SelectionMode="Single"
                                 SelectionUnit="FullRow"
                                 VerticalScrollBarVisibility="Auto">
+                                <DataGrid.Resources>
+                                    <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
+                                        <Setter Property="Margin" Value="0" />
+                                    </Style>
+                                </DataGrid.Resources>
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style BasedOn="{StaticResource MahApps.Styles.DataGridColumnHeader}" TargetType="DataGridColumnHeader">
+                                        <Setter Property="Background" Value="#303030" />
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
                                 <DataGrid.Style>
                                     <Style BasedOn="{StaticResource MaterialDesignDataGrid}" TargetType="DataGrid">
                                         <Setter Property="Visibility" Value="Visible" />
@@ -2946,6 +3020,7 @@
                                         CanUserSortColumns="True"
                                         CellStyle="{StaticResource dataGridCellLog}"
                                         Focusable="True"
+                                        HorizontalScrollBarVisibility="Disabled"
                                         KeyboardNavigation.TabNavigation="Contained"
                                         RowHeaderWidth="0"
                                         RowHeight="40"
@@ -2954,7 +3029,11 @@
                                         SelectionMode="Single"
                                         Style="{StaticResource MahApps.Styles.DataGrid}"
                                         VerticalScrollBarVisibility="Auto">
-
+                                        <DataGrid.Resources>
+                                            <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
+                                                <Setter Property="Margin" Value="0" />
+                                            </Style>
+                                        </DataGrid.Resources>
                                         <DataGrid.Columns>
                                             <DataGridTemplateColumn Header="RULE" HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                 <DataGridTemplateColumn.CellTemplate>
@@ -4262,8 +4341,9 @@
                                             </DataGridTemplateColumn>
                                         </DataGrid.Columns>
                                     </DataGrid>
+
                                     <DockPanel Name="settingMiscGrid" Margin="15">
-                                        <DockPanel HorizontalAlignment="Left" DockPanel.Dock="Left">
+                                        <DockPanel HorizontalAlignment="Left" DockPanel.Dock="Top">
                                             <TextBox
                                                 Name="settingLogPath"
                                                 Width="335"
@@ -4294,7 +4374,58 @@
                                                 FontFamily="Segoe MDL2 Assets"
                                                 FontSize="16"
                                                 Visibility="Visible" />
+
                                         </DockPanel>
+                                        <StackPanel
+                                            Margin="-5,10,0,0"
+                                            DockPanel.Dock="Top"
+                                            Orientation="Horizontal">
+                                            <StackPanel Margin="0,5,5,0">
+                                                <Label Content="Change login log view depth" FontSize="12" />
+                                                <Label
+                                                    Margin="0,-7.5,0,0"
+                                                    Content="Defines how far back (in days) login logs will be analyzed"
+                                                    FontFamily="Segoe UI Light"
+                                                    FontSize="10"
+                                                    Foreground="LightGray" />
+                                            </StackPanel>
+                                            <Controls:NumericUpDown
+                                                x:Name="settingSearchDaySpan"
+                                                Width="75"
+                                                Height="20"
+                                                Margin="10,5,0,0"
+                                                FontSize="12"
+                                                Maximum="365"
+                                                Minimum="1"
+                                                Visibility="Visible"
+                                                Value="{Binding Path=Days, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+
+
+                                        </StackPanel>
+
+
+                                        <StackPanel
+                                            Margin="-5,10,0,0"
+                                            DockPanel.Dock="Top"
+                                            Orientation="Horizontal">
+                                            <StackPanel Margin="0,5,5,0">
+                                                <Label Content="Reset AD Property Mappings" FontSize="12" />
+                                                <Label
+                                                    Margin="0,-7.5,0,0"
+                                                    Content="Will repull AD properties - required for updated schema (restart reqired)"
+                                                    FontFamily="Segoe UI Light"
+                                                    FontSize="10"
+                                                    Foreground="LightGray" />
+                                            </StackPanel>
+                                            <Button
+                                                x:Name="settingResetADPropMap"
+                                                Width="34"
+                                                Margin="0,5,0,0"
+                                                Content=""
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="16"
+                                                Visibility="Visible" />
+                                        </StackPanel>
                                     </DockPanel>
                                 </StackPanel>
                             </Grid>
@@ -6438,7 +6569,7 @@
 
                                                     <StackPanel Name="settingObjectToolActionPanel" DataContext="{Binding Mode=TwoWay, ElementName=settingObjectToolsPropGrid, Path=SelectedItem, UpdateSourceTrigger=PropertyChanged}">
                                                         <TextBox
-                                                            Height="50"
+                                                            Height="100"
                                                             Margin="0,0,0,15"
                                                             Padding="-10,0,0,-10"
                                                             VerticalAlignment="Top"
@@ -6464,7 +6595,7 @@
                                                             </TextBox.Style>
                                                         </TextBox>
                                                         <TextBox
-                                                            Height="50"
+                                                            Height="100"
                                                             Margin="0,0,0,15"
                                                             Padding="-10,0,0,-10"
                                                             VerticalAlignment="Top"
@@ -7367,6 +7498,39 @@
                                                         IsIndeterminate="True"
                                                         Style="{StaticResource MaterialDesignCircularProgressBar}"
                                                         Visibility="Hidden" />
+                                                    <Button
+                                                        x:Name="compExpanderOpenLog"
+                                                        Width="15"
+                                                        Height="15"
+                                                        Margin="0,0,-20,0"
+                                                        Padding="0"
+                                                        HorizontalAlignment="Right"
+                                                        Panel.ZIndex="5"
+                                                        md:RippleAssist.IsCentered="True"
+                                                        md:RippleAssist.RippleOnTop="True"
+                                                        md:RippleAssist.RippleSizeMultiplier="5"
+                                                        Content=""
+                                                        DockPanel.Dock="Right"
+                                                        FontFamily="Segoe MDL2 Assets"
+                                                        FontSize="14"
+                                                        FontWeight="ExtraBold"
+                                                        Foreground="{DynamicResource PrimaryHueLightBrush}"
+                                                        IsTabStop="False"
+                                                        ToolTip="Open log">
+                                                        <Button.Style>
+                                                            <Style BasedOn="{StaticResource MaterialDesignIconButton}" TargetType="Button">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ElementName=compExpander, Path=IsExpanded}" Value="False">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding ElementName=userCompNotFound, Path=Visibility}" Value="Visible">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
                                                 </DockPanel>
                                             </Expander.Header>
                                             <Grid>
@@ -8329,7 +8493,7 @@
                                     Margin="0,10,20,0"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Top"
-                                    Content=""
+                                    Content=""
                                     FontFamily="Segoe MDL2 Assets"
                                     FontSize="22">
 

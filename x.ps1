@@ -2,18 +2,12 @@
 
 # TODO
 #
-#- help dialogs : textbox databound to hashtable, text triggered by title contents
+# - log popout
+# - AD property custom?
 
 #- general options item: searchBase, other search patterns, logging options
 #- static variables / source $item:
 #- Color switches on glyph buttons???
-# - categorzation horzontal scrollbar on dialog textbox
-
-
-# credmgr package?
-# Tool pane?
-#
-# https://github.com/JimmyCushnie/Font-Character-Lister
 
 
 
@@ -282,9 +276,14 @@ $syncHash.itemToolGridItemsGrid.Add_SelectionChanged( {
     })
 
 $syncHash.itemToolCustomConfirm.Add_Click({
-$configHash.customDialogClosed = $true
-$configHash.customInput = $syncHash.itemToolCustomContent.Text
 
+})
+
+$syncHash.itemToolCustomContent.add_KeyDown({ 
+    if ($_.Key -eq 'Enter') {
+        $configHash.customDialogClosed = $true
+        $configHash.customInput = $syncHash.itemToolCustomContent.Text
+    } 
 })
 
 $syncHash.itemToolGridItemsGrid.Add_AutoGeneratingColumn( {
@@ -433,7 +432,7 @@ $syncHash.settingLogo.add_Loaded( {
                     $sysCheckHash.sysChecks[0].Admin -eq $false) { Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck }
                 
                 else { 
-                    Start-PropBoxPopulate -configHash $configHash 
+                    Start-PropBoxPopulate -configHash $configHash -SavedConfig $savedConfig
                     Set-ADGenericQueryNames -ConfigHash $configHash               
                     Set-QueryPropertyList -SyncHash $syncHash -ConfigHash $configHash
 
@@ -689,6 +688,8 @@ $syncHash.settingMiscClick.Add_Click( {
     })
 
 #endregion
+$syncHash.settingSearchDaySpan.Add_ValueChanged({$ConfigHash.searchDays = $syncHash.settingSearchDaySpan.Value })
+
 
 #region FlyOutExits
 $syncHash.settingLoggingCompFlyoutExit.Add_Click( { Reset-ChildWindow -SyncHash $syncHash -Title 'Login Log Paths' -SkipContentPaneReset -SkipResize })
@@ -1742,7 +1743,7 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
 
             $item = ($configHash.currentTabItem).toLower()
             $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
-            $toolName = ($configHash.objectToolConfig[$toolID - 1].toolActionToolTip).ToUpper()
+            $toolName = ($configHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
 
             try {                     
                 Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
@@ -1782,11 +1783,17 @@ $syncHash.itemToolDialog.Add_ClosingFinished( {
         $syncHash.itemToolImageBorder.Visibility = 'Collapsed'
         $syncHash.itemToolGridSelect.Visibility = 'Collapsed'
         $syncHash.itemToolCommandGridPanel.Visibility = 'Collapsed'
+        $syncHash.itemToolCustomDialog.Visibility = 'Collapsed'
         $syncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
         $syncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
     })
 
+$syncHash.compExpanderOpenLog.Add_Click({  Invoke-Item $queryHash[$configHash.currentTabItem].LoginLogPath })
 
+$syncHAsh.settingResetADPropMap.Add_Click({ 
+    Remove-SavedPropertyLists -SavedConfig $savedConfig 
+    $syncHAsh.settingResetADPropMap.IsEnabled = $false
+})
 #region ActionLogReview
 
 $syncHash.toolsSingleLogExport.Add_Click( { 
@@ -1827,6 +1834,8 @@ $syncHash.toolsLogEndDate.Add_CalendarClosed( { Set-FilteredLogs -SyncHash $sync
 
 $syncHash.toolsLogSearchBox.add_KeyDown( { if ($_.Key -eq 'Enter') { Set-FilteredLogs -SyncHash $syncHash -LogView $configHash.logCollectionView } })
 
+
+
 $syncHash.adHocConfirm.Add_Click({
     $configHash.confirmCode = 'continue'
     $syncHash.adHocConfirmWindow.IsOpen = $false
@@ -1843,7 +1852,8 @@ $syncHash.toolsLogDialogClose.Add_Click( { $syncHash.toolsLogDialog.IsOpen = $fa
 #endregion
 
 
-
+$syncHash.itemToolSearchBoxClear.Add_Click({ $syncHash.itemToolListSearchBox.Text = $null })
+$syncHash.itemToolGridSearchBoxClear.Add_Click({ $syncHash.itemToolGridSearchBox.Text = $null })
 
 
 
