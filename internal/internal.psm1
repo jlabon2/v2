@@ -226,8 +226,9 @@ function Set-Config {
                 $ConfigHash.($_ + 'PropListSelection') = $null
                 $ConfigHash.($_ + 'PropPullListNames') = $null
                 $ConfigHash.($_ + 'PropPullList') = $null
-                
             }
+
+            $ConfigHash.queryDefConfig.ID | ForEach-Object { $ConfigHash.queryDefConfig[$_ - 1].QueryDefTypeList = $null }
 
             $ConfigHash.buttonGlyphs = $null
             $ConfigHash.adPropertyMap = $null
@@ -1003,7 +1004,20 @@ function Start-AdminCheck {
     param ($SysCheckHash) 
     if ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole([Security.Principal.WindowsBUiltInRole]::Administrator)) { $SysCheckHash.sysChecks[0].IsInAdmin = 'True' }
 
-    if ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole('Domain Admins')) { $SysCheckHash.sysChecks[0].IsDomainAdmin = 'True' }
+    if ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole('Domain Admins')) { 
+        $SysCheckHash.sysChecks[0].IsDomainAdmin            = 'True' 
+        $SysCheckHash.sysChecks[0].IsDomainAdminOrDelegated = 'True' 
+    }
+
+    else {
+        if (![string]::IsNullOrEmpty($SysCheckHash.sysChecks[0].DelegatedGroupName)) {
+            if ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole($SysCheckHash.sysChecks[0].DelegatedGroupName)) {
+                $SysCheckHash.sysChecks[0].IsDomainAdminOrDelegated = 'True' 
+                $SysCheckHash.sysChecks[0].IsDelegated = 'True' 
+            }
+        }
+
+    }
 }
 
 function Set-RSDataContext {
@@ -1039,32 +1053,35 @@ function Get-AdObjectPropertyList {
 function Remove-SavedPropertyLists {
     param ($savedConfig)
     $configRoot = Split-Path $savedConfig 
-    if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)user.json")) { Remove-Item  (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)user.json")}
-    if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)comp.json")) { Remove-Item  (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)comp.json")}
+    if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-user.json")) { Remove-Item  (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-user.json")}
+    if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-comp.json")) { Remove-Item  (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-comp.json")}
 }
 
 function Get-PropertyLists {
-    param ($ConfigHash, $savedConfig) 
+    param ($ConfigHash, $savedConfig, $syncHash, $window, $adLabel) 
  
     $configRoot = Split-Path $savedConfig 
 
     foreach ($type in ('user', 'comp')) {
         if ($type -eq 'user') {  
-            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json")) {
-                $ConfigHash.userPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json") | ConvertFrom-Json
+            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json")) {
+                $ConfigHash.userPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json") | ConvertFrom-Json
             }
             else { 
-                $ConfigHash.userPropPullList = Create-AttributeList -Type User -ConfigHash $configHash
-                $ConfigHash.userPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json")
+                 $window.Dispatcher.Invoke([Action]{$adLabel.Visibility = "Visible"})
+                $ConfigHash.userPropPullList = Create-AttributeList -Type User -ConfigHash $configHash | Sort-Object -Unique Name
+                $ConfigHash.userPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json")
             }
         }
 
         else { 
-            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json")) {
-                $ConfigHash.compPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json") | ConvertFrom-Json
+            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json")) {
+                $ConfigHash.compPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json") | ConvertFrom-Json
             }
-            else { $ConfigHash.compPropPullList = Create-AttributeList -Type Computer -ConfigHash $configHash
-                   $ConfigHash.compPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)$type.json")
+            else { 
+                $window.Dispatcher.Invoke([Action]{$adLabel.Visibility = "Visible"})
+                $ConfigHash.compPropPullList = Create-AttributeList -Type Computer -ConfigHash $configHash | Sort-Object -Unique Name
+                $ConfigHash.compPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json")
             }
         }
         
@@ -1085,9 +1102,9 @@ function Set-ADGenericQueryNames {
 
 
 function Start-PropBoxPopulate {
-    param ($ConfigHash, $savedConfig)
+    param ($ConfigHash, $savedConfig, $window, $adLabel)
 
-    Get-PropertyLists -ConfigHash $ConfigHash -SavedConfig $savedConfig
+    Get-PropertyLists -ConfigHash $ConfigHash -Window $window -ADLabel $adLabel -SavedConfig $savedConfig
 
     foreach ($type in @('User', 'Comp')) {
         $tempList = $ConfigHash.($type + 'PropList')
@@ -2274,11 +2291,11 @@ function Find-ObjectLogs {
             if ($ConfigHash.UserLogPath -and (Test-Path (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt"))) {
                 $queryHash.$($match.SamAccountName).LoginLogPath = (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt")
                 $queryHash.$($match.SamAccountName).LoginLogRaw = Get-Content (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt") |
-                    Select-Object -Last 100 | 
+                    Select-Object -Last ($ConfigHash.searchDays * 2.5) | 
                         ConvertFrom-Csv -Header $ConfigHash.userLogMapping.Header |
                             Select-Object *, @{Label = 'DateTime'; Expression = { $_.DateRaw -as [datetime] } } -ExcludeProperty DateRaw |
                                 Where-Object { $_.DateTime -gt (Get-Date).AddDays(-($ConfigHash.searchDays)) } |
-                                    Sort-Object DateTime -Descending 
+                                    Sort-Object DateTime
                                     
                 if ($queryHash.$($match.SamAccountName).LoginLogRaw) {
                     $loginCounts = $queryHash.$($match.SamAccountName).LoginLogRaw |
@@ -2290,8 +2307,11 @@ function Find-ObjectLogs {
                                         
                                        
                     foreach ($log in ($queryHash.$($match.SamAccountName).LoginLogRaw |
-                                Sort-Object -Unique -Property ComputerName |
-                                    Sort-Object DateTime -Descending)) {                    
+                                Group-Object ComputerName | ForEach-Object {$_ |
+                                     Select-Object -ExpandProperty group |
+                                         Sort-Object DateTime -Descending |
+                                             Select-Object -First 1} ) | Sort-Object DateTime -Descending) {               
+                                                  
                         Remove-Variable sessionInfo, clientLocation, hostLocation -ErrorAction SilentlyContinue
                                               
                         $ruleCount = ($ConfigHash.nameMapList | Measure-Object).Count
@@ -2385,7 +2405,10 @@ function Find-ObjectLogs {
                             }
                         }
 
-                        $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.SamAccountName).LoginLogListView.Refresh() })
+                        if (!$refreshTimer -or ($refreshTimer.Elapsed.TotalSeconds -ge 5)) {
+                            $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.SamAccountName).LoginLogListView.Refresh() })
+                            $refreshTimer =  [system.diagnostics.stopwatch]::StartNew()
+                        }
                             
 
                         if (($SyncHash.userCompGrid.Items | Measure-Object).Count -eq 1) {
@@ -2393,7 +2416,10 @@ function Find-ObjectLogs {
 
                             $queryHash[$match.SamAccountName].logsSearched = $true
                         }
-                    }                                                                              
+                    } 
+                    
+                    $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.SamAccountName).LoginLogListView.Refresh() })
+                                                                                                 
                 }
                 else { $queryHash[$match.SamAccountName].logsSearched = $true }
             }                                    
@@ -2410,7 +2436,7 @@ function Find-ObjectLogs {
             if ($ConfigHash.compLogPath -and (Test-Path (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt"))) {
                 $queryHash.$($match.Name).LoginLogPath = (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt")
                 $queryHash.$($match.Name).LoginLogRaw = Get-Content (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt") | 
-                    Select-Object -Last 100 |
+                    Select-Object -Last ($ConfigHash.searchDays * 2.5) |
                         ConvertFrom-Csv -Header $ConfigHash.compLogMapping.Header |
                             Select-Object *, @{Label = 'DateTime'; Expression = { $_.DateRaw -as [datetime] } } -ExcludeProperty DateRaw |
                                 Where-Object { $_.DateTime -gt (Get-Date).AddDays(-($ConfigHash.searchDays)) } |
@@ -2448,8 +2474,10 @@ function Find-ObjectLogs {
                     if ($compPing.IPV4Address) { $hostLocation = (Resolve-Location -computerName $match.Name -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue).Location }
 
                     foreach ($log in ($queryHash.$($match.Name).LoginLogRaw |
-                                Sort-Object -Unique -Property User |
-                                    Sort-Object DateTime -Descending)) {
+                                Group-Object User | ForEach-Object {$_ |
+                                     Select-Object -ExpandProperty group |
+                                         Sort-Object DateTime -Descending |
+                                             Select-Object -First 1} ) | Sort-Object DateTime -Descending) {
                         Remove-Variable clientLocation -ErrorAction SilentlyContinue
 
                         if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName $log.ClientName }
@@ -2527,8 +2555,13 @@ function Find-ObjectLogs {
                             }
                         }
 
-                        $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.Name).LoginLogListView.Refresh() })
-                        #$syncHash.compUserGrid.Dispatcher.Invoke([Action] { $syncHash.compUserGrid.ItemsSource.Refresh() })
+                        
+
+                        if (!$refreshTimer -or ($refreshTimer.Elapsed.TotalSeconds -ge 5)) {
+                            $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.Name).LoginLogListView.Refresh() })
+                            $refreshTimer =  [system.diagnostics.stopwatch]::StartNew()
+                        }
+                        
 
                         if (($SyncHash.compUserGrid.Items | Measure-Object).Count -eq 1) {
                             $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.compUserGrid.SelectedItem = $SyncHash.compUserGrid.Items[0] })
@@ -2536,6 +2569,8 @@ function Find-ObjectLogs {
                             $queryHash[$match.Name].logsSearched = $true
                         }
                     }
+
+                    $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.Name).LoginLogListView.Refresh() })
                 }
                                             
                 else { $queryHash[$match.Name].logsSearched = $true }
@@ -2674,9 +2709,12 @@ function Write-LogMessage {
         [ValidateSet('Fail', 'Succeed', 'Query')]$Message,
         [Parameter(Mandatory)]$ActionName,
         $SubjectName,
+        $ContextSubjectName,
         $SubjectType,
         [Parameter(Mandatory)]$ArrayList,
         $Error,
+        $OldValue,
+        $NewValue,
         $syncHashWindow)
    
     $textInfo = (Get-Culture).TextInfo
@@ -2684,14 +2722,23 @@ function Write-LogMessage {
     $logMsg = ([PSCustomObject]@{
             ActionName  = $textInfo.ToTitleCase(($ActionName.ToLower() -replace '[][]')) 
             Message     = $textInfo.ToTitleCase($Message.ToLower() -replace '[][]')
-            SubjectName = if ($SubjectName) { ($SubjectName -replace '[][]').ToLower() };
-            SubjectType = if ($SubjectType) { $textInfo.ToTitleCase($SubjectType.ToLower() -replace '[][]') };
+            SubjectName = if ($SubjectName) { ($SubjectName -replace '[][]').ToLower()}
+                          else { "[N/A]" }
+            CxtSubName  = if ($ContextSubjectName) { ($ContextSubjectName -replace '[][]').ToLower()}
+                          else { "[N/A]" }
+            SubjectType = if ($SubjectType) { $textInfo.ToTitleCase(($SubjectType.ToLower() -replace '[][]' -replace "Comp",'Computer')) }
+                          else { "[N/A]" }
             Date        = (Get-Date -Format d)
             Time        = (Get-Date -Format t)
             DateFull    = Get-Date
             Admin       = ($env:USERNAME).ToLower()
             Error       = if ($Error) { $Error }
-            else { 'null' }
+                          else { '[none]' }
+            ogValue     = if ( $OldValue ) {  $OldValue }
+                          else { '[N/A]' }
+            newValue    = if ( $newValue ) { $newValue }
+                          else { '[N/A]' }
+
         }) 
 
     if ($syncHashWindow) { $syncHashWindow.Dispatcher.Invoke([Action] { $ArrayList.Add($logMsg) }) }
@@ -2733,8 +2780,8 @@ function Get-LogItems {
     process {
     
         (Get-Content $InputObject.FullName |
-                ConvertFrom-Csv -Header ActionName, Message, SubjectName, SubjectType, Date, Time, DateFull, Admin, Error) |
-                Select-Object ActionName, Message, SubjectName, SubjectType, Admin, Error, @{Label = 'Date'; Expression = { Get-Date(Get-Date($_.DateFull)) -Format 'M/d/yyyy hh:mm:ss tt' } } |
+                ConvertFrom-Csv -Header ActionName, Message, SubjectName, ContextSubject, SubjectType, Date, Time, DateFull, Admin, Error, OldValue, NewValue) |
+                Select-Object ActionName, Message, SubjectName, SubjectType, ContextSubject, Admin, Error, OldValue, NewValue, @{Label = 'Date'; Expression = { Get-Date(Get-Date($_.DateFull)) -Format 'M/d/yyyy hh:mm:ss tt' } } |
                     ForEach-Object { $tempArray.Add($_) }
         
         
@@ -2798,12 +2845,12 @@ function Initialize-LogGrid {
         ModulesToImport = $configHash.modList
     }
 
-    Start-RSJob $rsArgs -ScriptBlock {
+    Start-RSJob @rsArgs -ScriptBlock {
         param ($rsCmd, $ConfigHash, $SyncHash)
 
         Start-Sleep -Seconds 2
         
-        if ($Scope -eq 'User') { $logList = Get-ChildItem (Join-Path $ConfigHash.actionlogPath -ChildPath $rsCmd.CurrentUser) }
+        if ($rsCmd.scope -eq 'User') { $logList = Get-ChildItem (Join-Path $ConfigHash.actionlogPath -ChildPath $rsCmd.CurrentUser) }
         else { $logList = Get-ChildItem $ConfigHash.actionlogPath -Recurse }
         
         $logList |
@@ -2844,7 +2891,7 @@ function New-LogHTMLExport {
         $rsArgs = @{
             Name            = 'LogWriteHtml'
             ArgumentList    = $ConfigHash, $Scope, $env:USERNAME, $TimeFrame, $span
-            ModulesToImport = @($ConfigHash.modList, 'PSWriteHTML')
+            ModulesToImport = $ConfigHash.modList
         }   
         
         Start-RSJob @rsArgs -ScriptBlock {

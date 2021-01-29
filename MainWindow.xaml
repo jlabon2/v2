@@ -534,6 +534,19 @@
                 <Setter Property="HorizontalAlignment" Value="Left" />
                 <Setter Property="Cursor" Value="Arrow" />
             </Style>
+
+            <Style x:Key="toolLogLabel" TargetType="Label">
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="10,0,10,0" />
+                <Style.Triggers>
+                    <Trigger Property="Content" Value="[N/A]">
+                        <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Gray}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
             <Style
                 x:Key="compItemBox"
                 BasedOn="{StaticResource MaterialDesignTextBoxBase}"
@@ -772,7 +785,16 @@
                 VerticalAlignment="Top"
                 Panel.ZIndex="1"
                 Visibility="Visible">
-
+                <Label
+                    Name="settingADRegenText"
+                    Margin="0,-25,0,25"
+                    HorizontalAlignment="Center"
+                    Panel.ZIndex="5"
+                    Content="Generating initial Active Directory mappings... this may take a minute."
+                    DockPanel.Dock="Bottom"
+                    FontFamily="Segoe UI Light"
+                    FontSize="12"
+                    Visibility="Hidden" />
                 <ProgressBar
                     x:Name="settingProgressBar"
                     Width="400"
@@ -889,10 +911,7 @@
 
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Left"
-                                                        Content="{Binding ActionName}" />
+                                                    <Label Content="{Binding ActionName}" Style="{StaticResource toolLogLabel}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -908,10 +927,9 @@
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
                                                     <Label
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Left"
                                                         Background="Transparent"
-                                                        Content="{Binding Message}" />
+                                                        Content="{Binding Message}"
+                                                        Style="{StaticResource toolLogLabel}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -926,10 +944,7 @@
 
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Left"
-                                                        Content="{Binding SubjectName}" />
+                                                    <Label Content="{Binding SubjectName}" Style="{StaticResource toolLogLabel}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -944,11 +959,10 @@
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
                                                     <Label
-                                                        Margin="10,0,0,0"
-                                                        Padding="0"
                                                         VerticalAlignment="Center"
                                                         HorizontalContentAlignment="Left"
-                                                        Content="{Binding SubjectType}" />
+                                                        Content="{Binding SubjectType}"
+                                                        Style="{StaticResource toolLogLabel}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -963,7 +977,7 @@
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
                                                     <Label
-                                                        Margin="10,0,0,0"
+                                                        Margin="10,0,10,0"
                                                         Padding="0"
                                                         VerticalAlignment="Center"
                                                         HorizontalContentAlignment="Center"
@@ -982,7 +996,7 @@
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
                                                     <Label
-                                                        Margin="10,0,0,0"
+                                                        Margin="10,0,10,0"
                                                         Padding="0"
                                                         VerticalAlignment="Center"
                                                         HorizontalContentAlignment="Center"
@@ -1026,7 +1040,7 @@
                                                             </Setter>
                                                             <Setter Property="Foreground" Value="IndianRed" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Error}" Value="null">
+                                                                <DataTrigger Binding="{Binding Error}" Value="[none]">
                                                                     <Setter Property="Content" Value="" />
                                                                     <Setter Property="ToolTip" Value="No error" />
                                                                     <Setter Property="md:RippleAssist.IsDisabled" Value="False" />
@@ -2585,7 +2599,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="50" />
                                 <RowDefinition Height="50" />
-                                <RowDefinition Height="50" />
+                                <RowDefinition Height="20" />
                                 <RowDefinition Height="50" />
                                 <RowDefinition Height="50" />
                                 <RowDefinition Height="50" />
@@ -2602,7 +2616,7 @@
                                     Margin="5,0,0,0"
                                     FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                     Foreground="LightGray"
-                                    Text="Current user must be a local administrator" />
+                                    Text="Current user is a local administrator" />
                             </DockPanel>
                             <Label
                                 x:Name="settingLocalAdminLabel"
@@ -2620,14 +2634,56 @@
                                     Margin="5,0,0,0"
                                     FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                     Foreground="LightGray"
-                                    Text="Current user must be a domain administrator" />
+                                    Text="Current user is in domain admins or delegated group" />
+
                             </DockPanel>
                             <Label
                                 x:Name="settingDomainAdminLabel"
                                 Grid.Row="1"
                                 Grid.Column="3"
                                 Style="{StaticResource StatusLabel}"
-                                Tag="{Binding IsDomainAdmin}" />
+                                Tag="{Binding IsDomainAdminOrDelegated}" />
+                            <DockPanel
+                                Name="settingDelegatedPanel"
+                                Grid.Row="3"
+                                Grid.Column="1"
+                                Grid.ColumnSpan="4"
+                                Tag="{Binding IsDomainAdmin}">
+                                <DockPanel.Style>
+                                    <Style TargetType="DockPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <Trigger Property="Tag" Value="False">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+
+                                </DockPanel.Style>
+                                <StackPanel DockPanel.Dock="Left">
+                                    <Label
+                                        Margin="0,5,0,0"
+                                        Content="Select group with delegated rights (requires reset)"
+                                        FontFamily="Segoe UI Light" />
+                                    <Label
+                                        Name="settingDelegatedGroupSelection"
+                                        Margin="0,-5,0,0"
+                                        Content="{Binding DelegatedGroupName, UpdateSourceTrigger=PropertyChanged}"
+                                        FontFamily="Segoe UI"
+                                        Foreground="{StaticResource MahApps.Brushes.Accent}" />
+                                </StackPanel>
+                                <Button
+                                    Name="settingDelegatedGroupPick"
+                                    Width="25"
+                                    Height="25"
+                                    Margin="37.5,5,0,0"
+                                    Content=""
+                                    DockPanel.Dock="Right"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="10"
+                                    ToolTip="Pick group with delegated rights" />
+                            </DockPanel>
+
                         </Grid>
                     </Canvas>
                     <Canvas
@@ -4394,6 +4450,7 @@
                                                 Width="75"
                                                 Height="20"
                                                 Margin="10,5,0,0"
+                                                BorderThickness=".5"
                                                 FontSize="12"
                                                 Maximum="365"
                                                 Minimum="1"
@@ -5727,7 +5784,7 @@
                                                             md:CheckBoxAssist.CheckBoxSize="15"
                                                             Content="Enabled"
                                                             FontSize="10"
-                                                            IsChecked="{Binding actionCmd2Enabled}"
+                                                            IsChecked="{Binding actionCmd2Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                             IsEnabled="True"
                                                             Style="{DynamicResource MaterialDesignAccentCheckBox}" />
                                                     </DockPanel>
@@ -8704,7 +8761,7 @@
                                                     Style="{DynamicResource MaterialDesignIconButton}" />
                                                 <HeaderedContentControl
                                                     Grid.Row="1"
-                                                    Margin="50,0,0,0"
+                                                    Margin="40,30,0,0"
                                                     FontFamily="{DynamicResource MaterialDesignFont}"
                                                     Header="Logging Info" />
                                                 <Grid Grid.Row="1">
@@ -8725,6 +8782,34 @@
                                                                 DockPanel.Dock="Left"
                                                                 FontSize="12"
                                                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}" />
+                                                            <Button
+                                                                x:Name="toolsLogSearchBoxClear"
+                                                                Width="15"
+                                                                Height="15"
+                                                                Margin="-50,0,0,-15"
+                                                                Padding="0"
+                                                                Panel.ZIndex="5"
+                                                                md:RippleAssist.IsCentered="True"
+                                                                md:RippleAssist.RippleOnTop="True"
+                                                                md:RippleAssist.RippleSizeMultiplier="5"
+                                                                Content=""
+                                                                DockPanel.Dock="Left"
+                                                                FontFamily="Segoe MDL2 Assets"
+                                                                FontSize="14"
+                                                                Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                IsTabStop="False">
+                                                                <Button.Style>
+                                                                    <Style BasedOn="{StaticResource MaterialDesignIconButton}" TargetType="Button">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding ElementName=toolsLogSearchBox, Path=Text.Length, UpdateSourceTrigger=PropertyChanged}" Value="0">
+                                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                            </DataTrigger>
+
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Button.Style>
+                                                            </Button>
                                                             <DatePicker
                                                                 Name="toolsLogStartDate"
                                                                 Width="100"
@@ -8745,7 +8830,7 @@
                                                                 Style="{StaticResource MaterialDesignFloatingHintDatePicker}" />
                                                         </DockPanel>
                                                         <Grid
-                                                            Margin="50"
+                                                            Margin="25,50,25,50"
                                                             HorizontalAlignment="Stretch"
                                                             VerticalAlignment="Stretch"
                                                             DockPanel.Dock="Top">
@@ -8780,7 +8865,6 @@
                                                                 IsReadOnly="True"
                                                                 KeyboardNavigation.TabNavigation="Cycle"
                                                                 MaxColumnWidth="500"
-                                                                MinColumnWidth="100"
                                                                 RowHeaderWidth="0"
                                                                 RowHeight="30"
                                                                 RowStyle="{StaticResource dataGridRowStyleHistory}"
@@ -8812,7 +8896,7 @@
 
                                                                 <DataGrid.Columns>
                                                                     <DataGridTemplateColumn
-                                                                        Width="15*"
+                                                                        Width="12.5*"
                                                                         Header="ACTION"
                                                                         HeaderStyle="{StaticResource historyGridHeader}">
 
@@ -8820,17 +8904,14 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label
-                                                                                        VerticalAlignment="Center"
-                                                                                        HorizontalContentAlignment="Left"
-                                                                                        Content="{Binding ActionName}" />
+                                                                                    <Label Content="{Binding ActionName}" Style="{StaticResource toolLogLabel}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
                                                                     </DataGridTemplateColumn>
 
                                                                     <DataGridTemplateColumn
-                                                                        Width="10*"
+                                                                        Width="7.5*"
                                                                         Header="RESULT"
                                                                         HeaderStyle="{StaticResource historyGridHeader}">
 
@@ -8838,18 +8919,14 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label
-                                                                                        VerticalAlignment="Center"
-                                                                                        HorizontalContentAlignment="Left"
-                                                                                        Background="Transparent"
-                                                                                        Content="{Binding Message}" />
+                                                                                    <Label Content="{Binding Message}" Style="{StaticResource toolLogLabel}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
                                                                     </DataGridTemplateColumn>
 
                                                                     <DataGridTemplateColumn
-                                                                        Width="15*"
+                                                                        Width="8*"
                                                                         Header="TARGET"
                                                                         HeaderStyle="{StaticResource historyGridHeader}">
 
@@ -8857,16 +8934,27 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label
-                                                                                        VerticalAlignment="Center"
-                                                                                        HorizontalContentAlignment="Left"
-                                                                                        Content="{Binding SubjectName}" />
+                                                                                    <Label Content="{Binding SubjectName}" Style="{StaticResource toolLogLabel}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
                                                                     </DataGridTemplateColumn>
                                                                     <DataGridTemplateColumn
-                                                                        Width="10*"
+                                                                        Width="8*"
+                                                                        Header="CXT TARGET"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
+
+                                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                                    <Label Content="{Binding ContextSubject}" Style="{StaticResource toolLogLabel}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+                                                                    <DataGridTemplateColumn
+                                                                        Width="7.5*"
                                                                         Header="TYPE"
                                                                         HeaderStyle="{StaticResource historyGridHeader}">
 
@@ -8874,18 +8962,41 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label
-                                                                                        Margin="10,0,0,0"
-                                                                                        Padding="0"
-                                                                                        VerticalAlignment="Center"
-                                                                                        HorizontalContentAlignment="Left"
-                                                                                        Content="{Binding SubjectType}" />
+                                                                                    <Label Content="{Binding SubjectType}" Style="{StaticResource toolLogLabel}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
                                                                     </DataGridTemplateColumn>
                                                                     <DataGridTemplateColumn
-                                                                        Width="20*"
+                                                                        Width="7.5*"
+                                                                        Header="OLD VALUE"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
+
+                                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                                    <Label Content="{Binding OldValue}" Style="{StaticResource toolLogLabel}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+                                                                    <DataGridTemplateColumn
+                                                                        Width="7.5*"
+                                                                        Header="NEW VALUE"
+                                                                        HeaderStyle="{StaticResource historyGridHeader}">
+
+                                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                                            <DataTemplate>
+                                                                                <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                                    <Label Content="{Binding NewValue}" Style="{StaticResource toolLogLabel}" />
+                                                                                </Viewbox>
+                                                                            </DataTemplate>
+                                                                        </DataGridTemplateColumn.CellTemplate>
+                                                                    </DataGridTemplateColumn>
+                                                                    <DataGridTemplateColumn
+                                                                        Width="10*"
                                                                         Header="DATE"
                                                                         HeaderStyle="{StaticResource historyGridHeader}"
                                                                         SortMemberPath="Date">
@@ -8894,18 +9005,14 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Center" StretchDirection="DownOnly">
-                                                                                    <Label
-                                                                                        Margin="2.5,0,2.5,0"
-                                                                                        Padding="0"
-                                                                                        VerticalAlignment="Center"
-                                                                                        HorizontalContentAlignment="Center"
-                                                                                        Content="{Binding Date}" />
+                                                                                    <Label Content="{Binding Date}" Style="{StaticResource toolLogLabel}" />
+
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
                                                                     </DataGridTemplateColumn>
                                                                     <DataGridTemplateColumn
-                                                                        Width="15*"
+                                                                        Width="10*"
                                                                         Header="Admin"
                                                                         HeaderStyle="{StaticResource historyGridHeader}">
 
@@ -8913,12 +9020,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label
-                                                                                        Margin="10,0,0,0"
-                                                                                        Padding="0"
-                                                                                        VerticalAlignment="Center"
-                                                                                        HorizontalContentAlignment="Center"
-                                                                                        Content="{Binding Admin}" />
+                                                                                    <Label Content="{Binding Admin}" Style="{StaticResource toolLogLabel}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -8926,7 +9028,7 @@
 
 
                                                                     <DataGridTemplateColumn
-                                                                        Width="10*"
+                                                                        Width="3*"
                                                                         Header=""
                                                                         HeaderStyle="{StaticResource historyGridHeader}">
                                                                         <DataGridTemplateColumn.CellTemplate>
@@ -8935,7 +9037,7 @@
                                                                                     x:Name="resultsErrorItem"
                                                                                     Width="15"
                                                                                     Height="15"
-                                                                                    Margin="-6,-7,0,-7"
+                                                                                    Margin="-5,-7,0,-7"
                                                                                     Padding="0"
                                                                                     HorizontalAlignment="Center"
                                                                                     FontFamily="Segoe MDL2 Assets"
@@ -8958,7 +9060,7 @@
                                                                                             </Setter>
                                                                                             <Setter Property="Foreground" Value="IndianRed" />
                                                                                             <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding Error}" Value="null">
+                                                                                                <DataTrigger Binding="{Binding Error}" Value="[none]">
                                                                                                     <Setter Property="Content" Value="" />
                                                                                                     <Setter Property="ToolTip" Value="No error" />
                                                                                                     <Setter Property="md:RippleAssist.IsDisabled" Value="False" />
@@ -8986,14 +9088,14 @@
 
 
 
-                                                                    <DataGridTemplateColumn Width="10*" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                                    <DataGridTemplateColumn Width="3*" HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                                         <DataGridTemplateColumn.CellTemplate>
                                                                             <DataTemplate>
                                                                                 <Button
                                                                                     x:Name="resultsQueryItem"
                                                                                     Width="15"
                                                                                     Height="15"
-                                                                                    Margin="-7.5,-7,0,-7"
+                                                                                    Margin="-6,-7,0,-7"
                                                                                     Padding="0"
                                                                                     HorizontalAlignment="Center"
                                                                                     Content=""
