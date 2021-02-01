@@ -19,20 +19,16 @@
             actionCmd1Icon    = $null
             actionCmd1Refresh = $false
             actionCmd1Multi   = $false
-            ValidCmd          = $false
-            ValidAction1      = $false
-            ValidAction2      = $false
+            ValidCmd          = $null
+            ValidAction1      = $null
+            ValidAction2      = $null
             actionCmd2        = 'Do-Something -User $user'
             actionCmd2ToolTip = 'Action name'
             actionCmd2Icon    = $null
             actionCmd2Refresh = $false
             actionCmd2Multi   = $false
-            querySubject      = $env:USERNAME
-            result            = '(null)'
             actionCmdsEnabled = $true
             transCmdsEnabled  = $true
-            actionCmd1result  = '(null)'
-            actionCmd2result  = '(null)'
             actionCmd2Enabled = $false
             PropType          = $null
             actionList        = @('ReadOnly', 'ReadOnly-Raw', 'Editable', 'Editable-Raw', 'Actionable', 'Actionable-Raw', 'Editable-Actionable', 'Editable-Actionable-Raw')
@@ -56,7 +52,9 @@
             objectList             = @('Comp', 'User', 'Both', 'Standalone')
             objectType             = $null
             toolAction             = 'Do-Something -UserName $user'
-            toolActionValid        = $false
+            toolActionValid        = $null
+            toolSelectValid        = $null
+            toolExtraValid         = $null
             toolActionConfirm      = $true
             toolActionToolTip      = $null
             toolActionIcon         = $null
@@ -99,7 +97,7 @@
                 actionCmd      = 'Do-Something -User $user'
                 actionCmdIcon  = $null
                 actionCmdMulti = $false
-                ValidAction    = $false
+                ValidAction    = $null
             }))
       
     $configHash.boxContextCount = ($configHash.contextConfig | Measure-Object).Count
@@ -176,6 +174,11 @@
     # THIS RETURN THE ROW DATA AVAILABLE
     # resultObj scope is the whole script
    
+        $itemSource = $configHash.objectToolConfig[ $syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1]
+
+        Update-ScriptBlockValidityStatus -syncHash $syncHash -itemSet $itemSource -statusName 'toolActionValid' -ResultBoxName 'settingObjectToolResultBox'
+        Update-ScriptBlockValidityStatus -SyncHash $syncHash -ItemSet $itemSource -StatusName 'toolSelectValid' -ResultBoxName 'settingObjectToolSelectionResultBox'
+        Update-ScriptBlockValidityStatus -SyncHash $syncHash -ItemSet $itemSource -StatusName 'toolExtraValid' -ResultBoxName 'settingObjectToolExtraResultBox'
 
     if ($button.Name -match 'settingObjectToolsEdit') {
         if ($syncHash.settingObjectToolsPropGrid.SelectedItem.toolType -eq 'CommandGrid') {
@@ -205,10 +208,12 @@
 
 [System.Windows.RoutedEventHandler]$global:EventonContextGrid = {
     $button = $_.OriginalSource
-   
+
+    $itemSource = $configHash.contextConfig[$syncHash.settingContextPropGrid.SelectedItem.IDNum - 1]
+    Update-ScriptBlockValidityStatus -syncHash $syncHash -itemSet $itemSource -statusName 'ValidAction' -ResultBoxName 'settingContextResultBox'
+
 
     if ($button.Name -match 'settingContextEdit') {
-        $syncHash.settingContextResultBox.Text = $configHash.contextConfig[$syncHash.settingContextPropGrid.SelectedItem.IDNum - 1].Result
         $syncHash.settingContextIcon.ItemsSource = $configHash.buttonGlyphs
         $syncHash.settingContextDefFlyout.Height = $syncHash.settingChildHeight.ActualHeight      
         $syncHash.settingContextDefFlyout.IsOpen = $true
@@ -230,7 +235,7 @@
     }
 }
 
-[System.Windows.RoutedEventHandler]$global:EventonDataGrid = {
+[System.Windows.RoutedEventHandler]$global:EventonPropertyDataGrid = {
     # GET THE NAME OF EVENT SOURCE
     $button = $_.OriginalSource
     # THIS RETURN THE ROW DATA AVAILABLE
@@ -240,7 +245,16 @@
     else { $type = 'Comp' }
 
     if ($button.Name -match 'settingEdit') {
-        $switchVal = (($configHash.($type + 'PropList')[$syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1]).ActionName)
+
+         $itemSource = $configHash.($type + 'PropList')[$syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1]
+
+        Update-ScriptBlockValidityStatus -syncHash $syncHash -itemSet $itemSource -statusName 'ValidCmd' -ResultBoxName 'settingResultBox'
+        Update-ScriptBlockValidityStatus -SyncHash $syncHash -ItemSet $itemSource -StatusName 'ValidAction1' -ResultBoxName 'settingBox1ResultBox'
+        Update-ScriptBlockValidityStatus -SyncHash $syncHash -ItemSet $itemSource -StatusName 'ValidAction1' -ResultBoxName 'settingBox2ResultBox'
+
+       
+        $switchVal = $itemSource.ActionName
+
         switch -wildcard ($switchVal) {
             
             { $switchVal -notmatch 'raw' } {
@@ -278,7 +292,6 @@
         else { Set-CurrentPane -SyncHash $syncHash -Panel 'settingPropCompDefine' }
             
         
-        $syncHash.settingResultBox.Text = ($configHash.($type + 'PropList')[$syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1]).Result
         $syncHash.settingBox1Icon.ItemsSource = $configHash.buttonGlyphs
         $syncHash.settingBox2Icon.ItemsSource = $configHash.buttonGlyphs
         $syncHash.settingUserPropDefFlyout.Height = $syncHash.settingChildHeight.ActualHeight
@@ -415,7 +428,16 @@
     $button = $_.OriginalSource
    
 
-    if ($button.Name -match 'settingNetClearItem') { $configHash.netMapList.Remove(($configHash.netMapList | Where-Object -FilterScript { $_.ID -eq ($syncHash.settingNetDataGrid.SelectedItem.ID) })) }
+    if ($button.Name -match 'settingNetClearItem') {
+        $id = $syncHash.settingNetDataGrid.SelectedItem.ID  
+        $configHash.netMapList.Remove(($configHash.netMapList | Where-Object -FilterScript { $_.ID -eq ($syncHash.settingNetDataGrid.SelectedItem.ID) }))
+        
+        $configHash.netMapList |
+            Where-Object -FilterScript { $_.Id -gt $id } |
+                ForEach-Object -Process { $_.Id = $_.Id - 1 }       
+        
+        $syncHash.settingNetDataGrid.Items.Refresh()
+    }
 
     elseif ($button.Name -match 'settingnetIP') {
         try {
@@ -458,7 +480,7 @@
     if ($button.Name -match 'settingNameClearItem') { 
         $id = $syncHash.settingNameDataGrid.SelectedItem.ID 
         $configHash.NameMapList.Remove(($configHash.NameMapList | Where-Object -FilterScript { $_.ID -eq ($syncHash.settingNameDataGrid.SelectedItem.ID) }))
-        ($configHash.NameMapList | Where-Object -FilterScript { $_.Id -eq ($syncHash.settingNameDataGrid.SelectedItem.ID) })
+      #  ($configHash.NameMapList | Where-Object -FilterScript { $_.Id -eq ($syncHash.settingNameDataGrid.SelectedItem.ID) })
 
 
         

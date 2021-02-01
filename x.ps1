@@ -77,13 +77,15 @@ To be completed.. settingItemToolsContent
 }
     'settingContextPropContent' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingContextPropContent
+Contextual tools are actions accessible through the historical view. It uses the currently queried object and the selection made within the historical view to perform tasks defined within this configuration section. 
 '@
-        'Types' = @{}
+      
 }
     'settingVarContent' =  [PSCustomObject]@{
         'Body'  = @'  
-To be completed.. settingVarContent
+Resources and variables are items updated as defined intervals that allow custom data to be accessed through out scriptblocks found throughout the tool.
+
+Functions and modules are PowerShell items added to allow access to scriptblocks executing in new threads. If not added, they can not be accessed in the thread.
 '@
         'Types' = @{}
 }
@@ -137,6 +139,10 @@ These are general options related to querying and logging.
 Miscellaneous settings.
 
 The logging path defines where this tool's actions are logged. Ideally, this should be the same network location for all administrators using this tool. 
+
+Login log view depth refers to how far back login logs will be searched, analyzed, and displayed on the historical view. Larger depth will result in longer overall querying time, but this number may need to be adjusted to best fit your enviornment's usage.
+
+Active directory mappings are an index of the entire list of the AD object properties and their related data. If the AD schema is updated, these should be refreshed using the button below.
 '@
 }
  'rtConfigFlyout' =  [PSCustomObject]@{
@@ -163,15 +169,40 @@ The COMMAND field holds the command executed after selecting the tool’s button
 }
 'settingLoggingContent' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingLoggingContent
+Select directories that store the login logs for both clients and users. These should be .CSV, or data files otherwise delimited by commas. They should at least contain the username of the user, the date, and the computer name. After choosing the respective directory, the structure of the logs can be defined to map each attribute.
+
+After selecting the directory with the gear button, the edit button will enable - from here, you can map each value to its respective type. The given values are pulled from the newest log entry in the previously defined logging path. 
+
+The IGNORE selection will skip the property, while the CUSTOM selection will allow you to assign a custom friendly name to display this value in the historical view when this item type is queried.
 '@
-        'Types' = @{}
+       
 }
 'settingContextDefFlyout' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingContextDefFlyout
+These fields define how and when the selected contextual action is peformed.
+
+The selection(s) made within the TARGET TYPES list will determine what type of computers will allow access to this action's button. Inelligble computer types will disable the button. The values in this list are referenced from the computer types defined in the NAMING CONVENTION configuration section. 
+
+Within the BUTTON SETTINGS section, the scriptblock will determine the actions performed when the button is selected. The variables listed below can be used within this scriptblock to reference the current selected items.
+
+As with other scriptblocks, this tool's scriptblock must be validated before it can be used. Selecting the EXECUTE button will evaluate the block for any warnings, issues, or parsing errors - the results will be displayed in the SCRIPTBLOCK VALIDITY text box. After validating, the tooltip of the status icon found within this box will list any warnings or errors. 
+
+The TARGET USER MUST BE LOGGED IN option will only allow this action's button to be accessible if the targeted user has a current session on the target machine. The TARGET MUST BE ONLINE option will only allow this action's button to be accessible if the targeted computer is online. The NEW THREAD option will run the button’s action in a new thread - this is suggested for longer or more complicated tasks (however, it may not be required if the action is simple or quick to complete). The ICON will appear as the button’s icon within the historical view.
 '@
-        'Types' = @{}
+        'Vars' = [ordered]@{
+            '$comp'      = 'The computer name of the targeted system. If the queried object is a computer, this variable refers to that item. If it is not, it refers to the selected computer in the queried user''s historical view'
+            '$user'      = 'The username of the targeted user.  If the queried object is a user, this variable refers to that item. If it is not, it refers to the selected user in the queried computer''s historical view'
+            '$sessionID' = 'The session ID of the targeted user, if the selected item in the historical view has an active session.'
+                     
+        }
+
+        'Tips' = [ordered]@{
+            'Confirmation Window' = @'
+Adding the following line at any point within the scriptblock will launch a confirmation window before continuing the block:
+    New-DialogWait -ConfirmWindow $confirmWindow -Window 
+        $window -configHash $configHash 
+'@         
+        }
 }
 'settingObjectToolDefFlyout' =  [PSCustomObject]@{
         'Body'  = @' 
@@ -181,9 +212,24 @@ To be completed.. settingObjectToolDefFlyout
 }
 'settingVarDataGrid' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingVarDataGrid
+Variables defined below will populate according to the set frequency and allow access from within scriptblocks defined elsewhere.
+
+The NAME field will be the name of the variable. These can and will overwrite the default variables referenceable from within scriptblocks if the same names are used. The UPDATE FREQUENCY dictates how often these variables update. They are described in the list below. The DESCRIPTION field should explain the variable - it appears alongside the name in all information panels that list variables. The DEF field is the scriptblock that executes whenever the variable updates.
 '@
-        'Types' = @{}
+        'Types'  = [ordered]@{
+            'All Queries'      = 'The value will update whenever any query is made.'
+            'User Queries'     = 'The value will update whenever any user query is made.'
+            'Computer Queries' = 'The value will update whenever any user query is made.'
+            'Daily'            = 'The value will update when the program starts, and then every 24 hours afterwards.'
+            'Hourly'           = 'The value will update when the program starts, and then every hour afterwards.'
+            'Every 15 minutes' = 'The value will update when the program starts, and then every 15 minutes afterwards.'
+            'Program Start'    = 'The value will update only upon program start.'
+        }
+}
+'settingAdminContent' = [PSCustomObject]@{
+        'Body'  = @' 
+To be completed.. settingAdminContent
+'@
 }
 }
 
@@ -492,6 +538,12 @@ $syncHash.settingRtAddClick.Add_Click( {
 #region NetworkMap events
 
 $syncHash.settingNetMapClick.Add_Click( {
+
+        if ($syncHash.settingNetImportClick.ItemsSource -eq $null) {
+            $syncHash.settingNetImportClick.ItemsSource = @('Current device address','ADDS subnets','DHCP scopes')
+            $syncHash.settingNetImportClick.SelectedIndex = 0
+        }
+
         $syncHash.settingNetDataGrid.Visibility = 'Visible'
         $syncHash.settingNetDataGrid.ItemsSource = $configHash.netMapList 
         Set-ChildWindow -SyncHash $syncHash -Title 'Network Mappings' -HideCloseButton -Background Flyout
@@ -608,7 +660,7 @@ $syncHash.settingGeneralAddClick.Add_Click( {
 
 
 $syncHash.settingVarAddClick.Add_Click( {
-        if ($syncHash.settingGeneralAddClick.Tag -eq 'Var') {
+        if ($syncHash.settingVarAddClick.Tag -eq 'Var') {
             $configHash.varListConfig.Add([PSCustomObject]@{
                     VarNum              = ($configHash.varListConfig.VarNum |
                             Sort-Object -Descending |
@@ -617,6 +669,7 @@ $syncHash.settingVarAddClick.Add_Click( {
                     VarCmd              = $null
                     UpdateFrequencyList = @('All Queries', 'User Queries', 'Comp Queries', 'Daily', 'Hourly', 'Every 15 mins', 'Program Start')
                     UpdateFrequency     = 'Program Start'
+                    VarDesc             = $null
                 })    
 
             $syncHash.settingVarDataGrid.Items.Refresh()
@@ -1019,7 +1072,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                           
                                                         $rsArgs = @{
                                                             Name            = 'threadedAction'
-                                                            ArgumentList    = @($rsCmd, $queryHash, $b, $configHash, $syncHash.adHocConfirmWindow, $syncHash.Window)
+                                                            ArgumentList    = @($rsCmd, $queryHash, $b, $configHash, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
                                                             ModulesToImport = $configHash.modList
                                                         }
 
@@ -1028,6 +1081,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                         
                                                             Start-Sleep -Milliseconds 500
                                                            
+                                                            Set-CustomVariables -VarHash $varHash
+
                                                             $actionName = $rsCmd.propList.('actionCmd' + $b + 'ToolTip')
                                                             $actionObject = $rsCmd.actionObject
 
@@ -1104,6 +1159,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                         }
                                    
                                                         $b = $sender.Name -replace '.*action'
+
+                                                        Set-CustomVariables -VarHash $varHash
 
                                                         Remove-Variable -Name $type -ErrorAction SilentlyContinue
                                                         New-Variable -Name $type -Value $actionObject
@@ -1318,12 +1375,12 @@ $syncHash.tabMenu.add_Loaded( {
                                     
                                 $rsArgs = @{
                                     Name            = 'buttonThreadedAction'
-                                    ArgumentList    = @($rsCmd, $syncHash, $configHash, $syncHash.adHocConfirmWindow, $syncHash.Window)
+                                    ArgumentList    = @($rsCmd, $syncHash, $configHash, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
                                     ModulesToImport = $configHash.modList
                                 }
 
                                 Start-RSJob @rsArgs -ScriptBlock {
-                                    Param($rsCmd, $syncHash, $configHash, $confirmWindow, $window)
+                                    Param($rsCmd, $syncHash, $configHash, $confirmWindow, $window, $varHash)
                             
                                     $user = $rsCmd.user
                                     $comp = $rsCmd.comp
@@ -1331,7 +1388,7 @@ $syncHash.tabMenu.add_Loaded( {
 
                                     $combinedString = "$($user.ToLower()) on $($comp.ToLower())"
                                     $toolName = $rsCmd.buttonSettings.ActionName
-                            
+                                    Set-CustomVariables -VarHash $varHash
 
                                     try {
                                         Invoke-Expression -Command $rsCmd.buttonSettings.actionCmd
@@ -1349,6 +1406,7 @@ $syncHash.tabMenu.add_Loaded( {
                             else {
                                 $combinedString = "$($user.ToLower()) on $($comp.ToLower())"
                                 $toolName = $configHash.contextConfig[$id - 1].ActionName
+                                Set-CustomVariables -VarHash $varHash
 
                                 try {
                                     Invoke-Expression -Command $configHash.contextConfig[$id - 1].actionCmd
@@ -1748,16 +1806,17 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
 
         $rsArgs = @{
             Name            = 'ItemTool'
-            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash, $syncHash.Window, $syncHash.adHocConfirmWindow)
+            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash, $syncHash.Window, $syncHash.adHocConfirmWindow, $varHash)
             ModulesToImport = $configHash.modList
         }
 
         Start-RSJob @rsArgs -ScriptBlock {
-            Param($queue, $toolID, $configHash, $queryHash, $window, $confirmWindow)
+            Param($queue, $toolID, $configHash, $queryHash, $window, $confirmWindow, $varHash)
 
             $item = ($configHash.currentTabItem).toLower()
             $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
             $toolName = ($configHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
+            Set-CustomVariables -VarHash $varHash
 
             try {                     
                 Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
@@ -1821,25 +1880,46 @@ $syncHash.toolsAllLogExport.Add_Click( {
     })
 
 $syncHash.toolsExportConfirmButton.Add_Click( {
-        if ($syncHash.toolsExportDialog.Tag -eq 'Single') { New-LogHTMLExport -Scope User -ConfigHash $configHash -TimeFrame $syncHash.toolsExportDate.SelectedValue.Content }
-        else { New-LogHTMLExport -Scope All -ConfigHash $configHash -TimeFrame $syncHash.toolsExportDate.SelectedValue.Content }
 
-        $syncHash.SnackMsg.MessageQueue.Enqueue('Log export started') 
+        if ($ConfigHash.actionlogPath -and (Test-Path $ConfigHash.actionlogPath)) {
+
+            if ($syncHash.toolsExportDialog.Tag -eq 'Single') { New-LogHTMLExport -Scope User -ConfigHash $configHash -TimeFrame $syncHash.toolsExportDate.SelectedValue.Content }
+            else { New-LogHTMLExport -Scope All -ConfigHash $configHash -TimeFrame $syncHash.toolsExportDate.SelectedValue.Content }
+
+            $syncHash.SnackMsg.MessageQueue.Enqueue('Log export started') 
+            
+        }
+
+        else { $syncHash.SnackMsg.MessageQueue.Enqueue('Log path is invalid or unset; cannot export') }
+
         $syncHash.toolsExportDialog.isOpen = $false
+
     })
 
 $syncHash.toolsExportConfirmCancel.Add_Click( { $syncHash.toolsExportDialog.isOpen = $false })
 
 $syncHash.toolsAllLogView.Add_Click( { 
+
+    if ($ConfigHash.actionlogPath -and (Test-Path $ConfigHash.actionlogPath)) {
         $syncHash.toolsLogProgress.Tag = 'Unloaded'
         $syncHash.toolsLogEmpty.Tag = 'Unloaded'
         Initialize-LogGrid -Scope All -ConfigHash $configHash -SyncHash $syncHash
+    }
+
+    else { $syncHash.SnackMsg.MessageQueue.Enqueue('Log path is invalid or unset; cannot view logs') }
+
     })
 
 $syncHash.toolsSingleLogView.Add_Click( { 
-        $syncHash.toolsLogProgress.Tag = 'Unloaded'
-        $syncHash.toolsLogEmpty.Tag = 'Unloaded'
-        Initialize-LogGrid -Scope User -ConfigHash $configHash -SyncHash $syncHash 
+        
+        if ($ConfigHash.actionlogPath -and (Test-Path $ConfigHash.actionlogPath)) {
+            $syncHash.toolsLogProgress.Tag = 'Unloaded'
+            $syncHash.toolsLogEmpty.Tag = 'Unloaded'
+            Initialize-LogGrid -Scope User -ConfigHash $configHash -SyncHash $syncHash 
+        }
+
+        else { $syncHash.SnackMsg.MessageQueue.Enqueue('Log path is invalid or unset; cannot view logs') }
+
     })
 
 $syncHash.toolsLogStartDate.Add_CalendarClosed( { Set-FilteredLogs -SyncHash $syncHash -LogView $configHash.logCollectionView })
@@ -1898,12 +1978,14 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
 
         $rsArgs = @{
             Name            = 'CommandGridAllRun'
-            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd, $syncHash.adHocConfirmWindow, $syncHash.Window)
+            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
             ModulesToImport = $configHash.modList
         }
 
         Start-RSJob @rsArgs -ScriptBlock {
             Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window)
+
+            Set-CustomVariables -VarHash $varHash
 
             $item = $rsCmd.item
             $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
@@ -1962,75 +2044,21 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
 
 
 
-$syncHash.settingExecute.Add_Click( {
-        if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') {
-            $type = 'User'
-            $user = $syncHash.('setting' + $type + 'PropGrid').SelectedItem.querySubject
-        }
+$syncHash.settingExecute.Add_Click({
+        if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') { $type = 'User' }
 
-        else {
-            $type = 'Comp'
-            $comp = $syncHash.('setting' + $type + 'PropGrid').SelectedItem.querySubject
-        }
-
-        Remove-Variable -Name resultColor -ErrorAction SilentlyContinue          
-   
-        # Empty collection for errors
-        $scriptBlockErrors = @()
-
-        # Define input script
-        [void][System.Management.Automation.Language.Parser]::ParseInput(($syncHash.('setting' + $type + 'PropGrid').SelectedItem.translationCmd), [ref]$null, [ref]$scriptBlockErrors)
-
-        if ($scriptBlockErrors) {
-            $syncHash.settingResultBox.Text = "Invalid scriptblock - $($scriptBlockErrors.Count) errors"
-            $configHash.UserPropList[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)].ValidCmd = $false
-
-            $syncHash.settingResultError.ToolTip = $null
-        
-            for ($err = 0; $err -lt $scriptBlockErrors.Count; $err++) {
-                if ($err -eq $scriptBlockErrors.Count - 1) { $syncHash.settingResultError.ToolTip += [string] $scriptBlockErrors[$err].Message }
-                else { $syncHash.settingResultError.ToolTip += "$([string] $scriptBlockErrors[$err].Message) `n" }
-            }
-      
-            $syncHash.settingResultError.Visibility = 'Visible'
-        }
-
-        else {
-            if ($syncHash.('setting' + $type + 'PropGrid').SelectedItem.PropName -ne 'Non-AD Property') {
-                if ($type -eq 'User') { $result = (Get-ADUser -Identity $syncHash.settingUserPropGrid.SelectedItem.querySubject -Properties $syncHash.settingUserPropGrid.SelectedItem.PropName -ErrorAction Continue).($syncHash.settingUserPropGrid.SelectedItem.PropName) }
-                else { $result = (Get-ADComputer -Identity $syncHash.settingCompPropGrid.SelectedItem.querySubject -Properties $syncHash.settingCompPropGrid.SelectedItem.PropName -ErrorAction Continue).($syncHash.settingCompPropGrid.SelectedItem.PropName) }               
-            }
-        
-            $return = Invoke-Expression -Command $syncHash.('setting' + $type + 'PropGrid').SelectedItem.translationCmd -ErrorAction Continue -ErrorVariable errorVar
+        else { $type = 'Comp' }
        
-            if ($errorVar) {
-                $syncHash.settingResultError.ToolTip = [string]$errorVar
-                $syncHash.settingResultError.Visibility = 'Visible'             
-            }
-
-            else { $syncHash.settingResultError.Visibility = 'Hidden' }
-
-            if (($return | Measure-Object -Line).Lines -gt 2) { $syncHash.settingResultBox.Text = ("Invalid: Return too long ($($($return | Measure-Object -Line).Lines) lines)") }
-
-            else {
-                if ($null -eq $return) {
-                    if ($errorVar) { $syncHash.settingResultBox.Text = ('Invalid: Returned error code') }
-                    
-                    else { $syncHash.settingResultBox.Text = ('Valid (return was empty)') }
-                }
-                else { $syncHash.settingResultBox.Text = ('Valid: ' + [string]$return) }
-                $return = [string]$return
-                $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)].result = $return
-                $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)].validCmd = $true
-            }
-
-
-            if ($resultColor) {
-                try { $syncHash.settingResultBox.Foreground = $resultColor }
-
-                catch { }
-            }
+        $scriptTestArgs = @{
+            ScriptBlock  =  $syncHash.('setting' + $type + 'PropGrid').SelectedItem.translationCmd
+            ErrorControl = 'settingResultBox'
+            SyncHash     = $syncHash
+            ItemSet      = $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)]
+            StatusName   = 'ValidCmd'
         }
+
+        Test-UserScriptBlock @scriptTestArgs
+
     })
 
 
@@ -2049,79 +2077,196 @@ for ($i = 1; $i -le 2; $i++) {
             
             $id = $sender.Name -replace 'settingBox|Execute' 
             $type = $sender.DataContext.ItemType
-            #  try {
-            #      $user = (Get-AdUser -Identity $syncHash.settingUserPropGrid.SelectedItem.querySubject).SamAccountName
-        
-            #      if ($null -eq $user) {
-            #           $configHash.UserPropList[($syncHash.settingUserPropGrid.SelectedItem.Field-1)].Result = "User could not be found"
-            #           break
-            #        }
-
-
-            # Empty collection for errors
-            $scriptBlockErrors = @()
-
-            # Define input script
-            [void][System.Management.Automation.Language.Parser]::ParseInput(($syncHash.('setting' + $type + 'PropGrid').SelectedItem.('actionCmd' + $id)), [ref]$null, [ref]$scriptBlockErrors)
-
-            if ($scriptBlockErrors) {
-                $configHash.($type + 'PropList')[(('setting' + $type + 'PropGrid').SelectedItem.Field - 1)].('actionCmd' + $id + 'result') = "Invalid scriptblock - $($scriptBlockErrors.Count) errors"
-                $configHash.($type + 'PropList')[(('setting' + $type + 'PropGrid').SelectedItem.Field - 1)].('ValidAction' + $id) = $false
-            }
-
-            else {
-                $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)].('actionCmd' + $id + 'result') = 'Scriptblock validated'
-                $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)].('ValidAction' + $id) = $true
-            }
           
-            #   }
-            
-            #   catch { 
-     
-            #      $configHash.UserPropList[($syncHash.settingUserPropGrid.SelectedItem.Field-1)].('actionCmd' + $id + 'result') = "Invalid principal for search."
-            #       $configHash.UserPropList[($syncHash.settingUserPropGrid.SelectedItem.Field-1)].('ValidAction' + $id) = $false 
-            #   }
+            $scriptTestArgs = @{
+                ScriptBlock  =  $syncHash.('setting' + $type + 'PropGrid').SelectedItem.('actionCmd' + $id)
+                ErrorControl = ('settingBox' + $id + 'ResultBox')
+                SyncHash     = $syncHash
+                ItemSet      = $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)]
+                StatusName   = ('ValidAction' + $id)
+            }
 
-            $syncHash.('settingBox' + $id + 'ResultBox').Text = $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)].('actionCmd' + $id + 'result')           
+            Test-UserScriptBlock @scriptTestArgs
+
         }        
     )
 }
 
 $syncHash.settingContextExecute.Add_Click( {
-        # Empty collection for errors
-        $scriptBlockErrors = @()
 
-        # Define input script
-        [void][System.Management.Automation.Language.Parser]::ParseInput(($syncHash.settingContextPropGrid.SelectedItem.actionCmd), [ref]$null, [ref]$scriptBlockErrors)
-
-        if ($scriptBlockErrors) {
-            $syncHash.settingContextResultBox.Text = "Invalid scriptblock - $($scriptBlockErrors.Count) errors"
-            $configHash.contextConfig[($syncHash.settingContextPropGrid.SelectedItem.IDNum - 1)].ValidAction = $false
+        $scriptTestArgs = @{
+            ScriptBlock  =  $syncHash.settingContextPropGrid.SelectedItem.actionCmd
+            ErrorControl = 'settingContextResultBox'
+            SyncHash     = $syncHash
+            ItemSet      = $configHash.contextConfig[($syncHash.settingContextPropGrid.SelectedItem.IDNum - 1)]
+            StatusName   = 'ValidAction'
         }
 
-        else {
-            $syncHash.settingContextResultBox.Text = 'Scriptblock validated'
-            $configHash.contextConfig[($syncHash.settingContextPropGrid.SelectedItem.IDNum - 1)].ValidAction = $true
-        }
+        Test-UserScriptBlock @scriptTestArgs
+
     })
+
+
+$syncHash.settingTranslationScriptBlockBox.Add_TextChanged({ 
+    if ($syncHash.settingTranslationScriptBlockBox.IsFocused -and $syncHash.settingResultBox.Tag -ne 'Unchecked') {
+
+        if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') { $type = 'User' }
+
+        else { $type = 'Comp' }
+       
+        $resetArgs = @{
+            SyncHash      = $syncHash
+            ResultBoxName = 'settingResultBox'
+            ItemSet       = $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)]
+            StatusName    = 'ValidCmd'
+        } 
+      
+        Reset-ScriptBlockValidityStatus @resetArgs
+
+    }
+
+})
+
+$syncHash.settingAction1ScriptBlockBox.Add_TextChanged({ 
+    if ($syncHash.settingAction1ScriptBlockBox.IsFocused -and $syncHash.settingBox1ResultBox.Tag -ne 'Unchecked') {
+           
+        
+        if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') { $type = 'User' }
+
+        else { $type = 'Comp' }
+
+        $resetArgs = @{
+            SyncHash      = $syncHash
+            ResultBoxName = 'settingBox1ResultBox'
+            ItemSet       = $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)]
+            StatusName    = 'ValidAction1'
+        } 
+      
+        Reset-ScriptBlockValidityStatus @resetArgs
+
+    }
+
+})
+
+$syncHash.settingAction2ScriptBlockBox.Add_TextChanged({ 
+    if ($syncHash.settingAction2ScriptBlockBox.IsFocused -and $syncHash.settingBox2ResultBox.Tag -ne 'Unchecked') {
+           
+        
+        if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') { $type = 'User' }
+
+        else { $type = 'Comp' }
+
+        $resetArgs = @{
+            SyncHash      = $syncHash
+            ResultBoxName = 'settingBox2ResultBox'
+            ItemSet       = $configHash.($type + 'PropList')[($syncHash.('setting' + $type + 'PropGrid').SelectedItem.Field - 1)]
+            StatusName    = 'ValidAction2'
+        } 
+      
+        Reset-ScriptBlockValidityStatus @resetArgs
+
+    }
+
+})
+
+$syncHash.settingContextScriptBlockBox.Add_TextChanged({
+     if ($syncHash.settingContextScriptBlockBox.IsFocused -and $syncHash.settingContextResultBox.Tag -ne 'Unchecked') {
+         $resetArgs = @{
+                SyncHash      = $syncHash
+                ResultBoxName = 'settingContextResultBox'
+                ItemSet       = $configHash.contextConfig[($syncHash.settingContextPropGrid.SelectedItem.IDNum - 1)]
+                StatusName    = 'ValidAction'
+            } 
+      
+            Reset-ScriptBlockValidityStatus @resetArgs
+    }
+})
+
+    
+
+
 
 $syncHash.settingObjectToolExecute.Add_Click( {
-        # Empty collection for errors
-        $scriptBlockErrors = @()
 
-        # Define input script
-        [void][System.Management.Automation.Language.Parser]::ParseInput(($syncHash.settingObjectToolsPropGrid.SelectedItem.toolAction), [ref]$null, [ref]$scriptBlockErrors)
-
-        if ($scriptBlockErrors) {
-            $syncHash.settingObjectToolResultBox.Text = "Invalid scriptblock - $($scriptBlockErrors.Count) errors"
-            $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionValid = $false
+           $scriptTestArgs = @{
+            ScriptBlock  = $syncHash.settingObjectToolsPropGrid.SelectedItem.toolAction
+            ErrorControl = 'settingObjectToolResultBox'
+            SyncHash     = $syncHash
+            ItemSet      = $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)]
+            StatusName   = 'toolActionValid'
         }
 
-        else {
-            $syncHash.settingObjectToolResultBox.Text = 'Scriptblock validated'
-            $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionValid = $true
-        }
+        Test-UserScriptBlock @scriptTestArgs
+    
     })
+
+$syncHash.settingObjectToolScriptBox.Add_TextChanged({
+     if ($syncHash.settingObjectToolScriptBox.IsFocused -and $syncHash.settingObjectToolResultBox.Tag -ne 'Unchecked') {
+         $resetArgs = @{
+                SyncHash      = $syncHash
+                ResultBoxName = 'settingObjectToolResultBox'
+                 ItemSet      = $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)]
+                StatusName    = 'toolActionValid'
+            } 
+      
+            Reset-ScriptBlockValidityStatus @resetArgs
+    }
+})
+
+
+$syncHash.settingObjectToolSelectionExecute.Add_Click( {
+
+           $scriptTestArgs = @{
+            ScriptBlock  = $syncHash.settingObjectToolsPropGrid.SelectedItem.toolFetchCmd
+            ErrorControl = 'settingObjectToolSelectionResultBox'
+            SyncHash     = $syncHash
+            ItemSet      = $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)]
+            StatusName   = 'toolSelectValid'
+        }
+
+        Test-UserScriptBlock @scriptTestArgs
+    
+    })
+
+$syncHash.settingObjectToolSelectionScriptBox.Add_TextChanged({
+     if ($syncHash.settingObjectToolSelectionScriptBox.IsFocused -and $syncHash.settingObjectToolSelectionResultBox.Tag -ne 'Unchecked') {
+         $resetArgs = @{
+                SyncHash      = $syncHash
+                ResultBoxName = 'settingObjectToolSelectionResultBox'
+                ItemSet       = $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)]
+                StatusName    = 'toolSelectValid'
+            } 
+      
+            Reset-ScriptBlockValidityStatus @resetArgs
+    }
+})
+
+
+$syncHash.settingObjectToolExtraExecute.Add_Click( {
+
+           $scriptTestArgs = @{
+            ScriptBlock  = $syncHash.settingObjectToolsPropGrid.SelectedItem.toolTargetFetchCmd
+            ErrorControl = 'settingObjectToolExtraResultBox'
+            SyncHash     = $syncHash
+            ItemSet      = $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)]
+            StatusName   = 'toolExtraValid'
+        }
+
+        Test-UserScriptBlock @scriptTestArgs
+    
+    })
+$syncHash.settingObjectToolExtraScriptBox.Add_TextChanged({
+     if ($syncHash.settingObjectToolExtraScriptBox.IsFocused -and $syncHash.settingObjectToolExtraResultBox.Tag -ne 'Unchecked') {
+         $resetArgs = @{
+                SyncHash      = $syncHash
+                ResultBoxName = 'settingObjectToolExtraResultBox'
+                ItemSet       = $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)]
+                StatusName    = 'toolExtraValid'
+            } 
+      
+            Reset-ScriptBlockValidityStatus @resetArgs
+    }
+})
 
     
 $syncHash.settingSelectTextOption.Add_Click({
@@ -2163,7 +2308,7 @@ $syncHash.settingInfoDialogClose.Add_Click( { $syncHash.settingInfoDialog.IsOpen
 $syncHash.settingInfoDialogOpen.Add_Click( {
         if ($syncHash.settingInfoDialog.IsOpen) { $syncHash.settingInfoDialog.IsOpen = $false }
         else { $syncHash.settingInfoDialog.IsOpen = $true }
-        Set-InfoPaneContent -syncHash $syncHash -settingInfoHash $settingInfoHash
+        Set-InfoPaneContent -SyncHash $syncHash -SettingInfoHash $settingInfoHash -ConfigHash $configHash
     })
 
 
@@ -2215,12 +2360,12 @@ $syncHash.itemRefresh.Add_Click( {
 
 $syncHash.sidePaneExit.Add_Click( { $syncHash.resultsSidePane.IsOpen = $false })
 
-$syncHash.settingUserPropGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $EventonDataGrid)
+$syncHash.settingUserPropGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $EventonPropertyDataGrid)
 $syncHash.settingContextPropGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $EventonContextGrid)
-$syncHash.settingUserPropGrid.AddHandler([System.Windows.Controls.Combobox]::SelectionChangedEvent, $EventonDataGrid)
-$syncHash.settingCompPropGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $EventonDataGrid)
+$syncHash.settingUserPropGrid.AddHandler([System.Windows.Controls.Combobox]::SelectionChangedEvent, $EventonPropertyDataGrid)
+$syncHash.settingCompPropGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $EventonPropertyDataGrid)
 $syncHash.settingObjectToolsPropGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $EventonObjectToolGrid)
-$syncHash.settingCompPropGrid.AddHandler([System.Windows.Controls.Combobox]::SelectionChangedEvent, $EventonDataGrid)
+$syncHash.settingCompPropGrid.AddHandler([System.Windows.Controls.Combobox]::SelectionChangedEvent, $EventonPropertyDataGrid)
 $syncHash.settingNetDataGrid.AddHandler([System.Windows.Controls.Button]::ClickEvent, $eventonNetDataGrid)
 $syncHash.settingNetDataGrid.AddHandler([System.Windows.Controls.TextBox]::LostKeyboardFocusEvent, $eventonNetDataGrid)
 $syncHash.settingCompAddItemClick.AddHandler([System.Windows.Controls.Button]::ClickEvent, $addItemClick)

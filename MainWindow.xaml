@@ -67,9 +67,59 @@
                 <Setter Property="FontSize" Value="11" />
             </Style>
 
+            <Style x:Key="ScriptBlockErrorStatus" TargetType="Label">
+                <Setter Property="Foreground" Value="WhiteSmoke" />
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="Content" Value="" />
+                <Setter Property="Panel.ZIndex" Value="1" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="Pass">
+                        <Setter Property="Foreground" Value="LightGreen" />
+                        <Setter Property="Visibility" Value="Visible" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="PassWithIssues">
+                        <Setter Property="Foreground" Value="Yellow" />
+                        <Setter Property="Visibility" Value="Visible" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Fail">
+                        <Setter Property="Foreground" Value="IndianRed" />
+                        <Setter Property="Visibility" Value="Visible" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
 
 
+            <Style
+                x:Key="ErrorStatusTextBox"
+                BasedOn="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
+                TargetType="TextBox">
+                <Setter Property="IsReadOnly" Value="True" />
+                <Setter Property="md:HintAssist.Foreground" Value="White" />
+                <Setter Property="md:HintAssist.Hint" Value="Scriptblock validity" />
+                <Setter Property="TextWrapping" Value="NoWrap" />
+                <Setter Property="VerticalContentAlignment" Value="Top" />
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="Unchecked">
+                        <Setter Property="Text" Value="Scriptblock requires validation" />
 
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Pass">
+                        <Setter Property="Text" Value="Scriptblock is valid" />
+
+                    </Trigger>
+                    <Trigger Property="Tag" Value="PassWithIssues">
+                        <Setter Property="Text" Value="Scriptblock is valid but has warnings" />
+
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Fail">
+                        <Setter Property="Text" Value="Scriptblock is invalid and has major errors" />
+
+                    </Trigger>
+                </Style.Triggers>
+
+            </Style>
 
 
 
@@ -690,7 +740,29 @@
                 <Setter Property="FontSize" Value="24" />
                 <Setter Property="Width" Value="63" />
             </Style>
+            <Style x:Key="scriptBlockToolTipBase" TargetType="Run">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="FontFamily" Value="Segoe UI Light" />
+                <Setter Property="Foreground" Value="WhiteSmoke" />
+            </Style>
 
+            <Style
+                x:Key="scriptBlockToolTipSeverity"
+                BasedOn="{StaticResource scriptBlockToolTipBase}"
+                TargetType="Run">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="Foreground" Value="LightYellow" />
+                <Style.Triggers>
+                    <Trigger Property="Text" Value="ParseError">
+                        <Setter Property="Foreground" Value="IndianRed" />
+                    </Trigger>
+                    <Trigger Property="Text" Value="Warning">
+                        <Setter Property="Foreground" Value="Yellow" />
+                    </Trigger>
+
+                </Style.Triggers>
+            </Style>
             <Style x:Key="scriptBlockValidStatus" TargetType="Label">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
@@ -2392,9 +2464,11 @@
                                                     Style="{StaticResource MaterialDesignBody1TextBlock}"
                                                     Text="{Binding Body}"
                                                     TextWrapping="Wrap" />
-                                                <StackPanel Name="infoPaneVars">
+
+                                                <StackPanel Name="infoPaneTypesPanel">
                                                     <Controls:MetroHeader
-                                                        Name="infoPaneVarHeader"
+                                                        Name="infoPaneTypesHeader"
+                                                        Content="Types"
                                                         FontWeight="SemiBold"
                                                         Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
 
@@ -2403,7 +2477,52 @@
                                                         Margin="-17.5,-17.5,0,0"
                                                         HorizontalScrollBarVisibility="Disabled"
                                                         VerticalScrollBarVisibility="Disabled">
-                                                        <FlowDocument Name="infoPaneVarList" TextAlignment="Left" />
+                                                        <FlowDocument Name="infoPaneTypesList" TextAlignment="Left" />
+                                                    </FlowDocumentScrollViewer>
+                                                </StackPanel>
+                                                <StackPanel Name="infoPaneTipsPanel">
+                                                    <Controls:MetroHeader
+                                                        Name="infoPaneTipsHeader"
+                                                        Content="Tips"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
+
+
+                                                    <FlowDocumentScrollViewer
+                                                        Margin="-17.5,-17.5,0,0"
+                                                        HorizontalScrollBarVisibility="Disabled"
+                                                        VerticalScrollBarVisibility="Disabled">
+                                                        <FlowDocument Name="infoPaneTipsList" TextAlignment="Left" />
+                                                    </FlowDocumentScrollViewer>
+                                                </StackPanel>
+                                                <StackPanel Name="infoPaneVarsPanel">
+                                                    <Controls:MetroHeader
+                                                        Name="infoPaneVarHeader"
+                                                        Content="Variables"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
+
+
+                                                    <FlowDocumentScrollViewer
+                                                        Margin="-17.5,-17.5,0,0"
+                                                        HorizontalScrollBarVisibility="Disabled"
+                                                        VerticalScrollBarVisibility="Disabled">
+                                                        <FlowDocument Name="infoPaneVarsList" TextAlignment="Left" />
+                                                    </FlowDocumentScrollViewer>
+                                                </StackPanel>
+                                                <StackPanel Name="infoPaneCustomVarsPanel">
+                                                    <Controls:MetroHeader
+                                                        Name="infoPaneCustomVarsHeader"
+                                                        Content="Universal Variables"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
+
+
+                                                    <FlowDocumentScrollViewer
+                                                        Margin="-17.5,-17.5,0,0"
+                                                        HorizontalScrollBarVisibility="Disabled"
+                                                        VerticalScrollBarVisibility="Disabled">
+                                                        <FlowDocument Name="infoPaneCustomVarsList" TextAlignment="Left" />
                                                     </FlowDocumentScrollViewer>
                                                 </StackPanel>
                                             </StackPanel>
@@ -2744,24 +2863,41 @@
                                     Grid.ColumnSpan="5"
                                     Margin="10,-20,0,0">
 
+                                    <Controls:SplitButton
+                                        x:Name="settingNetImportClick"
+                                        Width="130"
+                                        Height="20"
+                                        Margin="0,-30,50,0"
+                                        Padding="5,0,5,0"
+                                        HorizontalAlignment="Right"
+                                        HorizontalContentAlignment="Left"
+                                        Controls:ControlsHelper.CornerRadius="2"
+                                        BorderThickness="1"
+                                        FontFamily="Segoe UI Light"
+                                        FontSize="9"
+                                        Foreground="GhostWhite"
+                                        ToolTip="Populate from External Source"
+                                        Visibility="Visible">
+                                        <Controls:SplitButton.BorderBrush>
+                                            <SolidColorBrush Opacity=".85" Color="{StaticResource MahApps.Colors.Gray8}" />
+                                        </Controls:SplitButton.BorderBrush>
+
+                                        <Controls:SplitButton.Icon>
+                                            <Image
+                                                Width="10"
+                                                Height="10"
+                                                HorizontalAlignment="Left"
+                                                Source="{iconPacks:ModernImage Kind=Download,
+                                                                               Brush=GhostWhite}" />
+                                        </Controls:SplitButton.Icon>
+                                    </Controls:SplitButton>
+
                                     <DockPanel
                                         Margin="0,3,47.5,-2.5"
                                         HorizontalAlignment="Right"
                                         Panel.ZIndex="25">
 
-                                        <Button
-                                            x:Name="settingNetImportClick"
-                                            Width="25"
-                                            Height="25"
-                                            Margin="2.5"
-                                            Padding="0"
-                                            HorizontalAlignment="Right"
-                                            Content=""
-                                            DockPanel.Dock="Right"
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            ToolTip="Populate from AD Sites and Services"
-                                            Visibility="Visible" />
+
                                         <Button
                                             Name="settingNetAddClick"
                                             Width="25"
@@ -3757,7 +3893,7 @@
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
                                             <DataGridTemplateColumn
-                                                Width="130"
+                                                Width="135"
                                                 Header="  UPDATE FREQUENCY"
                                                 HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                 <DataGridTemplateColumn.CellTemplate>
@@ -3777,13 +3913,32 @@
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Header="  DESCRIPTION" HeaderStyle="{StaticResource datagridColumnNoTab}">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+
+                                                        <TextBox
+                                                            Name="settingVarDesc"
+                                                            Width="125"
+                                                            Height="20"
+                                                            Margin="-8,-12,-8,-12"
+                                                            Background="Transparent"
+                                                            BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}"
+                                                            BorderThickness=".5,.5,1,.5"
+                                                            IsEnabled="True"
+                                                            Style="{StaticResource customHeaderField}"
+                                                            Text="{Binding VarDesc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
                                             <DataGridTemplateColumn Header="  DEF" HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
 
                                                         <TextBox
                                                             Name="settingVarBox"
-                                                            Width="200"
+                                                            Width="105"
                                                             Height="20"
                                                             Margin="-8,-12,-8,-12"
                                                             Background="MidnightBlue"
@@ -5088,6 +5243,7 @@
                                                     DataContext="{Binding Mode=TwoWay, ElementName=settingContextPropGrid, Path=SelectedItem, UpdateSourceTrigger=PropertyChanged}">
 
                                                     <TextBox
+                                                        Name="settingContextScriptBlockBox"
                                                         Height="150"
                                                         Padding="-10,0,0,-10"
                                                         VerticalAlignment="Top"
@@ -5111,13 +5267,12 @@
                                                         Height="28"
                                                         Margin="10,10,5,10"
                                                         Padding="-10,-3,0,-10"
-                                                        VerticalContentAlignment="Top"
-                                                        md:HintAssist.Foreground="White"
-                                                        md:HintAssist.Hint="Result"
-                                                        Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
-                                                        Text="{Binding actionCmdresult, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                        TextWrapping="NoWrap"
-                                                        VerticalScrollBarVisibility="Auto" />
+                                                        Style="{StaticResource ErrorStatusTextBox}" />
+
+                                                    <Label
+                                                        Name="settingContextResultBoxErrorStatus"
+                                                        Margin="-25,0,0,0"
+                                                        Style="{StaticResource ScriptBlockErrorStatus}" />
                                                     <Button
                                                         Name="settingContextExecute"
                                                         Width="30"
@@ -5543,6 +5698,7 @@
                                                         </StackPanel.Style>
 
                                                         <TextBox
+                                                            Name="settingTranslationScriptBlockBox"
                                                             Height="100"
                                                             Padding="-10,0,0,-10"
                                                             VerticalAlignment="Top"
@@ -5559,41 +5715,23 @@
                                                             VerticalScrollBarVisibility="Auto" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,15,0" Orientation="Horizontal">
-                                                        <TextBox
-                                                            Width="125"
-                                                            Height="28"
-                                                            Margin="10,10,5,10"
-                                                            Padding="-10,-3,0,-10"
-                                                            VerticalContentAlignment="Top"
-                                                            md:HintAssist.Foreground="White"
-                                                            md:HintAssist.Hint="Test Object"
-                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
-                                                            Text="{Binding querySubject}"
-                                                            TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto" />
+
 
                                                         <TextBox
                                                             Name="settingResultBox"
-                                                            Width="357.5"
+                                                            Width="498"
                                                             Height="28"
                                                             Margin="10,10,5,10"
                                                             Padding="-10,-3,0,-10"
-                                                            VerticalContentAlignment="Top"
-                                                            md:HintAssist.Foreground="White"
-                                                            md:HintAssist.Hint="Result"
-                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
-                                                            Text="{Binding result, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto" />
+                                                            Style="{StaticResource ErrorStatusTextBox}" />
+
+
+
+
                                                         <Label
-                                                            Name="settingResultError"
-                                                            Margin="-30,12.5,0,0"
-                                                            Panel.ZIndex="1"
-                                                            Background="Transparent"
-                                                            Content=""
-                                                            FontFamily="Segoe MDL2 Assets"
-                                                            Foreground="Red"
-                                                            Visibility="Hidden" />
+                                                            Name="settingResultBoxErrorStatus"
+                                                            Margin="-25,0,0,0"
+                                                            Style="{StaticResource ScriptBlockErrorStatus}" />
                                                         <Button
                                                             Name="settingExecute"
                                                             Width="30"
@@ -5646,6 +5784,7 @@
                                                         </StackPanel.Style>
 
                                                         <TextBox
+                                                            Name="settingAction1ScriptBlockBox"
                                                             Height="100"
                                                             Padding="-10,0,0,-10"
                                                             VerticalAlignment="Top"
@@ -5669,13 +5808,11 @@
                                                             Height="28"
                                                             Margin="10,10,5,10"
                                                             Padding="-10,-3,0,-10"
-                                                            VerticalContentAlignment="Top"
-                                                            md:HintAssist.Foreground="White"
-                                                            md:HintAssist.Hint="Result"
-                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
-                                                            Text="{Binding actionCmd1result, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto" />
+                                                            Style="{StaticResource ErrorStatusTextBox}" />
+                                                        <Label
+                                                            Name="settingBox1ResultBoxErrorStatus"
+                                                            Margin="-25,0,0,0"
+                                                            Style="{StaticResource ScriptBlockErrorStatus}" />
                                                         <Button
                                                             Name="settingBox1Execute"
                                                             Width="30"
@@ -5794,6 +5931,7 @@
                                                     <StackPanel Name="settingBox2ActionPanel" Margin="5,-8,15,0">
 
                                                         <TextBox
+                                                            Name="settingAction2ScriptBlockBox"
                                                             Height="100"
                                                             Padding="-10,0,0,-10"
                                                             VerticalAlignment="Top"
@@ -5817,13 +5955,12 @@
                                                             Height="28"
                                                             Margin="10,10,5,10"
                                                             Padding="-10,-3,0,-10"
-                                                            VerticalContentAlignment="Top"
-                                                            md:HintAssist.Foreground="White"
-                                                            md:HintAssist.Hint="Result"
-                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
-                                                            Text="{Binding actionCmd2result, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto" />
+                                                            Style="{StaticResource ErrorStatusTextBox}" />
+                                                        <Label
+                                                            Name="settingBox2ResultBoxErrorStatus"
+                                                            Margin="-25,0,0,0"
+                                                            Style="{StaticResource ScriptBlockErrorStatus}" />
+
                                                         <Button
                                                             Name="settingBox2Execute"
                                                             Width="30"
@@ -6625,73 +6762,7 @@
                                                 <StackPanel Margin="15,0,32.5,0">
 
                                                     <StackPanel Name="settingObjectToolActionPanel" DataContext="{Binding Mode=TwoWay, ElementName=settingObjectToolsPropGrid, Path=SelectedItem, UpdateSourceTrigger=PropertyChanged}">
-                                                        <TextBox
-                                                            Height="100"
-                                                            Margin="0,0,0,15"
-                                                            Padding="-10,0,0,-10"
-                                                            VerticalAlignment="Top"
-                                                            md:HintAssist.Foreground="White"
-                                                            md:HintAssist.Hint="Selection Scriptblock"
-                                                            AcceptsReturn="True"
-                                                            AcceptsTab="True"
-                                                            Background="MidnightBlue"
-                                                            CaretBrush="WhiteSmoke"
-                                                            FontFamily="Consolas"
-                                                            Text="{Binding toolFetchCmd}"
-                                                            TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto">
-                                                            <TextBox.Style>
-                                                                <Style BasedOn="{StaticResource MaterialDesignOutlinedTextFieldTextBox}" TargetType="TextBox">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
-                                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBox.Style>
-                                                        </TextBox>
-                                                        <TextBox
-                                                            Height="100"
-                                                            Margin="0,0,0,15"
-                                                            Padding="-10,0,0,-10"
-                                                            VerticalAlignment="Top"
-                                                            md:HintAssist.Foreground="White"
-                                                            md:HintAssist.Hint="Target Item Additional Data"
-                                                            AcceptsReturn="True"
-                                                            AcceptsTab="True"
-                                                            Background="MidnightBlue"
-                                                            CaretBrush="WhiteSmoke"
-                                                            FontFamily="Consolas"
-                                                            Text="{Binding toolTargetFetchCmd}"
-                                                            TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto">
-                                                            <TextBox.Style>
-                                                                <Style BasedOn="{StaticResource MaterialDesignOutlinedTextFieldTextBox}" TargetType="TextBox">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
-                                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBox.Style>
-                                                        </TextBox>
-                                                        <TextBox
-                                                            Height="100"
-                                                            Padding="-10,0,0,-10"
-                                                            VerticalAlignment="Top"
-                                                            md:HintAssist.Foreground="White"
-                                                            md:HintAssist.Hint="Scriptblock"
-                                                            AcceptsReturn="True"
-                                                            AcceptsTab="True"
-                                                            Background="MidnightBlue"
-                                                            CaretBrush="WhiteSmoke"
-                                                            FontFamily="Consolas"
-                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
-                                                            Text="{Binding toolAction}"
-                                                            TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto" />
+
                                                         <TextBox
                                                             Height="50"
                                                             Margin="0,15,0,15"
@@ -6701,36 +6772,142 @@
                                                             md:HintAssist.Hint="Description"
                                                             AcceptsReturn="True"
                                                             AcceptsTab="True"
+                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
                                                             Text="{Binding toolDescription}"
                                                             TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto">
-                                                            <TextBox.Style>
-                                                                <Style BasedOn="{StaticResource MaterialDesignOutlinedTextFieldTextBox}" TargetType="TextBox">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
-                                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBox.Style>
-                                                        </TextBox>
+                                                            VerticalScrollBarVisibility="Auto" />
+                                                        <TextBox
+                                                            Name="settingObjectToolSelectionScriptBox"
+                                                            Height="100"
+                                                            Padding="-10,0,0,-10"
+                                                            VerticalAlignment="Top"
+                                                            md:HintAssist.Foreground="White"
+                                                            md:HintAssist.Hint="Selection Scriptblock"
+                                                            AcceptsReturn="True"
+                                                            AcceptsTab="True"
+                                                            Background="MidnightBlue"
+                                                            CaretBrush="WhiteSmoke"
+                                                            FontFamily="Consolas"
+                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
+                                                            Text="{Binding toolFetchCmd}"
+                                                            TextWrapping="NoWrap"
+                                                            VerticalScrollBarVisibility="Auto" />
+
+                                                        <StackPanel
+                                                            Margin="0,0,5,0"
+                                                            HorizontalAlignment="Center"
+                                                            Orientation="Horizontal">
+
+                                                            <TextBox
+                                                                Name="settingObjectToolSelectionResultBox"
+                                                                Width="460"
+                                                                Height="28"
+                                                                Margin="10,10,5,10"
+                                                                Padding="-10,-3,0,-10"
+                                                                Style="{StaticResource ErrorStatusTextBox}" />
+                                                            <Label
+                                                                Name="settingObjectToolSelectionResultBoxErrorStatus"
+                                                                Margin="-25,0,0,0"
+                                                                Style="{StaticResource ScriptBlockErrorStatus}" />
+                                                            <Button
+                                                                Name="settingObjectToolSelectionExecute"
+                                                                Width="30"
+                                                                Margin="5,8,5,5"
+                                                                Padding="0"
+                                                                HorizontalAlignment="Right"
+                                                                Content=""
+                                                                FontFamily="Segoe MDL2 Assets" />
+
+                                                        </StackPanel>
+                                                        <Separator Margin="30,5,30,5" Style="{StaticResource MaterialDesignLightSeparator}" />
+                                                        <TextBox
+                                                            Name="settingObjectToolExtraScriptBox"
+                                                            Height="100"
+                                                            Padding="-10,0,0,-10"
+                                                            VerticalAlignment="Top"
+                                                            md:HintAssist.Foreground="White"
+                                                            md:HintAssist.Hint="Target Item Additional Data"
+                                                            AcceptsReturn="True"
+                                                            AcceptsTab="True"
+                                                            Background="MidnightBlue"
+                                                            CaretBrush="WhiteSmoke"
+                                                            FontFamily="Consolas"
+                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
+                                                            Text="{Binding toolTargetFetchCmd}"
+                                                            TextWrapping="NoWrap"
+                                                            VerticalScrollBarVisibility="Auto" />
+
+                                                        <StackPanel
+                                                            Margin="0,0,5,0"
+                                                            HorizontalAlignment="Center"
+                                                            Orientation="Horizontal">
+                                                            <TextBox
+                                                                Name="settingObjectToolExtraResultBox"
+                                                                Width="460"
+                                                                Height="28"
+                                                                Margin="10,10,5,10"
+                                                                Padding="-10,-3,0,-10"
+                                                                Style="{StaticResource ErrorStatusTextBox}" />
+                                                            <Label
+                                                                Name="settingObjectToolExtraResultBoxErrorStatus"
+                                                                Margin="-25,0,0,0"
+                                                                Style="{StaticResource ScriptBlockErrorStatus}" />
+                                                            <Button
+                                                                Name="settingObjectToolExtraExecute"
+                                                                Width="30"
+                                                                Margin="5,8,5,5"
+                                                                Padding="0"
+                                                                HorizontalAlignment="Right"
+                                                                Content=""
+                                                                FontFamily="Segoe MDL2 Assets" />
+
+
+                                                        </StackPanel>
+                                                        <Separator Margin="30,5,30,5" Style="{StaticResource MaterialDesignLightSeparator}" />
+                                                        <StackPanel.Style>
+                                                            <Style TargetType="StackPanel">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </StackPanel.Style>
                                                     </StackPanel>
-                                                    <StackPanel Margin="0,0,15,0" Orientation="Horizontal">
+                                                    <TextBox
+                                                        Name="settingObjectToolScriptBox"
+                                                        Height="100"
+                                                        Padding="-10,0,0,-10"
+                                                        VerticalAlignment="Top"
+                                                        md:HintAssist.Foreground="White"
+                                                        md:HintAssist.Hint="Scriptblock"
+                                                        AcceptsReturn="True"
+                                                        AcceptsTab="True"
+                                                        Background="MidnightBlue"
+                                                        CaretBrush="WhiteSmoke"
+                                                        FontFamily="Consolas"
+                                                        Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
+                                                        Text="{Binding toolAction}"
+                                                        TextWrapping="NoWrap"
+                                                        VerticalScrollBarVisibility="Auto" />
+
+                                                    <StackPanel
+                                                        Margin="0,0,5,0"
+                                                        HorizontalAlignment="Center"
+                                                        Orientation="Horizontal">
 
                                                         <TextBox
                                                             Name="settingObjectToolResultBox"
-                                                            Width="450"
+                                                            Width="460"
                                                             Height="28"
                                                             Margin="10,10,5,10"
                                                             Padding="-10,-3,0,-10"
-                                                            VerticalContentAlignment="Top"
-                                                            md:HintAssist.Foreground="White"
-                                                            md:HintAssist.Hint="Result"
-                                                            Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
-                                                            Text="{Binding toolActionResult, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            TextWrapping="NoWrap"
-                                                            VerticalScrollBarVisibility="Auto" />
+                                                            Style="{StaticResource ErrorStatusTextBox}" />
+                                                        <Label
+                                                            Name="settingObjectToolResultBoxErrorStatus"
+                                                            Margin="-25,0,0,0"
+                                                            Style="{StaticResource ScriptBlockErrorStatus}" />
                                                         <Button
                                                             Name="settingObjectToolExecute"
                                                             Width="30"
@@ -6740,8 +6917,12 @@
                                                             Content=""
                                                             FontFamily="Segoe MDL2 Assets" />
                                                     </StackPanel>
-                                                    <StackPanel Margin="0,0,15,0">
-                                                        <StackPanel Margin="0,-5,0,0" Orientation="Horizontal">
+                                                    <Separator Margin="30,5,30,5" Style="{StaticResource MaterialDesignLightSeparator}" />
+                                                    <StackPanel Margin="-10,0,15,0" HorizontalAlignment="Center">
+                                                        <StackPanel
+                                                            Margin="0,-5,0,0"
+                                                            HorizontalAlignment="Center"
+                                                            Orientation="Horizontal">
                                                             <CheckBox
                                                                 Name="settingObjectToolRequireConfirm"
                                                                 Margin="6,0,5,0"

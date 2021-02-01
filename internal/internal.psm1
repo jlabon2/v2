@@ -94,53 +94,221 @@ function Create-AttributeList {
 
     $attributeList
 }
+
+function Reset-ScriptBlockValidityStatus {
+    param ($SyncHash, $ResultBoxName, $ItemSet, $StatusName)
+
+    $syncHash.($ResultBoxName + 'ErrorStatus').Tag = $null
+    $syncHash.$ResultBoxName.Tag = 'Unchecked'
+    $itemSet.$StatusName = $null
+}
+
+
+function Update-ScriptBlockValidityStatus {
+    param ($syncHash, $ResultBoxName, $itemSet, $statusName)
+    
+    $syncHash.($ResultBoxName + 'ErrorStatus').Tag = $null
   
+    switch ($itemSet.$StatusName) {
+        $null {  $syncHash.$ResultBoxName.Tag = 'Unchecked'; break }
+        $true {  $syncHash.$ResultBoxName.Tag = 'Pass'; break }
+        $false {  $syncHash.$ResultBoxName.Tag = 'Fail'; break }
+        
+    }
+}
 
-function Set-InfoPaneContent {
-    param ($SyncHash , $settingInfoHash) 
+
+function Test-UserScriptBlock {
+    param ($errorControl, $scriptBlock, $syncHash, $StatusName, $itemSet)
     
-    $SyncHash.infoPaneContent.DataContext = $settingInfoHash.($SyncHash.infoPaneContent.Tag)
-   
-
-    if ([string]::IsNullOrEmpty(($settingInfoHash.($SyncHash.infoPaneContent.Tag).Vars)) -and ([string]::IsNullOrEmpty(($settingInfoHash.($SyncHash.infoPaneContent.Tag).Types)))) { $SyncHash.infoPaneVars.Visibility = 'Collapsed' }
-
+    $scriptDef = @{
+        ScriptDefinition = $scriptBlock
+        Settings         = @('CodeFormatting', 'CmdletDesign', 'ScriptFunctions', 'ScriptingStyle', 'ScriptSecurity')
+        ExcludeRule      = 'PSUseDeclaredVarsMoreThanAssignments'
+    }
+  
+    $errorControlBase = $syncHash.$errorControl
+    $errorControlTool = $syncHash.($errorControl + 'ErrorStatus')
     
+    $results = Invoke-ScriptAnalyzer @scriptDef     
+    $toolTipBox = New-Object -TypeName System.Windows.Controls.TextBlock
+        
+    # parse errors - invalid block
+    if ($results.Severity -contains 'ParseError') {
+        $errorControlTool.Tag = 'Fail'
+        $errorControlBase.Tag = 'Fail'        
+        
+        $itemSet.$StatusName = $false
+       # $errorControlBase.Text = "Scriptblock is invalid ($((($results | Where-Object {$_.Severity -eq 'ParseError'}) | Measure-Object).Count) major errors)"              
+    }
+     
+    # non-terminating errors - valid block   
+    elseif ($results) {
+        $errorControlTool.Tag = 'PassWithIssues'
+        $errorControlBase.Tag = 'PassWithIssues'
+        
+        $itemSet.$StatusName = $true
+    #    $errorControlBase.Text = "Scriptblock is valid but has warnings ($(($results | Measure-Object).Count) errors)"       
+    }
+    
+    # no issues - valid block    
+    else { 
+        $errorControlTool.Tag = 'Pass'
+        $errorControlBase.Tag = 'Pass'
+
+        $itemSet.$StatusName = $true       
+     #   $errorControlBase.Text = "Scriptblock is valid and has no warnings"
+    }
+           
+    # build issue list
+    if ($results) {
+        $toolTipBox.AddChild((New-Object -TypeName System.Windows.Documents.Run -Property @{
+                    Text  = "Scriptblock invalid ($($results.Count) errors)"
+                    Style = $syncHash.Window.FindResource('scriptBlockToolTipSeverity')              
+                }))
+    
+        $toolTipBox.AddChild((New-Object -TypeName System.Windows.Documents.LineBreak))
+          
+    
+        foreach ($result in $results) {
+            
+            $listArray = [System.Collections.ArrayList]@()
+                
+            $listArray.Add((New-Object -TypeName System.Windows.Documents.LineBreak)) | Out-Null
+            
+            $listArray.Add((New-Object -TypeName System.Windows.Documents.Run -Property @{
+                        Text  = $result.Severity
+                        Style = $syncHash.Window.FindResource('scriptBlockToolTipSeverity')              
+                    })) | Out-Null
+    
+            $listArray.Add(( New-Object -TypeName System.Windows.Documents.Run -Property @{
+                        Text  = " - Line $($result.Line)"  
+                        Style = $syncHash.Window.FindResource('scriptBlockToolTipBase')                    
+                    })) | Out-Null
+            $listArray.Add((New-Object -TypeName System.Windows.Documents.LineBreak))
+    
+            $listArray.Add(( New-Object -TypeName System.Windows.Documents.Run -Property @{
+                        Text  = "$($result.Message)"        
+                        Style = $syncHash.Window.FindResource('scriptBlockToolTipBase')           
+                    })) | Out-Null
+    
+            $listArray.Add((New-Object -TypeName System.Windows.Documents.LineBreak)) | Out-Null
+              
+            $listArray | ForEach-Object { $toolTipBox.AddChild($_) }
+        }
+    
+        $errorControlTool.ToolTip.AddChild($toolTipBox)
+    }
 
     else {
-        if (
-            $settingInfoHash.($SyncHash.infoPaneContent.Tag).Vars) {
-            $SyncHash.infoPaneVarHeader.Content = 'Variables'
-            $type = 'vars'
-        }
-        else { 
-            $SyncHash.infoPaneVarHeader.Content = 'Types' 
-            $type = 'types'
+        $toolTipBox.AddChild((New-Object -TypeName System.Windows.Documents.Run -Property @{
+                    Text  = "No issues detected on scriptblock"
+                    Style = $syncHash.Window.FindResource('scriptBlockToolTipSeverity')              
+                }))
+    }
+    
+    $errorControlTool.ToolTip = $toolTipBox
+    
+}
+
+
+function Set-InfoPaneContent {
+    param ($SyncHash , $SettingInfoHash, $ConfigHash) 
+    
+    $SyncHash.infoPaneContent.DataContext = $settingInfoHash.($SyncHash.infoPaneContent.Tag)
+    $typeArray = @()
+
+        $syncHash.Keys | Where-Object {$_ -like "infoPane*Panel"} | ForEach-Object {$syncHash.$_.Visibility = 'Collapsed'}
+
+    if ( $settingInfoHash.($SyncHash.infoPaneContent.Tag).Vars) {            
+        $typeArray += 'vars'
+        $SyncHash.infoPaneVarsPanel.Visibility = 'Visible'
+
+        if ($configHash.varListConfig.VarCmd) {
+            $typeArray += 'customvars'
+            $SyncHash.infoPaneCustomVarsPanel.Visibility = 'Visible'
         }
 
-        $SyncHash.infoPaneVars.Visibility = 'Visible'
-        $SyncHash.infoPaneVarList.Blocks.Clear()
+    }
+
+    if ($settingInfoHash.($SyncHash.infoPaneContent.Tag).Tips) {            
+        $typeArray += 'tips'
+        $SyncHash.infoPaneTipsPanel.Visibility = 'Visible'
+    }
+
+    if ($settingInfoHash.($SyncHash.infoPaneContent.Tag).Types) { 
+        $typeArray += 'types'
+        $SyncHash.infoPaneTypesPanel.Visibility = 'Visible'
+    }
+
+        
+ 
+        
+
+    foreach ($type in $typeArray) {
+        $SyncHash.('infoPane' + $type + 'List').Blocks.Clear()
         $flowPara = New-Object -TypeName System.Windows.Documents.Paragraph
 
-        foreach ($item in (($settingInfoHash.($SyncHash.infoPaneContent.Tag).$type).Keys)) {
-            $bulletHeader = New-Object -TypeName System.Windows.Documents.Run -Property @{
-                Text  = "$item "
-                Style = $SyncHash.Window.FindResource('varNameRun')
-            }
+        if ($type -ne 'customvars') {
 
-            $bulletContent = New-Object -TypeName System.Windows.Documents.Run -Property @{
-                Text  = "- $(($settingInfoHash.($SyncHash.infoPaneContent.Tag).$type)[$item])"
-                Style = $SyncHash.Window.FindResource('varDescRun')
-            }
+            foreach ($item in (($settingInfoHash.($SyncHash.infoPaneContent.Tag).$type).Keys)) {
 
-            $bulletEnd = New-Object -TypeName System.Windows.Documents.LineBreak
+                if ($item -ne 'customvars') {
+                    $bulletHeader = New-Object -TypeName System.Windows.Documents.Run -Property @{
+                        Text  = $item
+                        Style = $SyncHash.Window.FindResource('varNameRun')
+                    }
+
+                    $bulletContent = New-Object -TypeName System.Windows.Documents.Run -Property @{
+                        Text  = " - $(($settingInfoHash.($SyncHash.infoPaneContent.Tag).$type)[$item])"
+                        Style = $SyncHash.Window.FindResource('varDescRun')
+                    }
+                }
+
+                $bulletEnd = New-Object -TypeName System.Windows.Documents.LineBreak
                     
-            $flowPara.AddChild($bulletHeader)
-            $flowPara.AddChild($bulletContent)
-            $flowPara.AddChild($bulletEnd)
+                $flowPara.AddChild($bulletHeader)
+                $flowPara.AddChild($bulletContent)
+                $flowPara.AddChild($bulletEnd)
+            }
+
         }
 
-        $SyncHash.infoPaneVarList.AddChild($flowPara)
+        else {
+            
+            foreach ($item in ($configHash.varListConfig | Where-Object {$null -ne $_.VarName -and $_.null -ne $_.VarCmd -and $null -ne $_.VarDesc})) {
+                $bulletHeader = New-Object -TypeName System.Windows.Documents.Run -Property @{
+                    Text  = $item.VarName
+                    Style = $SyncHash.Window.FindResource('varNameRun')
+                }
+
+                $bulletContent = New-Object -TypeName System.Windows.Documents.Run -Property @{
+                    Text  = " - $($item.VarDesc)"
+                    Style = $SyncHash.Window.FindResource('varDescRun')
+                }
+            
+
+                $bulletEnd = New-Object -TypeName System.Windows.Documents.LineBreak
+                    
+                $flowPara.AddChild($bulletHeader)
+                $flowPara.AddChild($bulletContent)
+                $flowPara.AddChild($bulletEnd)
+
+            }
+        }
+
+
+        $SyncHash.('infoPane' + $type + 'List').AddChild($flowPara)
     }
+}
+
+function Set-CustomVariables {
+    param ($VarHash) 
+
+    foreach ($var in $varHash.Keys) { 
+        Set-Variable -Name $var -Value $varHash.$var -Scope global
+    }
+
 }
 
 function Get-Glyphs {
@@ -577,7 +745,7 @@ function Add-CustomToolControls {
     $SyncHash.objectTools = @{ }
     #create custom tool buttons for queried objects
     foreach ($tool in $ConfigHash.objectToolConfig) {
-        if ($tool.toolActionValid -or $tool.ToolType -eq 'CommandGrid') {
+        if (($tool.toolActionValid -or $tool.ToolType -eq 'CommandGrid') -and !($tool.ToolType -match "Select|Grid" -and ($tool.toolSelectValid -ne $true -or $tool.toolExtraValid -ne $true))) {
             switch ($tool.objectType) {
 
                 { $_ -match 'Both|Comp' } {
@@ -734,16 +902,18 @@ function Add-CustomToolControls {
 
                                     $rsArgs = @{
                                         Name            = 'ItemTool'
-                                        ArgumentList    = @($SyncHash.snackMsg.MessageQueue, $toolID, $ConfigHash, $queryHash, $SyncHash.Window)
+                                        ArgumentList    = @($SyncHash.snackMsg.MessageQueue, $toolID, $ConfigHash, $queryHash, $SyncHash.Window, $varHash)
                                         ModulesToImport = $configHash.modList
                                     }
 
                                     Start-RSJob @rsArgs -ScriptBlock {
-                                        Param($queue, $toolID, $ConfigHash, $queryHash, $window)
+                                        Param($queue, $toolID, $ConfigHash, $queryHash, $window, $varHash)
 
                                         $item = ($ConfigHash.currentTabItem).toLower()
                                         $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
                                         $toolName = ($ConfigHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
+
+                                        Set-CustomVariables -VarHash $varHash
 
                                         try {                     
                                             Invoke-Expression $ConfigHash.objectToolConfig[$toolID - 1].toolAction
@@ -792,16 +962,18 @@ function Add-CustomToolControls {
 
                                     $rsArgs = @{
                                         Name            = 'PopulateListboxNoAD'
-                                        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $rsVars, $syncHash.adHocConfirmWindow, $syncHash.Window)
+                                        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $rsVars, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
                                         ModulesToImport = $configHash.modList
                                     }
 
                                     Start-RSJob @rsArgs -ScriptBlock {
-                                        param($ConfigHash, $SyncHash, $toolID, $rsVars, $confirmWindow, $window)
+                                        param($ConfigHash, $SyncHash, $toolID, $rsVars, $confirmWindow, $window, $varHash)
                             
                                         $target = $rsVars.target
                                         $targetType = $rsVars.targetType
                                                       
+                                        Set-CustomVariables -VarHash $varHash
+
                                         $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.itemTooListBoxProgress.Visibility = 'Visible' })
                     
                                         $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
@@ -863,15 +1035,17 @@ function Add-CustomToolControls {
                             
                                     $rsArgs = @{
                                         Name            = 'PopulateGridbox'
-                                        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $rsVars, $syncHash.adHocConfirmWindow, $syncHash.Window)
+                                        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $rsVars, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
                                         ModulesToImport = $configHash.modList
                                     }
 
                                     Start-RSJob @rsArgs -ScriptBlock {
-                                        param($ConfigHash, $SyncHash, $toolID, $rsVars, $confirmWindow, $window)
+                                        param($ConfigHash, $SyncHash, $toolID, $rsVars, $confirmWindow, $window, $varHash)
 
                                         $target = $rsVars.target
                                         $targetType = $rsVars.targetType
+                                        
+                                        Set-CustomVariables -VarHash $varHash
                                                       
                                         $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.itemToolGridProgress.Visibility = 'Visible' })
                                 
@@ -927,13 +1101,15 @@ function Add-CustomToolControls {
                                 
                                 $rsArgs = @{
                                     Name            = 'PopulateCommandGridbox'
-                                    ArgumentList    = @($ConfigHash, $SyncHash, $toolID)
+                                    ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $varHash)
                                     ModulesToImport = $configHash.modList
                                 }
 
                                 Start-RSJob @rsArgs -ScriptBlock {
-                                    param($ConfigHash, $SyncHash, $toolID)
+                                    param($ConfigHash, $SyncHash, $toolID, $varHash)
                                   
+                                    Set-CustomVariables -VarHash $varHash
+
                                     $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.itemCommandGridProgress.Visibility = 'Visible' })
                                     $source = $ConfigHash.objectToolConfig[$toolID - 1].toolCommandGridConfig
                                     $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
@@ -1142,13 +1318,16 @@ function Start-PropBoxPopulate {
                         else { $false }  
                                     
                         ValidCmd          = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).ValidCmd) { $true } 
+                        elseif ((($tempList | Where-Object -FilterScript { $_.Field -eq $i }).ValidCmd) -eq $null) { $null }
                         else { $false }
                                     
                         ValidAction1      = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).ValidAction1) { $true } 
-                        else { $false } 
+                        elseif ((($tempList | Where-Object -FilterScript { $_.Field -eq $i }).ValidAction1) -eq $null) { $null }
+                        else { $false }
                                     
                         ValidAction2      = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).ValidAction2) { $true } 
-                        else { $false } 
+                        elseif ((($tempList | Where-Object -FilterScript { $_.Field -eq $i }).ValidAction2) -eq $null) { $null }
+                        else { $false }
                                     
                         actionCmd2        = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).ValidAction2 -eq $true) { ($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd2 } 
                         else { "Do-Something -$type $('$' + $type)..." }
@@ -1165,21 +1344,14 @@ function Start-PropBoxPopulate {
                         actionCmd2Multi   = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd2Multi) { $true } 
                         else { $false }                       
                                     
-                        querySubject      = if ($type -eq 'user') { $env:USERNAME }
-                        else { $env:ComputerName }
-                                       
-                        result            = '(null)'
-                                    
+                                                          
                         actionCmdsEnabled = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmdsEnabled -eq $false) { $false }
                         else { $true }
                                     
                         transCmdsEnabled  = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).transCmdsEnabled -eq $false) { $false }
                         else { $true }
                                     
-                        actionCmd1result  = '(null)'
-                                    
-                        actionCmd2result  = '(null)'
-                                    
+                                                          
                         actionCmd2Enabled = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).ValidAction2 -eq $false) { $false }
                         elseif (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd2Enabled) { $true } 
                         else { $false }  
@@ -1326,12 +1498,17 @@ Function Set-ChildWindow {
         [ValidateSet('Standard', 'Flyout')][string[]]$Background
     )
 
+    $syncHash.settingInfoDialogOpen.Visibility = 'Visible'
+
     if ($Panel) {
         $SyncHash.$Panel.Visibility = 'Visible'
         $SyncHash.settingChildWindow.IsOpen = $true
         $SyncHash.infoPaneContent.Tag = $Panel
 
         switch ($Panel) {
+            'settingModContent' { $syncHash.settingInfoDialogOpen.Visibility = 'Hidden' }
+
+            'settingADContent' { $syncHash.settingInfoDialogOpen.Visibility = 'Hidden' }
 
             'settingUserPropContent' { 
                 if ($ConfigHash.UserPropList -ne $null) { $SyncHash.settingUserPropGrid.ItemsSource = $ConfigHash.UserPropList }
@@ -1453,13 +1630,14 @@ function Set-ADItemBox {
 
     $rsArgs = @{
         Name            = ('populate' + $Control)
-        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control)
+        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
         ModulesToImport = $configHash.modList
     }
 
     Start-RSJob @rsArgs -ScriptBlock {
-        param($ConfigHash, $SyncHash, $toolID, $Control)
+        param($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
 
+        Set-CustomVariables -VarHash $varHash
 
         $SyncHash.Window.Dispatcher.Invoke([Action] {
                 if ($Control -eq 'ListBox') { $SyncHash.itemToolListSelectListBox.ItemsSource = $null }
@@ -1531,13 +1709,14 @@ function Set-OUItemBox {
 
     $rsArgs = @{
         Name            = ('populate' + $Control)
-        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control)
+        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
         ModulesToImport = $configHash.modList
     }
 
     Start-RSJob @rsArgs -ScriptBlock {
-        param($ConfigHash, $SyncHash, $toolID, $Control)
+        param($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
 
+        Set-CustomVariables -VarHash $varHash
 
         $SyncHash.Window.Dispatcher.Invoke([Action] {
                 if ($Control -eq 'ListBox') { $SyncHash.itemToolListSelectListBox.ItemsSource = $null  }
@@ -1609,12 +1788,14 @@ function Set-CustomItemBox {
 
     $rsArgs = @{
         Name            = ('populate' + $Control)
-        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control)
+        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
         ModulesToImport = $configHash.modList
     }
 
     Start-RSJob @rsArgs -ScriptBlock {
-        param($ConfigHash, $SyncHash, $toolID, $Control)
+        param($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
+
+        Set-CustomVariables -VarHash $varHash
 
         $configHash.customDialogClosed = $false
         $configHash.customInput = $null
@@ -1696,16 +1877,18 @@ function Start-ItemToolAction {
 
     $rsArgs = @{
         Name            = 'ItemToolAction'
-        ArgumentList    = @($ConfigHash, $ItemList, $SyncHash.snackMsg.MessageQueue, $SyncHash.('itemTool' + $Control + 'SelectConfirmButton').Tag, $SyncHash.Window, $queryHash)
+        ArgumentList    = @($ConfigHash, $ItemList, $SyncHash.snackMsg.MessageQueue, $SyncHash.('itemTool' + $Control + 'SelectConfirmButton').Tag, $SyncHash.Window, $queryHash, $varHash)
         ModulesToImport = $ConfigHash.modList
     }
 
     Start-RSJob @rsArgs -ScriptBlock {
-        param($ConfigHash, $ItemList, $queue, $toolID, $window, $queryHash) 
+        param($ConfigHash, $ItemList, $queue, $toolID, $window, $queryHash, $varHash) 
 
         $toolName = $ConfigHash.objectToolConfig[$toolID - 1].toolName
         $target = $ConfigHash.currentTabItem
         $targetType = $queryHash[$target].ObjectClass -replace 'u', 'U' -replace 'c', 'C'
+
+        Set-CustomVariables -VarHash $varHash
 
         try {
             Invoke-Expression -Command $ConfigHash.objectToolConfig[$toolID - 1].toolTargetFetchCmd
@@ -1978,7 +2161,22 @@ function Add-CustomRTControls {
 #endregion
 
 #region NetworkingMapping
-
+function Convert-IpAddressToMaskLength([string] $dottedIpAddressString)
+{
+  $result = 0; 
+  # ensure we have a valid IP address
+  [IPAddress] $ip = $dottedIpAddressString;
+  $octets = $ip.IPAddressToString.Split('.');
+  foreach($octet in $octets)
+  {
+    while(0 -ne $octet) 
+    {
+      $octet = ($octet -shl 1) -band [byte]::MaxValue
+      $result++; 
+    }
+  }
+  return $result;
+}
 function Set-NetworkMapItem {
     param (
         $SyncHash,
@@ -1987,10 +2185,8 @@ function Set-NetworkMapItem {
     )
 
     if ($Import) {
-        $ConfigHash.netMapList = (New-Object System.Collections.ObjectModel.ObservableCollection[Object])
-        $subnets = Get-ADReplicationSubnet -Filter * -Properties * | Select-Object Name, Site, Location, Description
 
-        if (!($subnets)) {
+        if ($SyncHash.settingNetImportClick.SelectedIndex -eq 0) {
             $localAddress = ((Get-NetIPInterface -AddressFamily IPv4 |
                         Get-NetIPAddress |
                             Where-Object { $_.PrefixOrigin -ne 'WellKnown' }))
@@ -2011,10 +2207,13 @@ function Set-NetworkMapItem {
             }    
         }
 
-        else {
+        elseif ($SyncHash.settingNetImportClick.SelectedIndex -eq 1) {
+
+            $subnets = Get-ADReplicationSubnet -Filter * -Properties * | Select-Object Name, Site, Location, Description
+
             for ($i = 1; $i -le (($subnets | Measure-Object).Count); $i++) {
                 $ConfigHash.netMapList.Add([PSCustomObject]@{
-                        Id           = $i
+                        Id           = ($ConfigHash.netMapList | Measure-Object).Count + 1
                         Network      = ($subnets[$i - 1].Name -replace '//*.*', '')
                         ValidNetwork = $true
                         Mask         = ($subnets[$i - 1].Name -replace '.*/', '')
@@ -2024,6 +2223,24 @@ function Set-NetworkMapItem {
                     
                     })                                                               
             }
+        }
+
+
+        elseif ($SyncHash.settingNetImportClick.SelectedIndex -eq 2) {
+
+            $scopes =  Get-DhcpServerInDC | ForEach-Object {Get-DhcpServerv4Scope -ComputerName $_.DNSName} |
+                            Select-Object ScopeID, SubnetMask, Name
+
+            foreach ($scope in $scopes) {
+                $ConfigHash.netMapList.Add([PSCustomObject]@{
+                        Id           = ($ConfigHash.netMapList | Measure-Object).Count + 1
+                        Network      = $scope.ScopeID
+                        ValidNetwork = $true
+                        Mask         = Convert-IpAddressToMaskLength -dottedIpAddressString $scope.SubnetMask
+                        ValidMask    = $true
+                        Location     = $scope.Name
+                    })                                                               
+            }     
         }
 
         $SyncHash.settingNetDataGrid.ItemsSource = $ConfigHash.netMapList
@@ -2647,7 +2864,7 @@ function Set-ClientGridButtons {
     if ($type -eq 'User') { $itemName = 'userComp' }
     else { $itemName = 'compUser' }
 
-    foreach ($button in $SyncHash.Keys.Where( { $_ -like '*rbutbut*' })) {
+    foreach ($button in ($SyncHash | Where-Object { $_ -like '*rbutbut*' })) {
         if (($SyncHash.($itemName + 'Grid').SelectedItem.ClientType -in $ConfigHash.rtConfig.($SyncHash[$button].Tag).Types) -and
             (!($ConfigHash.rtConfig.($SyncHash[$button].Tag).RequireOnline -and $SyncHash.($itemName + 'Grid').SelectedItem.ClientOnline -eq $false)) -and 
             (!($ConfigHash.rtConfig.($SyncHash[$button].Tag).RequireUser -eq $true))) { $SyncHash[$button].IsEnabled = $true }
@@ -2657,14 +2874,14 @@ function Set-ClientGridButtons {
     foreach ($button in $SyncHash.customRT.Keys) {
         if (($SyncHash.($itemName + 'Grid').SelectedItem.ClientType -in $ConfigHash.rtConfig.$button.Types) -and
             (!($ConfigHash.rtConfig.$button.RequireOnline -and $SyncHash.($itemName + 'Grid').SelectedItem.ClientOnline -eq $false)) -and 
-            (!($ConfigHash.rtConfig.$button.RequireUser -ne $true))) { $SyncHash.customRT.$button.rbut.IsEnabled = $true }
+            ($ConfigHash.rtConfig.$button.RequireUser -ne $true)) { $SyncHash.customRT.$button.rbut.IsEnabled = $true }
         else { $SyncHash.customRT.$button.rbut.IsEnabled = $false }            
     }
 
     foreach ($button in $SyncHash.customContext.Keys) {
         if (($SyncHash.($itemName + 'Grid').SelectedItem.ClientType -in $ConfigHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
             (!($ConfigHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $SyncHash.($itemName + 'Grid').SelectedItem.ClientOnline -eq $false)) -and 
-            (!($ConfigHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -ne $true))) { $SyncHash.customContext.$button.('rbutcontext' + ($button -replace 'cxt')).IsEnabled = $true }
+            ($ConfigHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -ne $true)) { $SyncHash.customContext.$button.('rbutcontext' + ($button -replace 'cxt')).IsEnabled = $true }
         else { $SyncHash.customContext.$button.('rbutcontext' + ($button -replace 'cxt')).IsEnabled = $false }            
     }
 }
@@ -2726,7 +2943,7 @@ function Write-LogMessage {
                           else { "[N/A]" }
             CxtSubName  = if ($ContextSubjectName) { ($ContextSubjectName -replace '[][]').ToLower()}
                           else { "[N/A]" }
-            SubjectType = if ($SubjectType) { $textInfo.ToTitleCase(($SubjectType.ToLower() -replace '[][]' -replace "Comp",'Computer')) }
+            SubjectType = if ($SubjectType) { $textInfo.ToTitleCase(($SubjectType.ToLower() -replace '[][]' -replace "Comp$",'Computer')) }
                           else { "[N/A]" }
             Date        = (Get-Date -Format d)
             Time        = (Get-Date -Format t)
