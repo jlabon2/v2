@@ -1,4 +1,48 @@
 ﻿
+function IPInRange {
+    [cmdletbinding()]
+    [outputtype([System.Boolean])]
+    param(
+        # IP Address to find.
+        [parameter(Mandatory,
+                   Position=0)]
+        [validatescript({
+            ([System.Net.IPAddress]$_).AddressFamily -eq 'InterNetwork'
+        })]
+        [string]
+        $IPAddress,
+
+        # Range in which to search using CIDR notation. (ippaddr/bits)
+        [parameter(Mandatory)]
+        [string]
+        $NetworkIP,
+
+        [parameter(Mandatory)]
+        [string]
+        $Mask
+
+    )
+
+
+
+    # Split range into the address and the CIDR notation
+    [String]$CIDRAddress = $NetworkIP
+    [int]$CIDRBits       = $Mask
+
+    # Address from range and the search address are converted to Int32 and the full mask is calculated from the CIDR notation.
+    [int]$BaseAddress    = [System.BitConverter]::ToInt32((([System.Net.IPAddress]::Parse($CIDRAddress)).GetAddressBytes()), 0)
+    [int]$Address        = [System.BitConverter]::ToInt32(([System.Net.IPAddress]::Parse($IPAddress).GetAddressBytes()), 0)
+    [int]$Mask           = [System.Net.IPAddress]::HostToNetworkOrder(-1 -shl ( 32 - $CIDRBits))
+
+    # Determine whether the address is in the range.
+    if (($BaseAddress -band $Mask) -eq ($Address -band $Mask)) {
+        $true
+    } else {
+        $false
+    }
+}
+
+
 function Resolve-Location {
     [CmdletBinding(DefaultParameterSetName = 'HostName')]
     param (
@@ -8,10 +52,6 @@ function Resolve-Location {
         [parameter(Mandatory = $true)][PSCustomObject]$IPList
 
     )
-
-    Begin {
-        $ipMap = [System.Collections.ArrayList]@()
-    }
 
     Process {
         if ($computerName) {
@@ -25,13 +65,14 @@ function Resolve-Location {
         }
 
         if ($computerName -and $IPAddress) {
-               $ipMap.Add(($IPList | Where-Object {([System.Net.IpAddress]($_.Network.ToString())).Address -eq (([System.Net.IpAddress]$IPAddress).Address -band ([ipaddress]([uint32]::MaxValue-[math]::Pow(2,32-$_.Mask)+1)).Address)} |
-                Select-Object *, @{Label = 'Computername'; Expression = { $computerName }}, @{Label = 'IPv4'; Expression = {$IPAddress }} -ErrorAction Stop)) | Out-Null
-        }   
-    }
+            foreach ($ip in $ipList) {
+                if (IPInRange -IPAddress ([string]$ipAddress) -NetworkIP $ip.Network.IPAddressToString -Mask $ip.Mask)  {$location = $ip.Location; break} 
+                }
+            }   
+        }
 
     End {
-        $ipMap
+        $location
     }
 }
 

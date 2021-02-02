@@ -1696,6 +1696,7 @@
                                     Name="itemTooListBoxProgress"
                                     Width="175"
                                     Margin="40,20,0,0"
+                                    HorizontalAlignment="Center"
                                     IsIndeterminate="True"
                                     Style="{StaticResource MaterialDesignLinearProgressBar}"
                                     Visibility="Collapsed" />
@@ -1892,14 +1893,34 @@
                                 Margin="15,-15,15,35"
                                 HorizontalAlignment="Center"
                                 DockPanel.Dock="Top">
+                                <Button
+                                    Name="itemToolGridExport"
+                                    Width="15"
+                                    Height="15"
+                                    Margin="-75,0,0,0"
+                                    VerticalContentAlignment="Center"
+                                    Content=""
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="12">
+
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource MaterialDesignFlatAccentButton}" TargetType="Button">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                                 <ProgressBar
                                     Name="itemToolGridProgress"
                                     Width="175"
-                                    Margin="40,20,0,0"
+                                    HorizontalAlignment="Center"
                                     IsIndeterminate="True"
                                     Style="{StaticResource MaterialDesignLinearProgressBar}"
                                     Visibility="Collapsed" />
-                                <Canvas />
                                 <TextBox
                                     Name="itemToolGridSearchBox"
                                     Width="150"
@@ -6948,7 +6969,7 @@
                                                                 Margin="6,0,5,0"
                                                                 HorizontalAlignment="Right"
                                                                 md:CheckBoxAssist.CheckBoxSize="15"
-                                                                Content="Multiselect         "
+                                                                Content="Multiselect"
                                                                 FontSize="10"
                                                                 IsChecked="{Binding toolActionMultiSelect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                 IsEnabled="True">
@@ -6966,7 +6987,26 @@
                                                                     </Style>
                                                                 </CheckBox.Style>
                                                             </CheckBox>
-
+                                                            <CheckBox
+                                                                Name="settingObjectToolExportable"
+                                                                Margin="6,0,5,0"
+                                                                HorizontalAlignment="Right"
+                                                                md:CheckBoxAssist.CheckBoxSize="15"
+                                                                Content="Exportable"
+                                                                FontSize="10"
+                                                                IsChecked="{Binding toolActionExportable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                IsEnabled="True">
+                                                                <CheckBox.Style>
+                                                                    <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Grid">
+                                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </CheckBox.Style>
+                                                            </CheckBox>
                                                             <TextBox
                                                                 Name="settingObjectToolToolTip"
                                                                 Width="280"

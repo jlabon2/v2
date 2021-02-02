@@ -2537,10 +2537,10 @@ function Find-ObjectLogs {
                         $hostConnectivity = Test-OnlineFast -ComputerName $log.ComputerName
                                                                               
                         if ($hostConnectivity.Online) { $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue }
-                        if ($hostConnectivity.IPV4Address) { $hostLocation = (Resolve-Location -computerName $log.ComputerName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue).Location }
+                        if ($hostConnectivity.IPV4Address) { $hostLocation = Resolve-Location -computerName $log.ComputerName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
                         
                         if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName $log.ClientName }      
-                        if ($clientOnline.Online) { $clientLocation = (Resolve-Location -computerName $log.ClientName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue).Location }
+                        if ($clientOnline.Online) { $clientLocation = Resolve-Location -computerName $log.ClientName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
                                             
                                             
                         $queryHash.$($match.SamAccountName).LoginLog.Add(( New-Object PSCustomObject -Property @{
@@ -2688,7 +2688,7 @@ function Find-ObjectLogs {
                     $compPing = Test-OnlineFast $match.Name
 
                     if ($compPing.Online) { $sessionInfo = Get-RDSession -ComputerName $match.Name -ErrorAction SilentlyContinue }
-                    if ($compPing.IPV4Address) { $hostLocation = (Resolve-Location -computerName $match.Name -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue).Location }
+                    if ($compPing.IPV4Address) { $hostLocation = Resolve-Location -computerName $match.Name -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
 
                     foreach ($log in ($queryHash.$($match.Name).LoginLogRaw |
                                 Group-Object User | ForEach-Object {$_ |
@@ -2701,7 +2701,7 @@ function Find-ObjectLogs {
     
                         $userSession = $sessionInfo | Where-Object { $_.UserName -eq $log.User }                                                                                                              
         
-                        if ($clientOnline.IPV4Address) { $clientLocation = (Resolve-Location -computerName $log.ClientName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue).Location }
+                        if ($clientOnline.IPV4Address) { $clientLocation = Resolve-Location -computerName $log.ClientName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue}
 
                         $queryHash.$($match.Name).LoginLog.Add(( New-Object PSCustomObject -Property @{
         
