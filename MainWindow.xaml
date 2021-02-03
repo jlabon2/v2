@@ -1889,31 +1889,12 @@
                                     IsEnabled="True"
                                     Style="{StaticResource actiontoolbtn}" />
                             </DockPanel>
+                   
                             <DockPanel
                                 Margin="15,-15,15,35"
                                 HorizontalAlignment="Center"
                                 DockPanel.Dock="Top">
-                                <Button
-                                    Name="itemToolGridExport"
-                                    Width="15"
-                                    Height="15"
-                                    Margin="-75,0,0,0"
-                                    VerticalContentAlignment="Center"
-                                    Content=""
-                                    FontFamily="Segoe MDL2 Assets"
-                                    FontSize="12">
-
-                                    <Button.Style>
-                                        <Style BasedOn="{StaticResource MaterialDesignFlatAccentButton}" TargetType="Button">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
+                              
                                 <ProgressBar
                                     Name="itemToolGridProgress"
                                     Width="175"
@@ -1986,8 +1967,33 @@
                                     DockPanel.Dock="Left"
                                     FontFamily="Segoe MDL2 Assets"
                                     FontSize="12"
+                                    ToolTip="Select/Unselect All"
                                     IsEnabled="True"
                                     Visibility="Collapsed" />
+                                <Button
+                                    Name="itemToolGridExport"
+                                DockPanel.Dock="Left"
+                                    Width="25"
+                                    Height="25"
+                             
+                                    Margin="10,22.5,0,0"
+                                    ToolTip="Export grid contents"
+                                    Content=""
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="12">
+
+                                    <Button.Style>
+                                        <Style BasedOn="{StaticResource itemButton}" TargetType="Button">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Visibility}" Value="Visible">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                                
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                                 <Border
                                     Name="itemToolImageBorder"
                                     Margin="10,22.5,0,0"
@@ -2019,6 +2025,7 @@
                                 BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
                                 BorderThickness="1"
                                 CanUserAddRows="False"
+                                CanUserSortColumns="True"
                                 CanUserDeleteRows="False"
                                 CanUserResizeColumns="True"
                                 CellStyle="{StaticResource MahApps.Styles.DataGridCell}"

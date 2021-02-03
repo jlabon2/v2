@@ -919,9 +919,8 @@ function Add-CustomToolControls {
 
                                         Set-CustomVariables -VarHash $varHash
 
-                                        try {             
-                                            ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolAction)).Invoke()         
-
+                                        try {                     
+                                            Invoke-Expression $ConfigHash.objectToolConfig[$toolID - 1].toolAction
                                             if ($ConfigHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                                                 Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success 
                                                 Write-LogMessage -syncHashWindow $window -Path $ConfigHash.actionlogPath -Message Succeed -ActionName $toolName -ArrayList $ConfigHash.actionLog 
@@ -982,7 +981,7 @@ function Add-CustomToolControls {
                                         $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.itemTooListBoxProgress.Visibility = 'Visible' })
                     
                                         $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-                                        ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add([PSCUstomObject]@{'Name' = $_ }) }
+                                        Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add([PSCUstomObject]@{'Name' = $_ }) }
                                  
                                         $SyncHash.Window.Dispatcher.Invoke([Action] {
                                             $SyncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list
@@ -1082,8 +1081,8 @@ function Add-CustomToolControls {
                                         $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.itemToolGridProgress.Visibility = 'Visible' })
                                 
                                         $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-                                        ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add($_) }
-                                                                      
+                                        Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add($_) }
+                                 
                                         $SyncHash.Window.Dispatcher.Invoke([Action] {
                                                 $SyncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list
                                                 $SyncHash.itemToolGridItemsGrid.ItemsSource.IsLiveSorting = $true
@@ -1158,9 +1157,9 @@ function Add-CustomToolControls {
                                                     Index           = [int]$item.ToolID - 1
                                                     ItemName        = $item.SetName 
                                                     ParentToolIndex = $toolID - 1
-                                                    Result          = ([scriptblock]::Create($item.queryCmd)).Invoke()
+                                                    Result          = (Invoke-Expression $item.queryCmd).toString()
                                                 }))
-                                                  
+
                                         $index++
                                     }
                                         
@@ -1485,31 +1484,31 @@ function Start-VarUpdater {
                             'UpdateMinute' {
                                 $ConfigHash.varListConfig |
                                     Where-Object { $_.UpdateFrequency -eq 'Every 15 mins' } |
-                                        ForEach-Object { $varHash.($_.VarName) = ([scriptblock]::Create($_.VarCmd)).Invoke() }
+                                        ForEach-Object { $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
                                 $ConfigHash.varData.$varInfo = $false
                             }
                             'UpdateHour' {
                                 $ConfigHash.varListConfig |
                                     Where-Object { $_.UpdateFrequency -eq 'Hourly' } |
-                                        ForEach-Object { $varHash.($_.VarName) = ([scriptblock]::Create($_.VarCmd)).Invoke() }
+                                        ForEach-Object { $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
                                 $ConfigHash.varData.$varInfo = $false
                             }                                       
                             'UpdateDay' {
                                 $ConfigHash.varListConfig |
                                     Where-Object { $_.UpdateFrequency -eq 'Daily' } |
-                                        ForEach-Object { $varHash.($_.VarName) = ([scriptblock]::Create($_.VarCmd)).Invoke() }
+                                        ForEach-Object { $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
                                 $ConfigHash.varData.$varInfo = $false
                             }
                             'UpdateUser' { 
                                 $ConfigHash.varListConfig |
                                     Where-Object { $_.UpdateFrequency -match 'User Queries|All Queries' } |
-                                        ForEach-Object { $varHash.($_.VarName) = ([scriptblock]::Create($_.VarCmd)).Invoke() }
+                                        ForEach-Object { $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
                                 $ConfigHash.varData.$varInfo = $false
                             }
                             'UpdateComp' {
                                 $ConfigHash.varListConfig |
                                     Where-Object { $_.UpdateFrequency -match 'Comp Queries|All Queries' } |
-                                        ForEach-Object { $varHash.($_.VarName) = ([scriptblock]::Create($_.VarCmd)).Invoke() }
+                                        ForEach-Object { $varHash.($_.VarName) = Invoke-Expression $_.VarCmd }
                                 $ConfigHash.varData.$varInfo = $false
                             }
                         }
@@ -1697,10 +1696,8 @@ function Set-ADItemBox {
      
         $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
         
-        if ($Control -eq 'ListBox') { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
-        else { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add($_) } }
-
-
+        if ($Control -eq 'ListBox') { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
+        else { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add($_) } }
 
         $SyncHash.Window.Dispatcher.Invoke([Action] {
                 if ($Control -eq 'ListBox') {
@@ -1793,8 +1790,8 @@ function Set-OUItemBox {
      
         $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
         
-        if ($Control -eq 'ListBox') { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
-        else { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add($_) } }
+        if ($Control -eq 'ListBox') { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
+        else { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add($_) } }
 
         $SyncHash.Window.Dispatcher.Invoke([Action] {
                 if ($Control -eq 'ListBox') {
@@ -1887,8 +1884,8 @@ function Set-CustomItemBox {
      
         $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
         
-        if ($Control -eq 'ListBox') { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
-        else { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add($_) } }
+        if ($Control -eq 'ListBox') { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
+        else { Invoke-Expression ($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd) | ForEach-Object { $list.Add($_) } }
 
         $SyncHash.Window.Dispatcher.Invoke([Action] {
                 if ($Control -eq 'ListBox') {
@@ -1955,11 +1952,9 @@ function Start-ItemToolAction {
         Set-CustomVariables -VarHash $varHash
 
         try {
-            
-            Invoke-Command $ConfigHash.objectToolConfig[$toolID - 1].toolTargetFetchCmd
-           
-             
-            foreach ($selectedItem in $ItemList) { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolAction)).Invoke() }
+            Invoke-Expression -Command $ConfigHash.objectToolConfig[$toolID - 1].toolTargetFetchCmd
+
+            foreach ($selectedItem in $ItemList) { Invoke-Expression -Command $ConfigHash.objectToolConfig[$toolID - 1].toolAction }
             
             if ($ConfigHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                 Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success 
@@ -2652,12 +2647,11 @@ function Find-ObjectLogs {
                                         else {
                                             if (($ConfigHash.nameMapList | Sort-Object -Property ID -Descending)[$r].Condition) {
                                                 try {
-                                                    if (([scriptblock]::Create($ConfigHash.nameMapList[$r].Condition)).Invoke()) {
+                                                    if (Invoke-Expression $ConfigHash.nameMapList[$r].Condition) {
                                                         $ConfigHash.nameMapList[$r].Name
                                                         break
                                                     }
                                                 }
-                                                
                                                 catch { }
                                             }
                                         }
@@ -2672,7 +2666,7 @@ function Find-ObjectLogs {
                                         else {                                                          
                                             if ($ConfigHash.nameMapList[$r].Condition) {
                                                 try {
-                                                    if (([scriptblock]::Create($ConfigHash.nameMapList[$r].Condition)).Invoke()) {
+                                                    if (Invoke-Expression $ConfigHash.nameMapList[$r].Condition) {
                                                         $ConfigHash.nameMapList[$r].Name
                                                         break
                                                     }
@@ -2742,7 +2736,7 @@ function Find-ObjectLogs {
                         else {
                             if ($ConfigHash.nameMapList[$r].Condition) {
                                 try {
-                                    if (([scriptblock]::Create($ConfigHash.nameMapList[$r].Condition)).Invoke()) {
+                                    if (Invoke-Expression $ConfigHash.nameMapList[$r].Condition) {
                                         $ConfigHash.nameMapList[$r].Name
                                         break
                                     }
@@ -2820,7 +2814,7 @@ function Find-ObjectLogs {
                                             else {
                                                 if (($ConfigHash.nameMapList | Sort-Object -Property ID -Descending)[$r].Condition) {
                                                     try {
-                                                        if (([scriptblock]::Create($ConfigHash.nameMapList[$r].Condition)).Invoke()) {
+                                                        if (Invoke-Expression $ConfigHash.nameMapList[$r].Condition) {
                                                             $ConfigHash.nameMapList[$r].Name
                                                             break
                                                         }

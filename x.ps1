@@ -273,7 +273,7 @@ $configHash.modList = $modList | Where-Object -FilterScript { [string]::IsNullOr
 
 # loaded required DLLs
 foreach ($dll in ((Get-ChildItem -Path C:\TempData\asm\ -Filter *.dll).FullName)) { $null = [System.Reflection.Assembly]::LoadFrom($dll) }
-Import-Module 'C:\tempdata\internal\eventHandlers.ps1'
+
 
 
 # read xaml and load wpf controls into synchash (named synchash)
@@ -1097,7 +1097,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                             else { $prop = $queryHash.$actionObject.$fieldName } 
 
                                                             try {
-                                                                Invoke-Expression -Command $cmd
+                                                                ([scriptblock]::Create($cmd)).Invoke()                                                                
                                                                 Write-SnackMsg -Queue $rsCmd.SnackMsg -ToolName $actionName -Status Success -SubjectName $actionObject                           
                                                                 Write-LogMessage -syncHashWindow $rsCmd.Window -Path $configHash.actionlogPath -Message Succeed -ActionName $actionName -SubjectName $actionObject -SubjectType $type -ArrayList $configHash.actionLog 
 
@@ -1108,7 +1108,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                                             $queryHash.($user).($propName) = $result                                                                       
                                                                         }
                                                                         else {
-                                                                            $result = (Get-AdComputerName -Identity $comp -Properties $propName).$propName
+                                                                            $result = (Get-AdComputer -Identity $comp -Properties $propName).$propName
                                                                             $queryHash.($comp).($propName) = $result
                                                                         }
                                                                     }
@@ -1118,9 +1118,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                                     if ($queryHash.(Get-Variable -Name $type -ValueOnly).ActiveItem -eq $true) {  
                                                                         if ($rsCmd.propList.ValidCmd) {
                                                                             $tranCmd = $rsCmd.propList.translationCmd
-                                                                            $value = Invoke-Expression -Command $tranCmd
-                                                               
-                                                                    
+                                                                            $value = Invoke-Expression $tranCmd
+                                                                           
                                                                             if ($resultColor) { $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.boxResources.($type[0] + 'box' + $rsCmd.id + 'TextBox').Foreground = $resultColor }) }
 
                                                                             $updatedValue = $value
@@ -1169,7 +1168,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                         $actionName = $configHash.($type + 'PropList')[$id - 1].('actionCmd' + $b + 'ToolTip')
 
                                                         try {
-                                                            Invoke-Expression -Command ($configHash.($type + 'PropList')[$id - 1].('actionCmd' + $b))
+                                                            $cmd = $configHash.($type + 'PropList')[$id - 1].('actionCmd' + $b)
+                                                            ([scriptblock]::Create($cmd)).Invoke()
                                                             Write-SnackMsg -Queue ($syncHash.SnackMsg.MessageQueue) -ToolName $actionName -Status Success -SubjectName $actionObject
                                                             Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $actionName -SubjectName $actionObject -SubjectType $type -ArrayList $configHash.actionLog 
 
@@ -1190,7 +1190,8 @@ $syncHash.tabMenu.add_Loaded( {
                                                     
                                                                 if (($configHash.($type + 'PropList') | Where-Object -FilterScript { $_.Field -eq $id }).ValidCmd -and ($configHash.($type + 'PropList') | Where-Object -FilterScript { $_.Field -eq $id }).transCmdsEnabled) {
                                                                     Remove-Variable -Name resultColor -ErrorAction SilentlyContinue
-                                                                    $value = Invoke-Expression -Command (($configHash.($type + 'PropList') | Where-Object { $_.Field -eq $id }).TranslationCmd)
+                                                                    $value = Invoke-Expression ($configHash.($type + 'PropList') | Where-Object { $_.Field -eq $id }).TranslationCmd
+                                                              
                                         
                                                                     if ($resultColor) { $syncHash.($type[0] + 'box' + $id + 'resources').($type[0] + 'box' + $id + 'TextBox').Foreground = $resultColor }
 
@@ -1317,8 +1318,8 @@ $syncHash.tabMenu.add_Loaded( {
                                 $user = $syncHash.CompUserGrid.SelectedItem.UserName
                                 $sessionID = $syncHash.CompUserGrid.SelectedItem.SessionID
                             }
-
-                            Invoke-Expression -Command  ($configHash.rtConfig.$id.cmd)
+                            ([scriptblock]::Create($configHash.rtConfig.$id.cmd)).Invoke()
+                   
                         })
 
                     $syncHash.($buttonType + 'Grid').AddChild($syncHash.customRT.$rtID.$buttonType)
@@ -1391,7 +1392,7 @@ $syncHash.tabMenu.add_Loaded( {
                                     Set-CustomVariables -VarHash $varHash
 
                                     try {
-                                        Invoke-Expression -Command $rsCmd.buttonSettings.actionCmd
+                                        ([scriptblock]::Create($rsCmd.buttonSettings.actionCmd)).Invoke()
                                         Write-SnackMsg -Queue $rsCmd.Snackbar -ToolName $toolName -Status Success -SubjectName $combinedString                            
                                         Write-LogMessage -syncHashWindow $syncHash.Window -Path $configHash.actionlogPath -Message Succeed -ActionName $toolname -SubjectName $user -ContextSubjectName $comp -SubjectType 'Context' -ArrayList $configHash.actionLog
                                     }
@@ -1409,7 +1410,7 @@ $syncHash.tabMenu.add_Loaded( {
                                 Set-CustomVariables -VarHash $varHash
 
                                 try {
-                                    Invoke-Expression -Command $configHash.contextConfig[$id - 1].actionCmd
+                                    ([scriptblock]::Create($configHash.contextConfig[$id - 1].actionCmd)).Invoke()
                                     Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName $toolName -Status Success -SubjectName $combinedString
                                     Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -SubjectName $user -ContextSubjectName $comp -SubjectType 'Context' -ArrayList $configHash.actionLog 
                                 }
@@ -1600,8 +1601,8 @@ $syncHash.tabControl.add_SelectionChanged( {
 
                                     if ($selectedBox.ValidCmd -eq $true -and $selectedBox.transCmdsEnabled) {
                                         $result = ($queryHash[$currentTabItem]).($selectedBox.PropName)
-                                        $updateHash.Text = Invoke-Expression -Command $selectedBox.TranslationCmd
-    
+                                        $updateHash.Text = Invoke-Expression $selectedBox.TranslationCmd
+                                        
                                         if ($resultColor) { $updateHash.Foreground = $resultColor }             
                                     }
    
@@ -1714,7 +1715,28 @@ $syncHash.tabControl.add_SelectionChanged( {
         }
     })
         
-        
+$syncHash.itemToolGridExport.Add_Click({
+
+    
+    $configHash.gridExportList = [System.Collections.ArrayList]@()
+    $syncHash.itemToolGridItemsGrid.Items | ForEach-Object { $configHash.gridExportList.Add($_) | Out-Null}
+
+
+    $rsArgs = @{
+            Name            = 'ExportGrid'           
+            ModulesToImport = $configHash.modList 
+            ArgumentList    =  $configHash
+        }
+
+    $syncHash.snackMsg.MessageQueue.Enqueue("Grid contents exporting...")
+
+    Start-RSJob @rsArgs -ScriptBlock {
+        Param ($configHash) 
+       $configHash.gridExportList | Out-HtmlView
+    }
+
+})
+
 $syncHash.tabControl.add_tabItemClosingEvent( {
         $queryHash.Remove($configHash.currentTabItem)
 
@@ -1818,8 +1840,9 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
             $toolName = ($configHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
             Set-CustomVariables -VarHash $varHash
 
-            try {                     
-                Invoke-Expression $configHash.objectToolConfig[$toolID - 1].toolAction
+            try {              
+                 ([scriptblock]::Create($configHash.objectToolConfig[$toolID - 1].toolAction)).Invoke()     
+                          
                 if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {
                     Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success
                     Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -SubjectType 'Standalone' -ArrayList $configHash.actionLog
@@ -1853,6 +1876,7 @@ $syncHash.itemToolDialog.Add_ClosingFinished( {
         $syncHash.itemToolListSelectListBox.ItemsSource = $null
         $syncHash.itemToolADSelectedItem.Content = $null
         $syncHash.itemToolGridADSelectedItem.Content = $null
+        $syncHash.itemToolGridExport.Visibility = 'Collapsed'
         $syncHash.itemToolImageBorder.Visibility = 'Collapsed'
         $syncHash.itemToolGridSelect.Visibility = 'Collapsed'
         $syncHash.itemToolCommandGridPanel.Visibility = 'Collapsed'
@@ -1886,7 +1910,7 @@ $syncHash.toolsExportConfirmButton.Add_Click( {
             if ($syncHash.toolsExportDialog.Tag -eq 'Single') { New-LogHTMLExport -Scope User -ConfigHash $configHash -TimeFrame $syncHash.toolsExportDate.SelectedValue.Content }
             else { New-LogHTMLExport -Scope All -ConfigHash $configHash -TimeFrame $syncHash.toolsExportDate.SelectedValue.Content }
 
-            $syncHash.SnackMsg.MessageQueue.Enqueue('Log export started') 
+            $syncHash.SnackMsg.MessageQueue.Enqueue('Log export starting...') 
             
         }
 
@@ -2000,8 +2024,9 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
                 
                     $result = $gridItem.result
 
-                    Invoke-Expression $actionCmd
-                    $result = (Invoke-Expression $queryCmd).ToString()
+                    ([scriptblock]::Create($actionCmd)).Invoke() 
+
+                    $result = (([scriptblock]::Create($queryCmd)).Invoke()).ToString()
 
                     $syncHash.Window.Dispatcher.Invoke([action] { $syncHash.itemToolCommandGridDataGrid.Items[$gridItem.Index].Result = $result })
                 }
@@ -2494,8 +2519,8 @@ $syncHash.itemRefresh.Add_Click( {
 
             try {
                 $result = $rsCmd.Result                     
-                Invoke-Expression $actionCmd
-                $result = (Invoke-Expression $queryCmd).ToString()
+                ([scriptblock]::Create($actionCmd)).Invoke() 
+                $result = (([scriptblock]::Create($queryCmd)).Invoke() ).ToString()
                 
                 $syncHash.Window.Dispatcher.Invoke([action] {
                         $syncHash.itemToolCommandGridDataGrid.SelectedItem.Result = $result
