@@ -363,6 +363,14 @@ function Show-WPFWindow {
         })           
 }
 
+function Set-WPFHeader {
+    param ($ConfigHash, $SyncHash)   
+    if ($configHash.settingHeaderConfig) {
+        if ($configHash.settingHeaderConfig.headerUser) {$syncHash.headerUser.Text = "$($env:USERDNSDOMAIN)\$($env:USERNAME)"}
+        $syncHash.headerControl.DataContext = $configHash.settingHeaderConfig
+    }
+}
+
 function Set-Config {
     Param ( 
         [CmdletBinding()]
@@ -407,6 +415,8 @@ function Set-Config {
             $configHash.QueryADValues = $null
             $configHash.rawADValues = $null
             $configHash.currentTabItem = $null
+
+            $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString()
 
             $ConfigHash |
                 ConvertTo-Json -Depth 8 |
@@ -769,17 +779,22 @@ function Add-CustomToolControls {
                 
                     $SyncHash.objectTools.('ctool' + $tool.ToolID + 'Label1') = New-Object -TypeName System.Windows.Controls.Label -Property  @{
                         FontFamily          = 'Segoe UI'
-                        FontSize            = '9.5'
-                        Margin              = '0,-8,0,0'
+                        FontSize            = '8'
                         HorizontalAlignment = 'Center'
                         Content             = $tool.ToolName
-
                     }
               
-                            
-                
+                    $SyncHash.objectTools.('ctool' + $tool.ToolID + 'LabelVB') = New-Object -TypeName System.Windows.Controls.ViewBox -Property @{
+                        Style = $SyncHash.Window.FindResource('itemViewBox') 
+                        Margin              = '0,-8,0,0'
+                        HorizontalAlignment = 'Center'
+                    }
+                    
                     $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonGlyph'))
-                    $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('ctool' + $tool.ToolID + 'Label1'))
+                    $SyncHash.objectTools.('ctool' + $tool.ToolID + 'LabelVB').AddChild($SyncHash.objectTools.('ctool' + $tool.ToolID + 'Label1'))
+                    $SyncHash.objectTools.('ctool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('ctool' + $tool.ToolID + 'LabelVB'))
+                    
+                    
 
 
                     $SyncHash.objectTools.('ctool' + $tool.ToolID) = @{
@@ -810,18 +825,23 @@ function Add-CustomToolControls {
                 
                     $SyncHash.objectTools.('utool' + $tool.ToolID + 'Label1') = New-Object -TypeName System.Windows.Controls.Label -Property  @{
                         FontFamily          = 'Segoe UI'
-                        FontSize            = '9.5'
-                        Margin              = '0,-8,0,0'
+                        FontSize            = '8'
                         HorizontalAlignment = 'Center'
                         Content             = $tool.ToolName
-
+                    }
+              
+                    $SyncHash.objectTools.('utool' + $tool.ToolID + 'LabelVB') = New-Object -TypeName System.Windows.Controls.ViewBox -Property @{
+                        Style = $SyncHash.Window.FindResource('itemViewBox') 
+                        Margin              = '0,-8,0,0'
+                        HorizontalAlignment = 'Center'
                     }
                 
-             
-                            
-                
+                    
+
                     $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonGlyph'))
-                    $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('utool' + $tool.ToolID + 'Label1'))
+                    $SyncHash.objectTools.('utool' + $tool.ToolID + 'LabelVB').AddChild($SyncHash.objectTools.('utool' + $tool.ToolID + 'Label1'))
+                    $SyncHash.objectTools.('utool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('utool' + $tool.ToolID + 'LabelVB'))
+
         
                     $SyncHash.objectTools.('utool' + $tool.ToolID) = @{
                         ToolButton = New-Object -TypeName System.Windows.Controls.Button -Property  @{
@@ -857,18 +877,20 @@ function Add-CustomToolControls {
 
                     }
                 
-                    $SyncHash.objectTools.('tool' + $tool.ToolID + 'Label2') = New-Object -TypeName System.Windows.Controls.Label -Property  @{
-                        FontFamily          = 'Segoe UI Light'
-                        FontSize            = '10'
-                        HorizontalAlignment = 'Center'
-                        Margin              = '0,-10,0,0'
-                        Content             = $tool.toolActionToolTip
-                    }
+                 
                             
-                
+                    $SyncHash.objectTools.('tool' + $tool.ToolID + 'LabelVB1') = New-Object -TypeName System.Windows.Controls.ViewBox -Property @{
+                        Style = $SyncHash.Window.FindResource('itemViewBox') 
+                        HorizontalAlignment = 'Center'
+                        StretchDirection = 'DownOnly'
+                    }
+
+
                     $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonGlyph'))
-                    $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'Label1'))
-                    $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'Label2'))
+                    $SyncHash.objectTools.('tool' + $tool.ToolID + 'LabelVB1').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'Label1'))
+
+                    $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'LabelVB1'))
+      
 
                     $SyncHash.objectTools.('tool' + $tool.ToolID) = @{
                         ToolButton = New-Object -TypeName System.Windows.Controls.Button -Property  @{
@@ -1089,20 +1111,34 @@ function Add-CustomToolControls {
                                                 $SyncHash.itemToolGridItemsGrid.ItemsSource.IsLiveSorting = $true
                                                 $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
                                                 $SyncHash.itemToolGridItemsGrid.Items.Refresh()
-                                                if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect -and
-                                                    ($null -ne $ConfigHash.objectToolConfig[$toolID - 1].toolAction)) {
 
-                                                    $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Extended'
-                                                    $SyncHash.itemToolGridSelectAllButton.Visibility = 'Visible'
+                                                if ($SyncHash.itemToolGridItemsGrid.HasItems) {
+
+                                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect -and
+                                                        ($null -ne $ConfigHash.objectToolConfig[$toolID - 1].toolAction)) {
+
+                                                        $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Extended'
+                                                        $SyncHash.itemToolGridSelectAllButton.Visibility = 'Visible'
+                                                    }
+
+                                                    else {
+                                                        $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Single'
+                                                        $SyncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
+                                                    }
+
+                                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionExportable) { $syncHash.itemToolGridExport.Visibility = 'Visible'}
+                                                    
+                                                    else {$syncHash.itemToolGridExport.Visibility = 'Collapsed'}
+
+                                                     $syncHash.itemToolGridItemsEmptyText.Visibility = 'Collapsed'
+
                                                 }
 
-                                                else {
-                                                    $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Single'
-                                                    $SyncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
-                                                }
+                                                else { $syncHash.itemToolGridItemsEmptyText.Visibility = 'Visible' }
 
-                                                  if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionExportable) { $syncHash.itemToolGridExport.Visibility = 'Visible'}
-                                                  else {$syncHash.itemToolGridExport.Visibility = 'Collapsed'}
+                                            
+
+
                                             })
                                     }
                                 }
@@ -1600,14 +1636,8 @@ Function Set-ChildWindow {
             'settingMiscGrid' { 
                 $SyncHash.settingGeneralAddClick.Tag = 'null'
                 $SyncHash.settingMiscGrid.Visibility = 'Visible'
-            } 
-
-            'settingMiscGrid' {
-             
-               $syncHash.settingSearchDaySpan.Value = $ConfigHash.searchDays
-               
-
-            }
+                $syncHash.settingSearchDaySpan.Value = $ConfigHash.searchDays
+            }          
         }
     }
 
@@ -1895,15 +1925,16 @@ function Set-CustomItemBox {
                     $SyncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list
                     $SyncHash.itemTooListBoxProgress.Visibility = 'Collapsed'
 
-                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect) {
-                        $SyncHash.itemToolListSelectListBox.SelectionMode = 'Multiple'
-                        $SyncHash.itemToolListSelectAllButton.Visibility = 'Visible'
-                    }
+                        if ($SyncHash.itemToolListSelectListBox.HasItems -and $ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect) {
+                            $SyncHash.itemToolListSelectListBox.SelectionMode = 'Multiple'
+                            $SyncHash.itemToolListSelectAllButton.Visibility = 'Visible'
+                        }
 
-                    else {
-                        $SyncHash.itemToolListSelectListBox.SelectionMode = 'Single'
-                        $SyncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
-                    }
+                        else {
+                            $SyncHash.itemToolListSelectListBox.SelectionMode = 'Single'
+                            $SyncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
+                        }
+                    
 
                 }
                 else { 
@@ -1911,20 +1942,29 @@ function Set-CustomItemBox {
                     $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
                     $syncHash.itemToolCustomDialog.Visibility = 'Collapsed'
 
-                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect -and
-                        ($null -ne $ConfigHash.objectToolConfig[$toolID - 1].toolAction)) {
+                    if ($syncHash.itemToolGridItemsGrid.HasItems) {
 
-                        $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Extended'
-                        $SyncHash.itemToolGridSelectAllButton.Visibility = 'Visible'
+                        if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionMultiSelect -and
+                            ($null -ne $ConfigHash.objectToolConfig[$toolID - 1].toolAction)) {
+
+                            $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Extended'
+                            $SyncHash.itemToolGridSelectAllButton.Visibility = 'Visible'
+                        }
+
+                        else {
+                            $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Single'
+                            $SyncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
+                        }
+
+                        if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionExportable) { $syncHash.itemToolGridExport.Visibility = 'Visible'}
+                        else {$syncHash.itemToolGridExport.Visibility = 'Collapsed'}
+
                     }
 
                     else {
-                        $SyncHash.itemToolGridItemsGrid.SelectionMode = 'Single'
                         $SyncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
+                        $syncHash.itemToolGridExport.Visibility = 'Collapsed'
                     }
-
-                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionExportable) { $syncHash.itemToolGridExport.Visibility = 'Visible'}
-                    else {$syncHash.itemToolGridExport.Visibility = 'Collapsed'}
 
 
                 }
@@ -1954,9 +1994,11 @@ function Start-ItemToolAction {
 
         Set-CustomVariables -VarHash $varHash
 
+
+
         try {
             
-            Invoke-Command $ConfigHash.objectToolConfig[$toolID - 1].toolTargetFetchCmd
+             Invoke-Expression $ConfigHash.objectToolConfig[$toolID - 1].toolTargetFetchCmd
            
              
             foreach ($selectedItem in $ItemList) { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolAction)).Invoke() }
@@ -3016,7 +3058,7 @@ function Write-LogMessage {
             Time        = (Get-Date -Format t)
             DateFull    = Get-Date
             Admin       = ($env:USERNAME).ToLower()
-            Error       = if ($Error) { $Error }
+            Error       = if ($Error) { $Error -replace 'Exception calling "Invoke" with "0" argument\(s\):' -replace '^ "' -replace '"$' }
                           else { '[none]' }
             ogValue     = if ( $OldValue ) {  $OldValue }
                           else { '[N/A]' }

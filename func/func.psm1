@@ -42,6 +42,20 @@ function IPInRange {
     }
 }
 
+function New-FileDialog {
+    Param (
+        [parameter(mandatory)]$initialDirectory,
+        [parameter(mandatory)][string]$header)
+
+    [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
+
+    $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+    $openFileDialog.InitialDirectory = $initialDirectory
+    $openFileDialog.Title = $header
+    $openFileDialog.Multiselect = $true
+    $openFileDialog.ShowDialog() | Out-Null
+
+}
 
 function Resolve-Location {
     [CmdletBinding(DefaultParameterSetName = 'HostName')]

@@ -1,12 +1,15 @@
 ﻿# TODO
 #
 #- Color switches on glyph buttons???
+if ($host.name -eq 'ConsoleHost') {
 
-#$SW_HIDE, $SW_SHOW = 0, 5
-#$TypeDef = '[DllImport("User32.dll")]public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'
-#Add-Type -MemberDefinition $TypeDef -Namespace Win32 -Name Functions
-#$hWnd = (Get-Process -Id $PID).MainWindowHandle
-#$Null = [Win32.Functions]::ShowWindow($hWnd,$SW_HIDE)
+$SW_HIDE, $SW_SHOW = 0, 5
+$TypeDef = '[DllImport("User32.dll")]public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'
+Add-Type -MemberDefinition $TypeDef -Namespace Win32 -Name Functions
+$hWnd = (Get-Process -Id $PID).MainWindowHandle
+$Null = [Win32.Functions]::ShowWindow($hWnd,$SW_HIDE)
+
+}
 #####
 #
 
@@ -258,7 +261,7 @@ Set-Config -ConfigPath $savedConfig -Type Import -ConfigHash $configHash
 
 # process loaded data or creates initial item templates for various config datagrids
 @('userPropList', 'compPropList', 'contextConfig', 'objectToolConfig', 'nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig', 'modConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
-@('userLogMapping', 'compLogMapping') | Set-InitialValues -ConfigHash $configHash
+@('userLogMapping', 'compLogMapping', 'settingHeaderConfig') | Set-InitialValues -ConfigHash $configHash
 
 # matches config'd user/comp logins with default headers, creates new headers from custom values
 $defaultList = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
@@ -388,7 +391,7 @@ $syncHash.settingNamingClick.add_Click( { Set-ChildWindow -Panel settingNameCont
 
 $syncHash.settingVarClick.add_Click( { Set-ChildWindow -Panel settingVarContent -Title 'Resources and Variables' -SyncHash $syncHash -Height 275 -Width 530 })
 
-$syncHash.settingGeneralClick.add_Click( { Set-ChildWindow -Panel settingGeneralContent -Title 'General Settings' -SyncHash $syncHash -Height 275 -Width 530 })
+$syncHash.settingGeneralClick.add_Click( { Set-ChildWindow -Panel settingGeneralContent -Title 'General Settings' -SyncHash $syncHash -Height 370 -Width 530 })
 
 $syncHash.settingUserPropClick.add_Click( { Set-ChildWindow -Panel settingUserPropContent -Title 'User Property Mappings' -SyncHash $syncHash -Height 365 -Width 600 })
 
@@ -735,6 +738,18 @@ $syncHash.settingMiscClick.Add_Click( {
     
         if (!$configHash.actionlogPath) { $configHash.actionlogPath = 'C:\Logs' }
         $syncHash.settingLogPath.Text = $configHash.actionlogPath 
+
+        if (!$configHash.settingHeaderConfig) { 
+            $configHash.settingHeaderConfig = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+            $configHash.settingHeaderConfig.Add([PSCustomObject]@{
+                headerAdd              = $null
+                headerColor            = '#FFFFFF'
+                headerUser             = $false
+            })
+        }
+
+        $syncHash.settingHeaderDef.DataContext = $configHash.settingHeaderConfig
+
         $syncHash.settingGeneralFlyout.IsOpen = $true
     })
 
@@ -876,11 +891,6 @@ $syncHash.tabControl.ItemsSource = New-Object -TypeName System.Collections.Objec
 $syncHash.tabMenu.add_Loaded( {
         ###SEARCHHERE#
 
-
-
-
-
-
         if ($sysCheckHash.sysChecks.RSModule -eq $true) {
             
             $rsArgs = @{
@@ -901,8 +911,9 @@ $syncHash.tabMenu.add_Loaded( {
                 else { $syncHash.Window.Dispatcher.invoke([action] { $syncHash.tabMenu.SelectedIndex = 0 }) }
             }
        
-            New-VarUpdater -configHash $configHash
-            Start-VarUpdater -configHash $configHash -varHash $varHash
+            New-VarUpdater -ConfigHash $configHash
+            Start-VarUpdater -ConfigHash $configHash -VarHash $varHash
+            Set-WPFHeader -ConfigHash $configHash -SyncHash $syncHash
         }
 
         if (Test-Path $savedConfig) {              
@@ -986,7 +997,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                         
                                                         if ($null -eq $changedValue) { $changedValue = "[N/A]" }
                                                         Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName 'EDIT' -SubjectName $editObject -Status Fail  
-                                                        Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName Edit -SubjectName $editObject -SubjectType $type -OldValue $oldValue -NewValue $changedValue -ArrayList  $configHash.actionLog -Error $_
+                                                        Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName Edit -SubjectName $editObject -SubjectType $type -OldValue $oldValue -NewValue $changedValue -ArrayList  $configHash.actionLog -Error $_
                                                     }
                                                 }
 
@@ -1013,7 +1024,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                         }
 
                                                         catch { 
-                                                            Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName Clear -SubjectName $editObject -SubjectType $type -OldValue $oldValue -ArrayList $configHash.actionLog -Error $_
+                                                            Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName Clear -SubjectName $editObject -SubjectType $type -OldValue $oldValue -ArrayList $configHash.actionLog -Error $_
                                                             Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName 'CLEAR' -SubjectName $editObject -Status Fail
                                                         }
                                                     }
@@ -1398,7 +1409,7 @@ $syncHash.tabMenu.add_Loaded( {
                                     }
                             
                                     catch {
-                                        Write-SnackMsg -Queue $rsCmd.Snackbar -ToolName $toolName -Status Success -SubjectName $combinedString
+                                        Write-SnackMsg -Queue $rsCmd.Snackbar -ToolName $toolName -Status Fail -SubjectName $combinedString
                                         Write-LogMessage -syncHashWindow $syncHash.Window -Path $configHash.actionlogPath -Message Fail -ActionName $toolname -SubjectName $user -ContextSubjectName $comp -SubjectType 'Context' -ArrayList $configHash.actionLog -Error $_ 
                                     }
                                 }
@@ -1416,7 +1427,7 @@ $syncHash.tabMenu.add_Loaded( {
                                 }
                             
                                 catch {
-                                    Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName $toolName -Status Success -SubjectName $combinedString
+                                    Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName $toolName -Status Fail -SubjectName $combinedString
                                     Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -SubjectName $user -ContextSubjectName $comp -SubjectType 'Context' -ArrayList $configHash.actionLog -Error $_
                                 }
                             }
@@ -1883,6 +1894,7 @@ $syncHash.itemToolDialog.Add_ClosingFinished( {
         $syncHash.itemToolCustomDialog.Visibility = 'Collapsed'
         $syncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
         $syncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
+         $syncHash.itemToolGridItemsEmptyText.Visibility = 'Collapsed'
     })
 
 $syncHash.compExpanderOpenLog.Add_Click({  Invoke-Item $queryHash[$configHash.currentTabItem].LoginLogPath })
