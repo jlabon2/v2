@@ -15,10 +15,11 @@
     Height="700"
     BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
     BorderThickness="2"
-    FontFamily="{DynamicResource MaterialDesignFont}"
+    FontFamily="Segoe UI"
     GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
     ResizeMode="CanResizeWithGrip"
     ShowMinButton="True"
+    TextElement.FontFamily="Segoe UI"
     WindowStartupLocation="CenterOwner"
     WindowTitleBrush="{DynamicResource MahApps.Brushes.Accent}"
     mc:Ignorable="d">
@@ -36,7 +37,6 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Steel.xaml" />
-
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="StatusLabel" TargetType="Label">
@@ -91,7 +91,6 @@
                 </Style.Triggers>
             </Style>
 
-
             <Style
                 x:Key="ErrorStatusTextBox"
                 BasedOn="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
@@ -104,25 +103,18 @@
                 <Style.Triggers>
                     <Trigger Property="Tag" Value="Unchecked">
                         <Setter Property="Text" Value="Scriptblock requires validation" />
-
                     </Trigger>
                     <Trigger Property="Tag" Value="Pass">
                         <Setter Property="Text" Value="Scriptblock is valid" />
-
                     </Trigger>
                     <Trigger Property="Tag" Value="PassWithIssues">
                         <Setter Property="Text" Value="Scriptblock is valid but has warnings" />
-
                     </Trigger>
                     <Trigger Property="Tag" Value="Fail">
                         <Setter Property="Text" Value="Scriptblock is invalid and has major errors" />
-
                     </Trigger>
                 </Style.Triggers>
-
             </Style>
-
-
 
             <Style
                 x:Key="flyoutItemBox"
@@ -166,7 +158,6 @@
                 </Style.Triggers>
             </Style>
 
-
             <Style
                 x:Key="historyGridHeader"
                 BasedOn="{StaticResource logGridHeader}"
@@ -177,11 +168,6 @@
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="Margin" Value="-10,0,0,0" />
             </Style>
-
-
-
-
-
 
             <Style
                 x:Key="rtSwitch"
@@ -432,7 +418,6 @@
 
                 <Style.Triggers>
 
-
                     <MultiTrigger>
                         <MultiTrigger.Conditions>
                             <Condition Property="Controls:DataGridHelper.SelectionUnit" Value="FullRow" />
@@ -492,11 +477,6 @@
                 </Style.Triggers>
             </Style>
 
-
-
-
-
-
             <Style
                 x:Key="dataGridRowResultsStyleLog"
                 BasedOn="{StaticResource dataGridRowStyle}"
@@ -516,7 +496,7 @@
                 <Style.Triggers>
                     <Trigger Property="IsSelected" Value="True">
                         <Setter Property="Background" Value="Transparent" />
-                        <Setter Property="Foreground" Value="Transparent" />
+
                     </Trigger>
                 </Style.Triggers>
             </Style>
@@ -550,7 +530,7 @@
                 <Setter Property="md:HintAssist.HintOpacity" Value=".15" />
                 <Setter Property="MaxLength" Value="20" />
                 <Setter Property="FontSize" Value="16" />
-                <Setter Property="FontFamily" Value="{DynamicResource MaterialDesignFont}" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="md:TextFieldAssist.UnderlineBrush" Value="AliceBlue" />
                 <Setter Property="md:TextFieldAssist.NewSpecHighlightingEnabled" Value="True" />
                 <Setter Property="Controls:TextBoxHelper.AutoWatermark" Value="True" />
@@ -586,16 +566,28 @@
                 <Setter Property="Cursor" Value="Arrow" />
             </Style>
 
-            <Style x:Key="toolLogLabel" TargetType="Label">
+            <Style TargetType="Controls:MetroWindow">
+                <Setter Property="FontFamily" Value="Segoe UI" />
+            </Style>
+
+            <Style x:Key="toolLabel" TargetType="TextBlock">
                 <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="HorizontalContentAlignment" Value="Left" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Margin" Value="10,0,10,0" />
                 <Style.Triggers>
-                    <Trigger Property="Content" Value="[N/A]">
+                    <Trigger Property="Text" Value="[N/A]">
                         <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Gray}" />
                     </Trigger>
+
                 </Style.Triggers>
+            </Style>
+
+            <Style x:Key="compItemViewBox" TargetType="Viewbox">
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="Margin" Value="0,0,2,0" />
+                <Setter Property="StretchDirection" Value="DownOnly" />
+                <Setter Property="DockPanel.Dock" Value="Top" />
             </Style>
 
             <Style
@@ -609,12 +601,13 @@
                 <Setter Property="Margin" Value="4,-5,0,15" />
                 <Setter Property="IsReadOnly" Value="True" />
                 <Setter Property="Cursor" Value="Arrow" />
+                <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="md:HintAssist.Hint" Value="[empty]" />
                 <Setter Property="md:HintAssist.HintOpacity" Value=".15" />
                 <Setter Property="MaxLength" Value="20" />
                 <Setter Property="FontSize" Value="12" />
                 <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="FontFamily" Value="{DynamicResource MaterialDesignFont}" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
             </Style>
 
             <Style x:Key="itemStackPanel" TargetType="StackPanel">
@@ -640,12 +633,12 @@
                 <Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="Margin" Value="-2,-6,0,0" />
-                <Setter Property="FontFamily" Value="{DynamicResource md:MaterialDesignFont}" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
             </Style>
 
             <Style x:Key="itemViewBox" TargetType="{x:Type Viewbox}">
                 <Setter Property="HorizontalAlignment" Value="Left" />
-
+                <Setter Property="Margin" Value="-2,0,0,0" />
                 <Setter Property="MaxHeight" Value="35" />
                 <Setter Property="MinWidth" Value="30" />
                 <Setter Property="MinHeight" Value="20" />
@@ -704,8 +697,6 @@
                 <Setter Property="FontFamily" Value="Segoe UI Light" />
             </Style>
 
-
-
             <Style
                 x:Key="itemToolButton"
                 BasedOn="{StaticResource itemButton}"
@@ -761,7 +752,6 @@
                     <Trigger Property="Text" Value="Warning">
                         <Setter Property="Foreground" Value="Yellow" />
                     </Trigger>
-
                 </Style.Triggers>
             </Style>
             <Style x:Key="scriptBlockValidStatus" TargetType="Label">
@@ -849,8 +839,6 @@
                 </Style.Triggers>
             </Style>
 
-
-
             <Style x:Key="headerBlocks" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="Segoe UI Light" />
                 <Setter Property="VerticalAlignment" Value="Center" />
@@ -862,10 +850,8 @@
                     <Trigger Property="Text" Value="">
                         <Setter Property="Visibility" Value="Collapsed" />
                     </Trigger>
-
                 </Style.Triggers>
             </Style>
-
         </ResourceDictionary>
     </Window.Resources>
 
@@ -883,8 +869,6 @@
                 Foreground="{Binding headerColor}"
                 Style="{StaticResource headerBlocks}"
                 Text="{Binding headerAdd}" />
-
-
         </Controls:WindowCommands>
     </Controls:MetroWindow.RightWindowCommands>
 
@@ -1007,10 +991,8 @@
                                     <Style BasedOn="{StaticResource MahApps.Styles.DataGridColumnHeader}" TargetType="DataGridColumnHeader">
                                         <Setter Property="Background" Value="Transparent" />
                                         <Setter Property="Margin" Value="0,0,0,-25" />
-
                                     </Style>
                                 </DataGrid.ColumnHeaderStyle>
-
 
                                 <DataGrid.Columns>
                                     <DataGridTemplateColumn
@@ -1022,7 +1004,7 @@
 
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label Content="{Binding ActionName}" Style="{StaticResource toolLogLabel}" />
+                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding ActionName}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -1037,10 +1019,10 @@
 
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label
+                                                    <TextBlock
                                                         Background="Transparent"
-                                                        Content="{Binding Message}"
-                                                        Style="{StaticResource toolLogLabel}" />
+                                                        Style="{StaticResource toolLabel}"
+                                                        Text="{Binding Message}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -1055,7 +1037,7 @@
 
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label Content="{Binding SubjectName}" Style="{StaticResource toolLogLabel}" />
+                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding SubjectName}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -1069,11 +1051,10 @@
 
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label
+                                                    <TextBlock
                                                         VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Left"
-                                                        Content="{Binding SubjectType}"
-                                                        Style="{StaticResource toolLogLabel}" />
+                                                        Style="{StaticResource toolLabel}"
+                                                        Text="{Binding SubjectType}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -1087,12 +1068,7 @@
 
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label
-                                                        Margin="10,0,10,0"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Center"
-                                                        Content="{Binding Date}" />
+                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Date}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -1106,17 +1082,11 @@
 
                                             <DataTemplate>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label
-                                                        Margin="10,0,10,0"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Center"
-                                                        Content="{Binding Time}" />
+                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Time}" />
                                                 </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-
 
                                     <DataGridTemplateColumn
                                         Width="50"
@@ -1159,8 +1129,6 @@
                                                                     <Setter Property="Foreground" Value="LightGreen" />
                                                                 </DataTrigger>
 
-
-
                                                                 <MultiTrigger>
                                                                     <MultiTrigger.Conditions>
                                                                         <Condition Property="IsMouseOver" Value="True" />
@@ -1175,9 +1143,6 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-
-
-
 
                                     <DataGridTemplateColumn Width="50" HeaderStyle="{StaticResource datagridColumnNoTab}">
                                         <DataGridTemplateColumn.CellTemplate>
@@ -1215,7 +1180,6 @@
                             </DataGrid>
                         </DockPanel>
                     </StackPanel>
-
                 </Controls:Flyout>
                 <DockPanel
                     Height="325"
@@ -1273,7 +1237,6 @@
                             <Button.RenderTransform>
                                 <ScaleTransform ScaleX=".50" ScaleY=".50" />
                             </Button.RenderTransform>
-
                         </Button>
                         <Label
                             Padding="0"
@@ -1291,7 +1254,6 @@
                             </Label.LayoutTransform>
                         </Label>
                     </DockPanel>
-
                 </DockPanel>
             </Canvas>
             <Controls:Flyout
@@ -1384,12 +1346,10 @@
 
                                         <DataTemplate>
                                             <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                <Label
+                                                <TextBlock
                                                     Margin="-10,0,0,0"
-                                                    Padding="0"
-                                                    VerticalAlignment="Center"
-                                                    HorizontalContentAlignment="Left"
-                                                    Content="{Binding Name}" />
+                                                    Style="{StaticResource toolLabel}"
+                                                    Text="{Binding Name}" />
                                             </Viewbox>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
@@ -1404,14 +1364,11 @@
 
                                         <DataTemplate>
                                             <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                <Label
-                                                    Margin="0,0,0,0"
-                                                    Padding="0"
-                                                    VerticalAlignment="Center"
-                                                    HorizontalContentAlignment="Left"
+                                                <TextBlock
+                                                    Margin="0"
                                                     Controls:ControlsHelper.ContentCharacterCasing="Upper"
-                                                    Background="Transparent"
-                                                    Content="{Binding ObjectClass}" />
+                                                    Style="{StaticResource toolLabel}"
+                                                    Text="{Binding ObjectClass}" />
                                             </Viewbox>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
@@ -1605,7 +1562,6 @@
                         DockPanel.Dock="Top"
                         IsOpen="False">
 
-
                         <DockPanel
                             Margin="0,-50,0,0"
                             HorizontalAlignment="Stretch"
@@ -1632,7 +1588,6 @@
                                 FontFamily="Segoe UI Light"
                                 Style="{StaticResource itemButton}" />
                         </DockPanel>
-
                     </Controls:Flyout>
                     <DockPanel>
 
@@ -1826,7 +1781,7 @@
                                             Style="{StaticResource MaterialDesignAccentCheckBox}">
                                             <CheckBox.Content>
                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                    <Label Content="{Binding Name}" />
+                                                    <TextBlock Text="{Binding Name}" />
                                                 </Viewbox>
                                             </CheckBox.Content>
                                         </CheckBox>
@@ -2038,7 +1993,6 @@
                                                 <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Visibility}" Value="Visible">
                                                     <Setter Property="Visibility" Value="Visible" />
                                                 </DataTrigger>
-
                                             </Style.Triggers>
                                         </Style>
                                     </Button.Style>
@@ -2164,8 +2118,6 @@
                             </DockPanel>
                         </DockPanel>
 
-
-
                         <DockPanel
                             Name="itemToolCommandGridPanel"
                             MinWidth="300"
@@ -2255,7 +2207,6 @@
                                                     Style="{StaticResource gridTextItem}"
                                                     Text="{Binding ItemName}"
                                                     TextWrapping="Wrap" />
-
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -2299,7 +2250,6 @@
                                                         </Style>
                                                     </TextBox.Style>
                                                 </TextBox>
-
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -2334,8 +2284,6 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-
-
                                 </DataGrid.Columns>
                             </DataGrid>
                             <StackPanel
@@ -2369,7 +2317,6 @@
                                 </Button>
                             </StackPanel>
 
-
                             <DockPanel
                                 Margin="0,10,0,0"
                                 HorizontalAlignment="Center"
@@ -2385,10 +2332,7 @@
                                     FontFamily="Segoe UI Light"
                                     Style="{StaticResource itemButton}" />
                             </DockPanel>
-
                         </DockPanel>
-
-
                     </DockPanel>
                 </Grid>
             </simpleChildWindow:ChildWindow>
@@ -2523,6 +2467,7 @@
                                             IsTabStop="False"
                                             Style="{StaticResource MaterialDesignIconButton}" />
                                         <ScrollViewer
+                                            Name="settingInfoDialogScroller"
                                             Grid.Row="0"
                                             Grid.RowSpan="2"
                                             HorizontalScrollBarVisibility="Disabled"
@@ -2560,12 +2505,14 @@
                                                         FontWeight="SemiBold"
                                                         Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
 
-
                                                     <FlowDocumentScrollViewer
                                                         Margin="-17.5,-17.5,0,0"
                                                         HorizontalScrollBarVisibility="Disabled"
                                                         VerticalScrollBarVisibility="Disabled">
-                                                        <FlowDocument Name="infoPaneTypesList" TextAlignment="Left" />
+                                                        <FlowDocument
+                                                            Name="infoPaneTypesList"
+                                                            FontFamily="SegoeUI"
+                                                            TextAlignment="Left" />
                                                     </FlowDocumentScrollViewer>
                                                 </StackPanel>
                                                 <StackPanel Name="infoPaneTipsPanel">
@@ -2575,12 +2522,14 @@
                                                         FontWeight="SemiBold"
                                                         Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
 
-
                                                     <FlowDocumentScrollViewer
                                                         Margin="-17.5,-17.5,0,0"
                                                         HorizontalScrollBarVisibility="Disabled"
                                                         VerticalScrollBarVisibility="Disabled">
-                                                        <FlowDocument Name="infoPaneTipsList" TextAlignment="Left" />
+                                                        <FlowDocument
+                                                            Name="infoPaneTipsList"
+                                                            FontFamily="Segoe UI"
+                                                            TextAlignment="Left" />
                                                     </FlowDocumentScrollViewer>
                                                 </StackPanel>
                                                 <StackPanel Name="infoPaneVarsPanel">
@@ -2590,12 +2539,14 @@
                                                         FontWeight="SemiBold"
                                                         Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
 
-
                                                     <FlowDocumentScrollViewer
                                                         Margin="-17.5,-17.5,0,0"
                                                         HorizontalScrollBarVisibility="Disabled"
                                                         VerticalScrollBarVisibility="Disabled">
-                                                        <FlowDocument Name="infoPaneVarsList" TextAlignment="Left" />
+                                                        <FlowDocument
+                                                            Name="infoPaneVarsList"
+                                                            FontFamily="Segoe UI"
+                                                            TextAlignment="Left" />
                                                     </FlowDocumentScrollViewer>
                                                 </StackPanel>
                                                 <StackPanel Name="infoPaneCustomVarsPanel">
@@ -2605,12 +2556,14 @@
                                                         FontWeight="SemiBold"
                                                         Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
 
-
                                                     <FlowDocumentScrollViewer
                                                         Margin="-17.5,-17.5,0,0"
                                                         HorizontalScrollBarVisibility="Disabled"
                                                         VerticalScrollBarVisibility="Disabled">
-                                                        <FlowDocument Name="infoPaneCustomVarsList" TextAlignment="Left" />
+                                                        <FlowDocument
+                                                            Name="infoPaneCustomVarsList"
+                                                            FontFamily="Segoe UI"
+                                                            TextAlignment="Left" />
                                                     </FlowDocumentScrollViewer>
                                                 </StackPanel>
                                             </StackPanel>
@@ -2842,7 +2795,6 @@
                                     FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                     Foreground="LightGray"
                                     Text="Current user is in domain admins or delegated group" />
-
                             </DockPanel>
                             <Label
                                 x:Name="settingDomainAdminLabel"
@@ -2865,19 +2817,18 @@
                                             </Trigger>
                                         </Style.Triggers>
                                     </Style>
-
                                 </DockPanel.Style>
                                 <StackPanel DockPanel.Dock="Left">
                                     <Label
                                         Margin="0,5,0,0"
                                         Content="Select group with delegated rights (requires reset)"
                                         FontFamily="Segoe UI Light" />
-                                    <Label
+                                    <TextBlock
                                         Name="settingDelegatedGroupSelection"
                                         Margin="0,-5,0,0"
-                                        Content="{Binding DelegatedGroupName, UpdateSourceTrigger=PropertyChanged}"
-                                        FontFamily="Segoe UI"
-                                        Foreground="{StaticResource MahApps.Brushes.Accent}" />
+                                        Foreground="{StaticResource MahApps.Brushes.Accent}"
+                                        Style="{StaticResource toolLabel}"
+                                        Text="{Binding DelegatedGroupName, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                                 <Button
                                     Name="settingDelegatedGroupPick"
@@ -2890,7 +2841,6 @@
                                     FontSize="10"
                                     ToolTip="Pick group with delegated rights" />
                             </DockPanel>
-
                         </Grid>
                     </Canvas>
                     <Canvas
@@ -2984,7 +2934,6 @@
                                         Margin="0,3,47.5,-2.5"
                                         HorizontalAlignment="Right"
                                         Panel.ZIndex="25">
-
 
                                         <Button
                                             Name="settingNetAddClick"
@@ -3319,13 +3268,10 @@
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
 
-                                                        <Label
+                                                        <TextBlock
                                                             Margin="-8,-12,-8,-12"
-                                                            Padding="0"
-                                                            VerticalAlignment="Center"
-                                                            HorizontalContentAlignment="Center"
-                                                            Background="Transparent"
-                                                            Content="{Binding ID}" />
+                                                            Style="{StaticResource toolLabel}"
+                                                            Text="{Binding ID}" />
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
@@ -3550,12 +3496,12 @@
                                         Grid.Column="1"
                                         Grid.ColumnSpan="3">
                                         <StackPanel Margin="0,-15,0,0" DockPanel.Dock="Left">
-                                            <Label
+                                            <TextBlock
                                                 Name="settingRALabel"
                                                 Margin="15,10,20,0"
-                                                Content="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                 FontSize="14"
-                                                Style="{DynamicResource MaterialDesignLabel}" />
+                                                Style="{StaticResource toolLabel}"
+                                                Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
                                             <TextBox
                                                 Name="settingRtToolTip"
@@ -3615,7 +3561,6 @@
                                                         <Setter Property="Background" Value="Transparent" />
                                                     </Style>
                                                 </ListBox.ItemContainerStyle>
-
                                             </ListBox>
                                         </StackPanel>
                                     </DockPanel>
@@ -3689,7 +3634,6 @@
                                                             <Setter Property="IsChecked" Value="False" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
-
                                                 </Style>
                                             </CheckBox.Style>
                                         </CheckBox>
@@ -3952,13 +3896,10 @@
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
 
-                                                        <Label
+                                                        <TextBlock
                                                             Margin="-8,-12,-8,-12"
-                                                            Padding="0"
-                                                            VerticalAlignment="Center"
-                                                            HorizontalContentAlignment="Center"
-                                                            Background="Transparent"
-                                                            Content="{Binding VarNum}" />
+                                                            Style="{StaticResource toolLabel}"
+                                                            Text="{Binding VarNum}" />
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
@@ -4099,14 +4040,10 @@
                                             <DataGridTemplateColumn Header="  ID" HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
-
-                                                        <Label
+                                                        <TextBlock
                                                             Margin="-8,-12,-8,-12"
-                                                            Padding="0"
-                                                            VerticalAlignment="Center"
-                                                            HorizontalContentAlignment="Center"
-                                                            Background="Transparent"
-                                                            Content="{Binding ModNum}" />
+                                                            Style="{StaticResource toolLabel}"
+                                                            Text="{Binding ModNum}" />
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
@@ -4187,7 +4124,6 @@
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </StackPanel>
-
                             </Grid>
                         </Controls:Flyout>
                         <Grid ShowGridLines="False">
@@ -4252,7 +4188,7 @@
                                 </Grid.ColumnDefinitions>
                                 <DockPanel Grid.Column="1">
                                     <Label
-                                        Content="Functions and Modules"
+                                        Content="Modules"
                                         DockPanel.Dock="Top"
                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                         FontSize="16" />
@@ -4260,7 +4196,7 @@
                                         Margin="5,0,0,0"
                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                         Foreground="LightGray"
-                                        Text="Configure modules and functions for internal use" />
+                                        Text="Configure third party modules for internal use" />
                                 </DockPanel>
 
                                 <Grid Grid.Column="2" ShowGridLines="False">
@@ -4412,7 +4348,6 @@
                                             ToolTip="Add item">
                                             <Button.Style>
 
-
                                                 <Style BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}" TargetType="Button">
                                                     <Setter Property="Visibility" Value="Visible" />
                                                     <Setter Property="Padding" Value="0" />
@@ -4431,7 +4366,7 @@
 
                                     <DataGrid
                                         Name="settingOUDataGrid"
-                                        Height="260"
+                                        Height="360"
                                         Margin="0,-22.5,0,0"
                                         HorizontalAlignment="Stretch"
                                         VerticalAlignment="Top"
@@ -4449,6 +4384,7 @@
                                         CanUserSortColumns="True"
                                         CellStyle="{StaticResource dataGridCellLog}"
                                         Focusable="True"
+                                        HorizontalScrollBarVisibility="Disabled"
                                         KeyboardNavigation.TabNavigation="Contained"
                                         RowHeaderWidth="0"
                                         RowHeight="40"
@@ -4543,7 +4479,7 @@
                                     </DataGrid>
                                     <DataGrid
                                         Name="settingQueryDefDataGrid"
-                                        Height="260"
+                                        Height="360"
                                         Margin="0,-22.5,0,0"
                                         HorizontalAlignment="Stretch"
                                         VerticalAlignment="Top"
@@ -4615,7 +4551,6 @@
                                                 </DataGridTemplateColumn.CellTemplate>
                                             </DataGridTemplateColumn>
 
-
                                             <DataGridTemplateColumn Header="" HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
@@ -4673,7 +4608,6 @@
                                                 FontFamily="Segoe MDL2 Assets"
                                                 FontSize="16"
                                                 Visibility="Visible" />
-
                                         </DockPanel>
                                         <StackPanel
                                             Margin="-5,10,0,0"
@@ -4699,10 +4633,7 @@
                                                 Minimum="1"
                                                 Visibility="Visible"
                                                 Value="{Binding Path=Days, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-
-
                                         </StackPanel>
-
 
                                         <StackPanel
                                             Margin="-5,10,0,0"
@@ -4780,16 +4711,9 @@
                                                         Margin="0,5,20,0"
                                                         HorizontalAlignment="Stretch"
                                                         Color="{Binding Path=headerColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
                                                 </StackPanel>
                                             </StackPanel>
                                         </Grid>
-
-
-
-
-
-
                                     </DockPanel>
                                 </StackPanel>
                             </Grid>
@@ -4967,12 +4891,10 @@
 
                                                 <DataTemplate>
 
-                                                    <Label
+                                                    <TextBlock
                                                         Margin="-10,0,0,0"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Center"
-                                                        Content="{Binding ID}" />
+                                                        Style="{StaticResource toolLabel}"
+                                                        Text="{Binding ID}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -4986,13 +4908,7 @@
 
                                                 <DataTemplate>
 
-                                                    <Label
-                                                        Margin="0"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Left"
-                                                        Background="Transparent"
-                                                        Content="{Binding Field}" />
+                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Field}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -5128,12 +5044,10 @@
 
                                                 <DataTemplate>
 
-                                                    <Label
+                                                    <TextBlock
                                                         Margin="-10,0,0,0"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Center"
-                                                        Content="{Binding ID}" />
+                                                        Style="{StaticResource toolLabel}"
+                                                        Text="{Binding ID}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -5144,16 +5058,8 @@
                                             HeaderStyle="{StaticResource datagridColumnNoTab}">
 
                                             <DataGridTemplateColumn.CellTemplate>
-
                                                 <DataTemplate>
-
-                                                    <Label
-                                                        Margin="0"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Left"
-                                                        Background="Transparent"
-                                                        Content="{Binding Field}" />
+                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Field}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -5452,7 +5358,6 @@
                                                                                 <Setter Property="IsChecked" Value="False" />
                                                                             </DataTrigger>
                                                                         </Style.Triggers>
-
                                                                     </Style>
                                                                 </CheckBox.Style>
                                                             </CheckBox>
@@ -5478,7 +5383,7 @@
                                                             <Label
                                                                 Margin="-5,-11,0,0"
                                                                 Content="Icon"
-                                                                FontFamily="{DynamicResource MaterialDesignFont}"
+                                                                FontFamily="Segoe UI"
                                                                 FontSize="9"
                                                                 Foreground="DarkGray" />
                                                             <ComboBox
@@ -5617,16 +5522,8 @@
                                         HeaderStyle="{StaticResource datagridColumnNoTab}">
 
                                         <DataGridTemplateColumn.CellTemplate>
-
                                             <DataTemplate>
-
-                                                <Label
-                                                    Margin="-8,-12,-8,-12"
-                                                    Padding="0"
-                                                    VerticalAlignment="Center"
-                                                    HorizontalContentAlignment="Center"
-                                                    Background="Transparent"
-                                                    Content="{Binding IDnum}" />
+                                                <TextBlock Style="{StaticResource toolLabel}" Text="{Binding IDnum}" />
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -5868,7 +5765,6 @@
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,15,0" Orientation="Horizontal">
 
-
                                                         <TextBox
                                                             Name="settingResultBox"
                                                             Width="498"
@@ -5876,9 +5772,6 @@
                                                             Margin="10,10,5,10"
                                                             Padding="-10,-3,0,-10"
                                                             Style="{StaticResource ErrorStatusTextBox}" />
-
-
-
 
                                                         <Label
                                                             Name="settingResultBoxErrorStatus"
@@ -6013,7 +5906,7 @@
                                                                 <Label
                                                                     Margin="-5,-11,0,0"
                                                                     Content="Icon"
-                                                                    FontFamily="{DynamicResource MaterialDesignFont}"
+                                                                    FontFamily="Segoe UI"
                                                                     FontSize="9"
                                                                     Foreground="DarkGray" />
                                                                 <ComboBox
@@ -6161,7 +6054,7 @@
                                                                 <Label
                                                                     Margin="-5,-11,0,0"
                                                                     Content="Icon"
-                                                                    FontFamily="{DynamicResource MaterialDesignFont}"
+                                                                    FontFamily="Segoe UI"
                                                                     FontSize="9"
                                                                     Foreground="DarkGray" />
                                                                 <ComboBox
@@ -6311,16 +6204,11 @@
                                             HeaderStyle="{StaticResource datagridColumnNoTab}">
 
                                             <DataGridTemplateColumn.CellTemplate>
-
                                                 <DataTemplate>
-
-                                                    <Label
-                                                        Margin="-8,-12,-8,-12"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Center"
-                                                        Background="Transparent"
-                                                        Content="{Binding Field}" />
+                                                    <TextBlock
+                                                        Margin="2.5,0,0,0"
+                                                        Style="{StaticResource toolLabel}"
+                                                        Text="{Binding Field}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -6547,16 +6435,11 @@
                                             HeaderStyle="{StaticResource datagridColumnNoTab}">
 
                                             <DataGridTemplateColumn.CellTemplate>
-
                                                 <DataTemplate>
-
-                                                    <Label
-                                                        Margin="-8,-12,-8,-12"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Center"
-                                                        Background="Transparent"
-                                                        Content="{Binding Field}" />
+                                                    <TextBlock
+                                                        Margin="2.5,0,0,0"
+                                                        Style="{StaticResource toolLabel}"
+                                                        Text="{Binding Field}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -6766,8 +6649,6 @@
                                                             <Trigger Property="Tag" Value="Action">
                                                                 <Setter Property="Text" Value="{Binding actionCmd, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                                             </Trigger>
-
-
                                                         </Style.Triggers>
                                                     </Style>
                                                 </TextBox.Style>
@@ -6969,7 +6850,6 @@
                                                                 HorizontalAlignment="Right"
                                                                 Content=""
                                                                 FontFamily="Segoe MDL2 Assets" />
-
                                                         </StackPanel>
                                                         <Separator Margin="30,5,30,5" Style="{StaticResource MaterialDesignLightSeparator}" />
                                                         <TextBox
@@ -7012,8 +6892,6 @@
                                                                 HorizontalAlignment="Right"
                                                                 Content=""
                                                                 FontFamily="Segoe MDL2 Assets" />
-
-
                                                         </StackPanel>
                                                         <Separator Margin="30,5,30,5" Style="{StaticResource MaterialDesignLightSeparator}" />
                                                         <StackPanel.Style>
@@ -7155,7 +7033,7 @@
                                                                 <Label
                                                                     Margin="-5,-11,0,0"
                                                                     Content="Icon"
-                                                                    FontFamily="{DynamicResource MaterialDesignFont}"
+                                                                    FontFamily="Segoe UI"
                                                                     FontSize="9"
                                                                     Foreground="DarkGray" />
                                                                 <ComboBox
@@ -7227,7 +7105,6 @@
                                                             VerticalScrollBarVisibility="Auto" />
                                                         <StackPanel Margin="0,-5,0,0" Orientation="Horizontal">
 
-
                                                             <TextBox
                                                                 Name="settingCommandGridToolToolTip"
                                                                 Width="475"
@@ -7245,7 +7122,7 @@
                                                                 <Label
                                                                     Margin="-5,-11,0,0"
                                                                     Content="Icon"
-                                                                    FontFamily="{DynamicResource MaterialDesignFont}"
+                                                                    FontFamily="Segoe UI"
                                                                     FontSize="9"
                                                                     Foreground="DarkGray" />
                                                                 <ComboBox
@@ -7271,7 +7148,6 @@
                                                             </Canvas>
                                                         </StackPanel>
                                                     </StackPanel>
-
                                                 </Expander>
 
                                                 <DockPanel
@@ -7326,14 +7202,10 @@
                                                         <DataGridTemplateColumn Header="  ID" HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                             <DataGridTemplateColumn.CellTemplate>
                                                                 <DataTemplate>
-
-                                                                    <Label
+                                                                    <TextBlock
                                                                         Margin="-8,-12,-8,-12"
-                                                                        Padding="0"
-                                                                        VerticalAlignment="Center"
-                                                                        HorizontalContentAlignment="Center"
-                                                                        Background="Transparent"
-                                                                        Content="{Binding ToolID}" />
+                                                                        Style="{StaticResource toolLabel}"
+                                                                        Text="{Binding ToolID}" />
                                                                 </DataTemplate>
                                                             </DataGridTemplateColumn.CellTemplate>
                                                         </DataGridTemplateColumn>
@@ -7381,7 +7253,6 @@
                                                                             Margin="-22.5,0,0,0"
                                                                             Style="{StaticResource scriptBlockValidStatus}"
                                                                             Tag="{Binding queryCmdValid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
                                                                     </StackPanel>
                                                                 </DataTemplate>
                                                             </DataGridTemplateColumn.CellTemplate>
@@ -7468,7 +7339,6 @@
                                                     </Style>
                                                 </StackPanel.Style>
                                             </StackPanel>
-
                                         </DockPanel>
                                     </ScrollViewer>
                                 </StackPanel>
@@ -7579,16 +7449,11 @@
                                         HeaderStyle="{StaticResource datagridColumnNoTab}">
 
                                         <DataGridTemplateColumn.CellTemplate>
-
                                             <DataTemplate>
-
-                                                <Label
+                                                <TextBlock
                                                     Margin="-8,-12,-8,-12"
-                                                    Padding="0"
-                                                    VerticalAlignment="Center"
-                                                    HorizontalContentAlignment="Center"
-                                                    Background="Transparent"
-                                                    Content="{Binding ToolID}" />
+                                                    Style="{StaticResource toolLabel}"
+                                                    Text="{Binding ToolID}" />
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -7750,29 +7615,11 @@
                             <Controls:MetroTabItem.Header>
                                 <Label Content="" Style="{StaticResource customTabLabel}" />
                             </Controls:MetroTabItem.Header>
+
                             <Grid>
 
                                 <Grid>
-                                    <DockPanel
-                                        Margin="0,0,0,100"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Bottom">
-                                        <Image
-                                            Name="logoBackdrop"
-                                            Margin="50"
-                                            Opacity=".06" />
 
-                                        <DockPanel.Style>
-                                            <Style TargetType="DockPanel">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding ElementName=tabControl, Path=Items.Count}" Value="0">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </DockPanel.Style>
-                                    </DockPanel>
                                     <Grid Name="userGrid">
                                         <Grid.Style>
                                             <Style TargetType="Grid">
@@ -8031,13 +7878,10 @@
                                                                 <DataGridTemplateColumn.CellTemplate>
                                                                     <DataTemplate>
                                                                         <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                            <Label
+                                                                            <TextBlock
                                                                                 Margin="2.5,0,2.5,0"
-                                                                                Padding="0"
-                                                                                VerticalAlignment="Center"
-                                                                                HorizontalContentAlignment="Left"
-                                                                                Background="Transparent"
-                                                                                Content="{Binding HostName}" />
+                                                                                Style="{StaticResource toolLabel}"
+                                                                                Text="{Binding HostName}" />
                                                                         </Viewbox>
                                                                     </DataTemplate>
                                                                 </DataGridTemplateColumn.CellTemplate>
@@ -8050,13 +7894,11 @@
 
                                                                 <DataGridTemplateColumn.CellTemplate>
                                                                     <DataTemplate>
-                                                                        <Label
-                                                                            Width="65"
-                                                                            Padding="-5,0,0,0"
-                                                                            VerticalAlignment="Center"
-                                                                            HorizontalContentAlignment="Left"
-                                                                            Background="Transparent"
-                                                                            Content="{Binding logonTime, StringFormat=\{0:dd.MM.yy\}}" />
+                                                                        <TextBlock
+                                                                            Margin="-2,0,0,0"
+                                                                            HorizontalAlignment="Center"
+                                                                            Style="{StaticResource toolLabel}"
+                                                                            Text="{Binding logonTime, StringFormat=\{0:dd.MM.yy\}}" />
                                                                     </DataTemplate>
                                                                 </DataGridTemplateColumn.CellTemplate>
                                                             </DataGridTemplateColumn>
@@ -8067,11 +7909,10 @@
 
                                                                 <DataGridTemplateColumn.CellTemplate>
                                                                     <DataTemplate>
-                                                                        <Label
-                                                                            VerticalAlignment="Center"
-                                                                            HorizontalContentAlignment="Center"
-                                                                            Background="Transparent"
-                                                                            Content="{Binding loginCount}" />
+                                                                        <TextBlock
+                                                                            HorizontalAlignment="Center"
+                                                                            Style="{StaticResource toolLabel}"
+                                                                            Text="{Binding loginCount}" />
                                                                     </DataTemplate>
                                                                 </DataGridTemplateColumn.CellTemplate>
                                                             </DataGridTemplateColumn>
@@ -8191,11 +8032,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="145"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding HostName}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding HostName}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                     <DockPanel HorizontalAlignment="Left">
                                                                         <Label
@@ -8203,12 +8042,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="145"
-                                                                            Padding="0"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding IPAddress}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding IPAddress}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                     <DockPanel HorizontalAlignment="Left">
                                                                         <Label
@@ -8216,12 +8052,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="100"
-                                                                            HorizontalContentAlignment="Left"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding DeviceLocation}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding DeviceLocation}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                     <DockPanel HorizontalAlignment="Left">
                                                                         <Label
@@ -8229,11 +8062,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="80"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding Type}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding Type}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                     <DockPanel HorizontalAlignment="Left" VerticalAlignment="Top">
 
@@ -8242,12 +8073,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="145"
-                                                                            Padding="0"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding LoginDC}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding LoginDC}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                 </UniformGrid>
                                                             </DockPanel>
@@ -8264,7 +8092,7 @@
                                                                     DockPanel.Dock="Right"
                                                                     IsChecked="False"
                                                                     Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"
-                                                                    ToolTip="Focus host">
+                                                                    ToolTip="Focus client">
                                                                     <Label
                                                                         Padding="0"
                                                                         Content=""
@@ -8282,11 +8110,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="145"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding ClientName}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding ClientName}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                     <DockPanel HorizontalAlignment="Left">
                                                                         <Label
@@ -8294,12 +8120,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="145"
-                                                                            Padding="0"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding ClientIPAddress}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding ClientIPAddress}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                     <DockPanel HorizontalAlignment="Left">
                                                                         <Label
@@ -8307,12 +8130,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="100"
-                                                                            HorizontalContentAlignment="Left"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding ClientLocation}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding ClientLocation}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                     <DockPanel HorizontalAlignment="Left">
                                                                         <Label
@@ -8320,11 +8140,9 @@
                                                                             DockPanel.Dock="Top"
                                                                             FontSize="10"
                                                                             Foreground="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
-                                                                        <TextBox
-                                                                            Width="80"
-                                                                            DockPanel.Dock="Bottom"
-                                                                            Style="{DynamicResource compItemBox}"
-                                                                            Text="{Binding ClientType}" />
+                                                                        <Viewbox Style="{StaticResource compItemViewBox}">
+                                                                            <TextBox Style="{DynamicResource compItemBox}" Text="{Binding ClientType}" />
+                                                                        </Viewbox>
                                                                     </DockPanel>
                                                                     <DockPanel HorizontalAlignment="Left" VerticalAlignment="Top">
 
@@ -8343,7 +8161,7 @@
                                                                 </UniformGrid>
                                                             </DockPanel>
                                                             <DockPanel
-                                                                Margin="3,-10,3,0"
+                                                                Margin="3,-12.5,3,0"
                                                                 HorizontalAlignment="Stretch"
                                                                 DockPanel.Dock="Bottom">
                                                                 <StackPanel Margin="0,0,25,0">
@@ -8470,13 +8288,10 @@
                                                                 <DataGridTemplateColumn.CellTemplate>
                                                                     <DataTemplate>
 
-                                                                        <Label
+                                                                        <TextBlock
                                                                             Margin="2.5,0,2.5,0"
-                                                                            Padding="0"
-                                                                            VerticalAlignment="Center"
-                                                                            HorizontalContentAlignment="Left"
-                                                                            Background="Transparent"
-                                                                            Content="{Binding UserName}" />
+                                                                            Style="{StaticResource toolLabel}"
+                                                                            Text="{Binding UserName}" />
                                                                     </DataTemplate>
                                                                 </DataGridTemplateColumn.CellTemplate>
                                                             </DataGridTemplateColumn>
@@ -8488,13 +8303,11 @@
 
                                                                 <DataGridTemplateColumn.CellTemplate>
                                                                     <DataTemplate>
-                                                                        <Label
-                                                                            Width="65"
-                                                                            Padding="-5,0,0,0"
-                                                                            VerticalAlignment="Center"
-                                                                            HorizontalContentAlignment="Left"
-                                                                            Background="Transparent"
-                                                                            Content="{Binding logonTime, StringFormat=\{0:dd.MM.yy\}}" />
+                                                                        <TextBlock
+                                                                            Margin="-2,0,0,0"
+                                                                            HorizontalAlignment="Center"
+                                                                            Style="{StaticResource toolLabel}"
+                                                                            Text="{Binding logonTime, StringFormat=\{0:dd.MM.yy\}}" />
                                                                     </DataTemplate>
                                                                 </DataGridTemplateColumn.CellTemplate>
                                                             </DataGridTemplateColumn>
@@ -8505,11 +8318,10 @@
                                                                 HeaderStyle="{StaticResource logGridHeader}">
                                                                 <DataGridTemplateColumn.CellTemplate>
                                                                     <DataTemplate>
-                                                                        <Label
-                                                                            VerticalAlignment="Center"
-                                                                            HorizontalContentAlignment="Center"
-                                                                            Background="Transparent"
-                                                                            Content="{Binding loginCount}" />
+                                                                        <TextBlock
+                                                                            HorizontalAlignment="Center"
+                                                                            Style="{StaticResource toolLabel}"
+                                                                            Text="{Binding loginCount}" />
                                                                     </DataTemplate>
                                                                 </DataGridTemplateColumn.CellTemplate>
                                                             </DataGridTemplateColumn>
@@ -8691,7 +8503,7 @@
                                                                     DockPanel.Dock="Right"
                                                                     IsChecked="False"
                                                                     Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"
-                                                                    ToolTip="Focus host">
+                                                                    ToolTip="Focus client">
                                                                     <Label
                                                                         Padding="0"
                                                                         Content=""
@@ -8769,7 +8581,7 @@
                                                                     </DockPanel>
                                                                 </UniformGrid>
                                                             </DockPanel>
-                                                            <DockPanel Margin="3,-10,3,0" HorizontalAlignment="Stretch">
+                                                            <DockPanel Margin="3,-12.5,3,0" HorizontalAlignment="Stretch">
                                                                 <StackPanel Margin="0,0,25,0">
 
                                                                     <Button
@@ -8975,7 +8787,7 @@
                                             PopupMode="Click"
                                             StaysOpen="True"
                                             Style="{StaticResource MaterialDesignPopupBox}"
-                                            ToolTip="Manage items"
+                                            ToolTip="Search Options"
                                             UnfurlOrientation="Horizontal">
                                             <DockPanel Width="80" Margin="10,5,10,5">
 
@@ -9019,15 +8831,17 @@
                                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                             SelectionMode="Multiple"
-                                                            Style="{StaticResource MaterialDesignFilterChipListBox}" />
+                                                            Style="{StaticResource MaterialDesignFilterChipListBox}">
+                                                            <ListBox.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                                        <TextBlock Text="{Binding}" />
+                                                                    </Viewbox>
+                                                                </DataTemplate>
+                                                            </ListBox.ItemTemplate>
+                                                        </ListBox>
                                                     </DockPanel>
                                                 </md:PopupBox>
-
-
-
-
-
-
                                             </DockPanel>
                                         </md:PopupBox>
 
@@ -9062,8 +8876,6 @@
                                             </Button.Style>
                                         </Button>
                                     </Grid>
-
-
                                 </Grid>
                             </Grid>
                         </Controls:MetroTabItem>
@@ -9071,7 +8883,6 @@
                             <Controls:MetroTabItem.Header>
                                 <Label Content="" Style="{StaticResource customTabLabel}" />
                             </Controls:MetroTabItem.Header>
-
 
                             <Grid>
                                 <md:DialogHost
@@ -9114,7 +8925,7 @@
                                                 <HeaderedContentControl
                                                     Grid.Row="1"
                                                     Margin="40,30,0,0"
-                                                    FontFamily="{DynamicResource MaterialDesignFont}"
+                                                    FontFamily="Segoe UI"
                                                     Header="Logging Info" />
                                                 <Grid Grid.Row="1">
                                                     <DockPanel HorizontalAlignment="Stretch">
@@ -9157,7 +8968,6 @@
                                                                             <DataTrigger Binding="{Binding ElementName=toolsLogSearchBox, Path=Text.Length, UpdateSourceTrigger=PropertyChanged}" Value="0">
                                                                                 <Setter Property="Visibility" Value="Collapsed" />
                                                                             </DataTrigger>
-
                                                                         </Style.Triggers>
                                                                     </Style>
                                                                 </Button.Style>
@@ -9235,16 +9045,13 @@
                                                                             </Trigger>
                                                                         </Style.Triggers>
                                                                     </Style>
-
                                                                 </DataGrid.Style>
                                                                 <DataGrid.ColumnHeaderStyle>
                                                                     <Style BasedOn="{StaticResource MahApps.Styles.DataGridColumnHeader}" TargetType="DataGridColumnHeader">
                                                                         <Setter Property="Background" Value="#252525" />
                                                                         <Setter Property="Margin" Value="0,0,0,-25" />
-
                                                                     </Style>
                                                                 </DataGrid.ColumnHeaderStyle>
-
 
                                                                 <DataGrid.Columns>
                                                                     <DataGridTemplateColumn
@@ -9256,7 +9063,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding ActionName}" Style="{StaticResource toolLogLabel}" />
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding ActionName}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -9271,7 +9078,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding Message}" Style="{StaticResource toolLogLabel}" />
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Message}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -9286,7 +9093,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding SubjectName}" Style="{StaticResource toolLogLabel}" />
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding SubjectName}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -9300,7 +9107,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding ContextSubject}" Style="{StaticResource toolLogLabel}" />
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding ContextSubject}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -9314,7 +9121,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding SubjectType}" Style="{StaticResource toolLogLabel}" />
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding SubjectType}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -9328,7 +9135,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding OldValue}" Style="{StaticResource toolLogLabel}" />
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding OldValue}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -9342,7 +9149,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding NewValue}" Style="{StaticResource toolLogLabel}" />
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding NewValue}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -9357,8 +9164,7 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Center" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding Date}" Style="{StaticResource toolLogLabel}" />
-
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Date}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
@@ -9372,12 +9178,11 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
-                                                                                    <Label Content="{Binding Admin}" Style="{StaticResource toolLogLabel}" />
+                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Admin}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
                                                                     </DataGridTemplateColumn>
-
 
                                                                     <DataGridTemplateColumn
                                                                         Width="3*"
@@ -9420,8 +9225,6 @@
                                                                                                     <Setter Property="Foreground" Value="LightGreen" />
                                                                                                 </DataTrigger>
 
-
-
                                                                                                 <MultiTrigger>
                                                                                                     <MultiTrigger.Conditions>
                                                                                                         <Condition Property="IsMouseOver" Value="True" />
@@ -9436,9 +9239,6 @@
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
                                                                     </DataGridTemplateColumn>
-
-
-
 
                                                                     <DataGridTemplateColumn Width="3*" HeaderStyle="{StaticResource datagridColumnNoTab}">
                                                                         <DataGridTemplateColumn.CellTemplate>
@@ -9496,7 +9296,6 @@
                                                                         </Style.Triggers>
                                                                     </Style>
                                                                 </DockPanel.Style>
-
                                                             </DockPanel>
                                                         </Grid>
                                                         <DockPanel
@@ -9529,13 +9328,8 @@
                                                                 </Style>
                                                             </DockPanel.Style>
                                                         </DockPanel>
-
                                                     </DockPanel>
-
-
-
                                                 </Grid>
-
                                             </Grid>
                                         </Border>
                                     </md:DialogHost.DialogContent>
@@ -9662,8 +9456,6 @@
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Button>
-
-
                                             </WrapPanel>
                                         </ScrollViewer>
                                     </DockPanel>
@@ -9948,7 +9740,7 @@
                                                 <DockPanel HorizontalAlignment="Left">
 
                                                     <Label
-                                                        Content="Naming Convention"
+                                                        Content="Computer Categorization"
                                                         DockPanel.Dock="Top"
                                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                                         FontSize="16" />
@@ -9957,7 +9749,7 @@
                                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                                         FontSize="14"
                                                         Foreground="LightGray"
-                                                        Text="Define user and computer naming convention" />
+                                                        Text="Define computer categories" />
                                                 </DockPanel>
                                                 <Button
                                                     x:Name="settingNamingClick"

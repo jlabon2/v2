@@ -366,7 +366,7 @@ function Show-WPFWindow {
 function Set-WPFHeader {
     param ($ConfigHash, $SyncHash)   
     if ($configHash.settingHeaderConfig) {
-        if ($configHash.settingHeaderConfig.headerUser) {$syncHash.headerUser.Text = "$($env:USERDNSDOMAIN)\$($env:USERNAME)"}
+        if ($configHash.settingHeaderConfig.headerUser) {$syncHash.headerUser.Text = "$(($env:USERDNSDOMAIN).ToLower())\$($env:USERNAME)"}
         $syncHash.headerControl.DataContext = $configHash.settingHeaderConfig
     }
 }
@@ -989,12 +989,12 @@ function Add-CustomToolControls {
 
                                     $rsArgs = @{
                                         Name            = 'PopulateListboxNoAD'
-                                        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $rsVars, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
+                                        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $rsVars, $syncHash.adHocConfirmWindow, $syncHash.Window, $syncHash.adHocConfirmText, $varHash)
                                         ModulesToImport = $configHash.modList
                                     }
 
                                     Start-RSJob @rsArgs -ScriptBlock {
-                                        param($ConfigHash, $SyncHash, $toolID, $rsVars, $confirmWindow, $window, $varHash)
+                                        param($ConfigHash, $SyncHash, $toolID, $rsVars, $confirmWindow, $window, $textBlock, $varHash)
                             
                                         $target = $rsVars.target
                                         $targetType = $rsVars.targetType
@@ -1089,12 +1089,12 @@ function Add-CustomToolControls {
 
                                     $rsArgs = @{
                                         Name            = 'PopulateGridbox'
-                                        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $rsVars, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
+                                        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $rsVars, $syncHash.adHocConfirmWindow, $syncHash.Window, $syncHash.adHocConfirmText, $varHash)
                                         ModulesToImport = $configHash.modList
                                     }
 
                                     Start-RSJob @rsArgs -ScriptBlock {
-                                        param($ConfigHash, $SyncHash, $toolID, $rsVars, $confirmWindow, $window, $varHash)
+                                        param($ConfigHash, $SyncHash, $toolID, $rsVars, $confirmWindow, $window, $textBlock, $varHash)
 
                                         $target = $rsVars.target
                                         $targetType = $rsVars.targetType
@@ -1219,6 +1219,92 @@ function Add-CustomToolControls {
     }
 }
 
+function New-CustomLogHeader {
+    param
+    (
+        [Object]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, HelpMessage = "Data to process")]
+        $InputObject,
+        $SyncHash,
+        $ConfigHash,
+        [Parameter(Mandatory = $true)][ValidateSet('User', 'Comp')]$Type
+    )
+
+    begin {
+        $customField = 0
+
+        if ($type -eq 'User') {
+
+            $grid = 'UserCompGrid'
+            $panel = 'UserLogExtraPropGrid'
+        }
+
+        else {
+            $grid = 'CompUserGrid'
+            $panel = 'CompLogExtraPropGrid'
+        }          
+    }
+
+    process {
+        
+        # populate custom dock items
+        $customField++
+        $syncHash.Window.Dispatcher.Invoke([Action] {
+                $syncHash.('customPropDock' + $customField) = New-Object System.Windows.Controls.StackPanel
+                $syncHash.('customPropLabel' + $customField) = New-Object System.Windows.Controls.Label
+                $syncHash.('customPropText' + $customField) = New-Object System.Windows.Controls.Textbox
+                $syncHash.('customPropLabel' + $customField).Content = $InputObject.Header
+                $syncHash.('customPropDock' + $customField).VerticalAlignment = 'Top'
+                $syncHash.('customPropDock' + $customField).Margin = '0,-10,0,0'
+                        
+        
+                $syncHash.('customPropDock' + $customField).AddChild(($syncHash.('customPropLabel' + $customField)))
+                $syncHash.('customPropDock' + $customField).AddChild(($syncHash.('customPropText' + $customField)))
+             
+        
+                $syncHash.('customPropLabel' + $customField).FontSize = '10'
+                $syncHash.('customPropLabel' + $customField).Foreground = $syncHash.Window.FindResource('MahApps.Brushes.SystemControlBackgroundBaseMediumLow')
+                $syncHash.('customPropText' + $customField).Style = $syncHash.Window.FindResource('compItemBox') 
+                $syncHash.$panel.AddChild(($syncHash.('customPropDock' + $customField)))
+        
+                # Create and set a binding on the textbox object
+                $Binding = New-Object System.Windows.Data.Binding
+                $Binding.UpdateSourceTrigger = 'PropertyChanged'
+                $Binding.Source = $syncHash.$grid
+                $Binding.Path = "SelectedItem.$($InputObject.Header)"
+                $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+             
+        
+                [void][System.Windows.Data.BindingOperations]::SetBinding(($syncHash.('customPropText' + $customField)), [System.Windows.Controls.TextBox]::TextProperty, $Binding)
+            })
+                            
+    }
+}
+
+function Set-ItemControlPanelSize {
+    param
+    (
+        $SyncHash,
+        $ConfigHash
+    )
+
+    @('User', 'Comp') | ForEach-Object {
+
+        if ($_ -eq 'User') { $rowName = 'userCompControlRow' }
+        else { $rowName = 'compUserControlRow' }
+
+        $sizeToExpandFromCustomLogEntries = ([math]::Ceiling(($configHash.($_ + 'LogMapping') | Where-Object -FilterScript { $_.FieldSel -ne 'Ignore' }).Count / 5) - 1) * 57.5 
+        $sizeToExpandFromExtraContextButtons = ([math]::Ceiling(($configHash.contextConfig | Where-Object { $_.ValidAction -eq $true }).Count / 8) - 1) * 30
+        
+        $newSize = $sizeToExpandFromCustomLogEntries + $sizeToExpandFromExtraContextButtons + $syncHash.$rowName.Height.Value
+        
+        $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.$rowName.Height = $newSize })
+    
+    }
+}
+
+
+
 function Start-BasicADCheck {
     param ($SysCheckHash, $ConfigHash) 
 
@@ -1335,7 +1421,7 @@ function Get-PropertyLists {
             }
         }
         
-        Get-AdObjectPropertyList -ConfigHash $ConfigHash        
+        #Get-AdObjectPropertyList -ConfigHash $ConfigHash        
                 
         $ConfigHash.($type + 'PropPullListNames') = [System.Collections.ArrayList]@()
         $ConfigHash.($type + 'PropPullListNames').Add('Non-AD Property') 
@@ -1346,7 +1432,7 @@ function Get-PropertyLists {
 function Set-ADGenericQueryNames {
     param($ConfigHash) 
 
-    foreach ($id in ($ConfigHash.queryDefConfig.ID)) { $ConfigHash.queryDefConfig[$id - 1].QueryDefTypeList = $ConfigHash.QueryADValues.Key }
+    foreach ($id in ($ConfigHash.queryDefConfig.ID)) { $ConfigHash.queryDefConfig[$id - 1].QueryDefTypeList = $ConfigHash.adPropertyMap.Keys | Sort-Object }
 }
 
 
@@ -2030,9 +2116,17 @@ function Start-ItemToolAction {
 }
 
 function New-DialogWait {
-    param($confirmWindow, $window, $configHash)
+    param($confirmWindow, $window, $configHash, $textBlock, $text)
 
-    $window.Dispatcher.Invoke([action]{$confirmWindow.IsOpen = $true})
+    $window.Dispatcher.Invoke([action]{
+        
+        if ($text -and $textBlock) { $textBlock.Text = $text }
+        else {  $textBlock.Text = 'Continue with action?' }
+        
+        $confirmWindow.IsOpen = $true
+        
+    })
+
     $configHash.confirmCode = 'wait'
                 
     do {} until ($configHash.confirmCode  -match 'continue|cancel')
@@ -2096,7 +2190,7 @@ function Set-SelectedRTTypes {
 
     $SyncHash.settingRTIcon.Source = $null
 
-    switch ($SyncHash.settingRALabel.Content) {
+    switch ($SyncHash.settingRALabel.Text) {
         'MSTSC' { 
             $ConfigHash.rtConfig.MSTSC.Types = @()
             $SyncHash.settingRemoteListTypes.SelectedItems | ForEach-Object { $ConfigHash.rtConfig.MSTSC.Types += $_.Name }
@@ -2108,7 +2202,7 @@ function Set-SelectedRTTypes {
             break 
         }
         Default { 
-            $rtID = 'rt' + [string]($SyncHash.settingRALabel.Content -replace '.[A-Z]* ')
+            $rtID = 'rt' + [string]($SyncHash.settingRALabel.Text -replace '.[A-Z]* ')
             $ConfigHash.rtConfig.$rtID.Types = @()
             $SyncHash.settingRemoteListTypes.SelectedItems | ForEach-Object { $ConfigHash.rtConfig.$rtID.Types += $_.Name }
             break
@@ -2144,7 +2238,7 @@ function Get-RTExePath {
         $ConfigHash
     )
 
-    $rtID = 'rt' + [string]($SyncHash.settingRALabel.Content -replace '.[A-Z]* ')
+    $rtID = 'rt' + [string]($SyncHash.settingRALabel.Text -replace '.[A-Z]* ')
 
     $customSelection = New-Object System.Windows.Forms.OpenFileDialog -Property @{
         initialDirectory = [Environment]::GetFolderPath('ProgramFilesx86')
@@ -2285,6 +2379,41 @@ function Convert-IpAddressToMaskLength([string] $dottedIpAddressString)
   }
   return $result;
 }
+
+function Get-NetIPLocationList {
+    Begin {
+        $ipArray = [System.Collections.ArrayList]@()
+        $adSites = Get-ADReplicationSite -Filter *
+    }
+
+    Process {
+        foreach ($adSite in $adSites) {
+            (Get-ADReplicationSubnet -Filter "Site -eq ""$($adSite.DistinguishedName)""" -Properties Name, Location, Description) | ForEach-Object {
+                
+                $netAddress = $_.Name -split '/'
+
+                    $ipArray.Add([PSCustomObject]@{
+                    
+                        Location = if ($_.Location) { $_.Location }
+                                   elseif ($_.Description) { ($_.Description) } 
+                                   elseif ($adSite.Description) { $adSite.Description }
+                                   else { 'Unknown' }
+
+                        Network = $netAddress[0]
+
+                        Mask    = $netAddress[1]
+
+                    }) | Out-Null
+
+            }
+        }
+    }
+
+    End { $ipArray }
+}
+        
+
+
 function Set-NetworkMapItem {
     param (
         $SyncHash,
@@ -2317,17 +2446,17 @@ function Set-NetworkMapItem {
 
         elseif ($SyncHash.settingNetImportClick.SelectedIndex -eq 1) {
 
-            $subnets = Get-ADReplicationSubnet -Filter * -Properties * | Select-Object Name, Site, Location, Description
+            $subnets = Get-NetIPLocationList
 
             for ($i = 1; $i -le (($subnets | Measure-Object).Count); $i++) {
                 $ConfigHash.netMapList.Add([PSCustomObject]@{
                         Id           = ($ConfigHash.netMapList | Measure-Object).Count + 1
-                        Network      = ($subnets[$i - 1].Name -replace '//*.*', '')
+                        Network      = ($subnets[$i - 1].Network)
                         ValidNetwork = $true
-                        Mask         = ($subnets[$i - 1].Name -replace '.*/', '')
+                        Mask         = $subnets[$i - 1].Mask
                         ValidMask    = $true
                         Location     = if ($subnets[$i - 1].Location -ne $null) { $subnets[$i - 1].Location }
-                        elseif ($subnets[$i - 1].Description -ne $null) { $subnets[$i - 1].Description }
+                                        else { "Unknown" }
                     
                     })                                                               
             }
@@ -2342,7 +2471,7 @@ function Set-NetworkMapItem {
             foreach ($scope in $scopes) {
                 $ConfigHash.netMapList.Add([PSCustomObject]@{
                         Id           = ($ConfigHash.netMapList | Measure-Object).Count + 1
-                        Network      = $scope.ScopeID
+                        Network      = ($scope.ScopeID).IPAddresstoString
                         ValidNetwork = $true
                         Mask         = Convert-IpAddressToMaskLength -dottedIpAddressString $scope.SubnetMask
                         ValidMask    = $true
@@ -2465,8 +2594,8 @@ function Get-LDAPSearchNames {
         $ConfigHash,
         $SyncHash) 
 
-    (($ConfigHash.queryDefConfig | Where-Object { $_.Name -in $SyncHash.searchPropSelection.SelectedItems }).QueryDefType |
-            ForEach-Object { $ConfigHash.QueryADValues[([Array]::IndexOf($ConfigHash.QueryADValues.Key, $_))] }).Value
+    ($ConfigHash.queryDefConfig | Where-Object { $_.Name -in $SyncHash.searchPropSelection.SelectedItems }).QueryDefType |
+            ForEach-Object { $ConfigHash.adPropertyMap[$_] }
 }
 
 
@@ -2475,7 +2604,8 @@ function Get-LDAPSearchNames {
 #region Querying
 function Set-ItemExpanders {
     param($SyncHash, $ConfigHash,
-        [ValidateSet('Enable', 'Disable')]$IsActive)
+        [ValidateSet('Enable', 'Disable')]$IsActive,
+        [switch]$ClearContent)
     
     if ($IsActive -eq 'Disable') { 
         $SyncHash.Window.Dispatcher.Invoke([Action] {                 
@@ -2483,6 +2613,15 @@ function Set-ItemExpanders {
                 $SyncHash.compExpanderProgressBar.Visibility = 'Visible'                    
                 $SyncHash.userExpander.IsExpanded = $false 
                 $SyncHash.expanderProgressBar.Visibility = 'Visible'
+                $syncHash.userToolControlPanel.Visibility = 'Collapsed'
+                $syncHash.compToolControlPanel.Visibility = 'Collapsed'
+                $syncHash.settingToolParent.Visibility = "Collapsed"
+                   
+                if ($ClearContent) {
+                    $syncHash.expanderDisplay.Content = $null
+                    $syncHash.expanderTypeDisplay.Content = $null
+                    $syncHash.compExpanderTypeDisplay.Content = $null
+                }
             })
     }
     else {
@@ -2647,8 +2786,8 @@ function Find-ObjectLogs {
                         if ($hostConnectivity.Online) { $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue }
                         if ($hostConnectivity.IPV4Address) { $hostLocation = Resolve-Location -computerName $log.ComputerName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
                         
-                        if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName $log.ClientName }      
-                        if ($clientOnline.Online) { $clientLocation = Resolve-Location -computerName $log.ClientName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
+                        if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName ($log.ClientName -replace ' ') }      
+                        if ($clientOnline.IPV4Address) { $clientLocation = Resolve-Location -computerName ($log.ClientName -replace ' ') -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
                                             
                                             
                         $queryHash.$($match.SamAccountName).LoginLog.Add(( New-Object PSCustomObject -Property @{
@@ -2677,7 +2816,7 @@ function Find-ObjectLogs {
                                     }
                                     else { $null }
 
-                                    ClientName      = $log.ClientName 
+                                    ClientName      = ($log.ClientName -replace ' ')
                             
                                     ClientLocation  = $clientLocation
                             
@@ -2806,11 +2945,11 @@ function Find-ObjectLogs {
                                              Select-Object -First 1} ) | Sort-Object DateTime -Descending) {
                         Remove-Variable clientLocation -ErrorAction SilentlyContinue
 
-                        if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName $log.ClientName }
+                        if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName ($log.ClientName -replace ' ') }
     
                         $userSession = $sessionInfo | Where-Object { $_.UserName -eq $log.User }                                                                                                              
         
-                        if ($clientOnline.IPV4Address) { $clientLocation = Resolve-Location -computerName $log.ClientName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue}
+                        if ($clientOnline.IPV4Address) { $clientLocation = Resolve-Location -computerName ($log.ClientName -replace ' ') -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue}
 
                         $queryHash.$($match.Name).LoginLog.Add(( New-Object PSCustomObject -Property @{
         
@@ -2970,8 +3109,14 @@ function Set-ClientGridButtons {
         $ConfigHash,
         [parameter(Mandatory)][ValidateSet('Comp', 'User')]$type)
 
-    if ($type -eq 'User') { $itemName = 'userComp' }
-    else { $itemName = 'compUser' }
+   if ($type -eq 'User') { 
+        $itemName = 'userComp' 
+        $butCode = 'r'
+    }
+    else {
+        $itemName = 'compUser' 
+        $butCode = 'rc'
+    }
 
     foreach ($button in ($SyncHash | Where-Object { $_ -like '*rbutbut*' })) {
         if (($SyncHash.($itemName + 'Grid').SelectedItem.ClientType -in $ConfigHash.rtConfig.($SyncHash[$button].Tag).Types) -and
@@ -2983,15 +3128,15 @@ function Set-ClientGridButtons {
     foreach ($button in $SyncHash.customRT.Keys) {
         if (($SyncHash.($itemName + 'Grid').SelectedItem.ClientType -in $ConfigHash.rtConfig.$button.Types) -and
             (!($ConfigHash.rtConfig.$button.RequireOnline -and $SyncHash.($itemName + 'Grid').SelectedItem.ClientOnline -eq $false)) -and 
-            ($ConfigHash.rtConfig.$button.RequireUser -ne $true)) { $SyncHash.customRT.$button.rbut.IsEnabled = $true }
-        else { $SyncHash.customRT.$button.rbut.IsEnabled = $false }            
+            ($ConfigHash.rtConfig.$button.RequireUser -ne $true)) { $SyncHash.customRT.$button.($butCode + 'but').IsEnabled = $true }
+        else { $SyncHash.customRT.$button.($butCode + 'but').IsEnabled = $false }            
     }
 
     foreach ($button in $SyncHash.customContext.Keys) {
         if (($SyncHash.($itemName + 'Grid').SelectedItem.ClientType -in $ConfigHash.contextConfig[($button -replace 'cxt') - 1].Types) -and
             (!($ConfigHash.contextConfig[($button -replace 'cxt') - 1].RequireOnline -and $SyncHash.($itemName + 'Grid').SelectedItem.ClientOnline -eq $false)) -and 
-            ($ConfigHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -ne $true)) { $SyncHash.customContext.$button.('rbutcontext' + ($button -replace 'cxt')).IsEnabled = $true }
-        else { $SyncHash.customContext.$button.('rbutcontext' + ($button -replace 'cxt')).IsEnabled = $false }            
+            ($ConfigHash.contextConfig[($button -replace 'cxt') - 1].RequireUser -ne $true)) {  $SyncHash.customContext.$button.(($butCode + 'but') + 'context' + ($button -replace 'cxt')).IsEnabled = $true }
+        else { $SyncHash.customContext.$button.(($butCode + 'but') + 'context' + ($button -replace 'cxt')).IsEnabled = $false }            
     }
 }
 
@@ -3024,7 +3169,7 @@ function Write-SnackMsg {
     if ($Status -eq 'Fail') { $subStatus = 'incomplete' }
     else { $subStatus = 'complete' }
 
-    if ($SubjectName) { $queue.Enqueue("[$($toolName)]: $Status on $($SubjectName.toLower()) - action $subStatus") }
+    if ($SubjectName) { $queue.Enqueue("[$($toolName)]: $Status on $($SubjectName) - action $subStatus") }
     else { $queue.Enqueue("[$($toolName)]: $Status - standalone tool $subStatus") }
 }
         
@@ -3050,7 +3195,7 @@ function Write-LogMessage {
             Message     = $textInfo.ToTitleCase($Message.ToLower() -replace '[][]')
             SubjectName = if ($SubjectName) { ($SubjectName -replace '[][]').ToLower()}
                           else { "[N/A]" }
-            CxtSubName  = if ($ContextSubjectName) { ($ContextSubjectName -replace '[][]').ToLower()}
+            CxtSubName  = if ($ContextSubjectName) { ($ContextSubjectName -replace '[][]').toUpper()}
                           else { "[N/A]" }
             SubjectType = if ($SubjectType) { $textInfo.ToTitleCase(($SubjectType.ToLower() -replace '[][]' -replace "Comp$",'Computer')) }
                           else { "[N/A]" }
@@ -3066,6 +3211,8 @@ function Write-LogMessage {
                           else { '[N/A]' }
 
         }) 
+
+    if ($logMsg.SubjectType -eq 'Computer') { $logMsg.SubjectName = ($logMsg.SubjectName).toUpper() }
 
     if ($syncHashWindow) { $syncHashWindow.Dispatcher.Invoke([Action] { $ArrayList.Add($logMsg) }) }
     else { $null = $ArrayList.Add($logMsg) }

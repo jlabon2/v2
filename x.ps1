@@ -10,8 +10,8 @@ $hWnd = (Get-Process -Id $PID).MainWindowHandle
 $Null = [Win32.Functions]::ShowWindow($hWnd,$SW_HIDE)
 
 }
-#####
-#
+
+# update default rdp / msra values (command AND default to comp'
 
 Remove-Variable -Name * -ErrorAction SilentlyContinue
 Add-Type -AssemblyName 'System.Windows.Forms'
@@ -84,17 +84,17 @@ Contextual tools are actions accessible through the historical view. It uses the
 }
     'settingVarContent' =  [PSCustomObject]@{
         'Body'  = @'  
-Resources and variables are items updated as defined intervals that allow custom data to be accessed through out scriptblocks found throughout the tool.
+Resources and variables are items that capture defined values that update at defined intervals. These allow custom data to be accessed through out scriptblocks found throughout the tool.
 
-Functions and modules are PowerShell items added to allow access to scriptblocks executing in new threads. If not added, they can not be accessed in the thread.
+Modules refer to PowerShell modules to be added to allow access to scriptblocks executing in new threads. If not added, their functions cannot be accessed in the thread.
 '@
-        'Types' = @{}
 }
     'settingModDataGrid' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingModDataGrid
+Items below will allow defining PowerShell modules to be accessed within scriptblocks that use new threads.
+
+The NAME is a 'friendly name' for the module - it is only for descriptive purposes used within this list. The PATH is the local or network path to the module's .psm1 file. This can be selected by using the button in the respective row.
 '@
-        'Types' = @{}
 }
     'settingOUDataGrid' =  [PSCustomObject]@{
         'Body'  = @' 
@@ -126,7 +126,15 @@ To be completed.. settingNetContent
 }
     'settingNameContent' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingNameContent
+Computer categorization allows defining how computer objects are grouped. Contextual actions and remote tools rely on these categories to restrict or allow access.
+
+When querying objects login logs are analyzed, conditions defined in this section are evaluted against the given computer to determine its category. The rules are evaluated in descending order based on the RULE number. Once a rule's condition is TRUE, the evaluation is stopped and the object is categoriezed by the value in the NAME field for the corresponding condition.
+
+
+
+
+
+
 '@
         'Types' = @{}
 }
@@ -144,6 +152,8 @@ The logging path defines where this tool's actions are logged. Ideally, this sho
 Login log view depth refers to how far back login logs will be searched, analyzed, and displayed on the historical view. Larger depth will result in longer overall querying time, but this number may need to be adjusted to best fit your enviornment's usage.
 
 Active directory mappings are an index of the entire list of the AD object properties and their related data. If the AD schema is updated, these should be refreshed using the button below.
+
+Header context allows you to select whether the domain and username of the current user shows on the header of the application. Additionally, you can add a custom label and select the color of its font.
 '@
 }
  'rtConfigFlyout' =  [PSCustomObject]@{
@@ -200,8 +210,8 @@ The TARGET USER MUST BE LOGGED IN option will only allow this action's button to
         'Tips' = [ordered]@{
             'Confirmation Window' = @'
 Adding the following line at any point within the scriptblock will launch a confirmation window before continuing the block:
-    New-DialogWait -ConfirmWindow $confirmWindow -Window 
-        $window -configHash $configHash 
+    New-DialogWait -ConfirmWindow $confirmWindow -Window $window -configHash $configHash
+         -TextBlock $syncHash.adHocConfirmText -Text 'Custom text here'
 '@         
         }
 }
@@ -213,7 +223,7 @@ To be completed.. settingObjectToolDefFlyout
 }
 'settingVarDataGrid' =  [PSCustomObject]@{
         'Body'  = @' 
-Variables defined below will populate according to the set frequency and allow access from within scriptblocks defined elsewhere.
+Items defined below will populate variables according to the set frequency and allow access from within scriptblocks defined elsewhere.
 
 The NAME field will be the name of the variable. These can and will overwrite the default variables referenceable from within scriptblocks if the same names are used. The UPDATE FREQUENCY dictates how often these variables update. They are described in the list below. The DESCRIPTION field should explain the variable - it appears alongside the name in all information panels that list variables. The DEF field is the scriptblock that executes whenever the variable updates.
 '@
@@ -284,7 +294,7 @@ Set-WPFControls -TargetHash $syncHash -XAMLPath $xamlPath
 
 Get-Glyphs -ConfigHash $configHash -GlyphList $glyphList
 $syncHash.settingLogo.Source = 'C:\tempdata\trident.png'
-$syncHash.logoBackdrop.Source = 'C:\tempdata\trident.png'
+
 #Set-WPFControls -TargetHash $helpHash -XAMLPath $helpXAMLPath
 
 # builds custom WPF controls from whatever was defined and saved in ConfigHash
@@ -387,7 +397,7 @@ $syncHash.settingRemoteClick.add_Click( { Set-ChildWindow -Panel settingRTConten
 
 $syncHash.settingNetworkClick.add_Click( { Set-ChildWindow -Panel settingNetContent -Title 'Networking Mappings' -SyncHash $syncHash -Height 275 })
 
-$syncHash.settingNamingClick.add_Click( { Set-ChildWindow -Panel settingNameContent -Title 'Device Categorization' -SyncHash $syncHash -Height 275 })
+$syncHash.settingNamingClick.add_Click( { Set-ChildWindow -Panel settingNameContent -Title 'Computer Categorization' -SyncHash $syncHash -Height 275 })
 
 $syncHash.settingVarClick.add_Click( { Set-ChildWindow -Panel settingVarContent -Title 'Resources and Variables' -SyncHash $syncHash -Height 275 -Width 530 })
 
@@ -653,7 +663,7 @@ $syncHash.settingGeneralAddClick.Add_Click( {
                             Sort-Object -Descending |
                                 Select-Object -First 1) + 1
                     Name             = $null
-                    QueryDefTypeList = $configHash.QueryADValues.Key
+                    QueryDefTypeList = $configHash.adPropertyMap.Keys | Sort-Object
                     QueryDefType     = $null
                 })    
 
@@ -1083,12 +1093,12 @@ $syncHash.tabMenu.add_Loaded( {
                                                           
                                                         $rsArgs = @{
                                                             Name            = 'threadedAction'
-                                                            ArgumentList    = @($rsCmd, $queryHash, $b, $configHash, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
+                                                            ArgumentList    = @($rsCmd, $queryHash, $b, $configHash, $syncHash.adHocConfirmWindow, $syncHash.Window, $syncHash.adHocConfirmText, $varHash)
                                                             ModulesToImport = $configHash.modList
                                                         }
 
                                                         Start-RSJob @rsArgs -ScriptBlock {
-                                                            Param($rsCmd, $queryHash, $b, $configHash, $confirmWindow, $window)
+                                                            Param($rsCmd, $queryHash, $b, $configHash, $confirmWindow, $window, $textBlock, $varHash)
                                                         
                                                             Start-Sleep -Milliseconds 500
                                                            
@@ -1252,19 +1262,13 @@ $syncHash.tabMenu.add_Loaded( {
                         if ($sender.Name -match 'rbut') {
                             if ($syncHash.userCompFocusHostToggle.IsChecked) { $comp = $syncHash.UserCompGrid.SelectedItem.HostName }
                             else { $comp = $syncHash.UserCompGrid.SelectedItem.ClientName }
-
-                            $user = $syncHash.UserCompGrid.SelectedItem.UserName
                         }
-
                         else {
-                            if ($syncHash.compUserFocusUserToggle.IsChecked) { $comp = $syncHash.tabControl.SelectedItem.Name }
-                
+                            if ($syncHash.compUserFocusUserToggle.IsChecked) { $comp = $syncHash.tabControl.SelectedItem.Name }               
                             else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName }
-
-                            $user = $syncHash.CompUserGrid.SelectedItem.UserName
                         }
             
-                        mstsc.exe /v $comp /admin
+                       ([scriptblock]::Create($configHash.rtConfig.MSTSC.cmd)).Invoke()
                     })
 
                 $syncHash.($buttonType + 2).Source = ([Convert]::FromBase64String($configHash.rtConfig.MSRA.Icon))
@@ -1274,19 +1278,16 @@ $syncHash.tabMenu.add_Loaded( {
                         param([Parameter(Mandatory)][Object]$sender)
                         if ($sender.Name -match 'rbut') {
                             if ($syncHash.userCompFocusHostToggle.IsChecked) { $comp = $syncHash.UserCompGrid.SelectedItem.HostName }
-                            else { $comp = $syncHash.UserCompGrid.SelectedItem.ClientName }
-
-                            $user = $syncHash.UserCompGrid.SelectedItem.UserName
+                            else { $comp = $syncHash.UserCompGrid.SelectedItem.ClientName } 
                         }
 
                         else {
-                            if ($syncHash.compUserFocusUserToggle.IsChecked) { $comp = $syncHash.tabControl.SelectedItem.Name }
-                
-                            else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName }
-
-                            $user = $syncHash.CompUserGrid.SelectedItem.UserName
+                            if ($syncHash.compUserFocusUserToggle.IsChecked) { $comp = $syncHash.tabControl.SelectedItem.Name }             
+                            else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName } 
                         }
-                        msra.exe /offerra $comp 
+                        
+                        ([scriptblock]::Create($configHash.rtConfig.MSRA.cmd)).Invoke()
+                        
                     })    
 
 
@@ -1371,9 +1372,6 @@ $syncHash.tabMenu.add_Loaded( {
                                 else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName }     
                             }
                         
-                        
-
-
                             if ($configHash.contextConfig[$id - 1].actionCmdMulti) {
                                 $rsCmd = @{
                                     comp           = $comp
@@ -1381,24 +1379,22 @@ $syncHash.tabMenu.add_Loaded( {
                                     buttonSettings = $configHash.contextConfig[$id - 1]
                                     sessionID      = $sessionID
                                     snackBar       = $syncHash.SnackMsg.MessageQueue
-
                                 }
-
-                                    
+   
                                 $rsArgs = @{
                                     Name            = 'buttonThreadedAction'
-                                    ArgumentList    = @($rsCmd, $syncHash, $configHash, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
+                                    ArgumentList    = @($rsCmd, $syncHash, $configHash, $syncHash.adHocConfirmWindow, $syncHash.Window, $syncHash.adHocConfirmText, $varHash)
                                     ModulesToImport = $configHash.modList
                                 }
 
                                 Start-RSJob @rsArgs -ScriptBlock {
-                                    Param($rsCmd, $syncHash, $configHash, $confirmWindow, $window, $varHash)
+                                    Param($rsCmd, $syncHash, $configHash, $confirmWindow, $window, $textBlock, $varHash)
                             
                                     $user = $rsCmd.user
                                     $comp = $rsCmd.comp
                                     $sessionID = $rsCmd.SessionID
 
-                                    $combinedString = "$($user.ToLower()) on $($comp.ToLower())"
+                                    $combinedString = "$($user.ToLower()) on $($comp.toUpper())"
                                     $toolName = $rsCmd.buttonSettings.ActionName
                                     Set-CustomVariables -VarHash $varHash
 
@@ -1416,7 +1412,7 @@ $syncHash.tabMenu.add_Loaded( {
                             }
 
                             else {
-                                $combinedString = "$($user.ToLower()) on $($comp.ToLower())"
+                                $combinedString = "$($user.ToLower()) on $($comp.ToUpper())"
                                 $toolName = $configHash.contextConfig[$id - 1].ActionName
                                 Set-CustomVariables -VarHash $varHash
 
@@ -1436,81 +1432,18 @@ $syncHash.tabMenu.add_Loaded( {
                     $syncHash.($buttonType + 'ContextGrid').AddChild($syncHash.customContext.('cxt' + $contextBut.IDNum).($buttonType + 'context' + $contextBut.IDNum))
                 }
             }
-
-            $customField = 0
-            $sizeToExpand = ([math]::Ceiling(($configHash.userLogMapping | Where-Object -FilterScript { $_.FieldSel -ne 'Ignore' }).Count / 5) - 1) * 55 + $syncHash.userCompControlRow.Height.Value
-            $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.userCompControlRow.Height = $sizeToExpand })
+      
+            # add fields in panel under historical view for custom fields (for both user/comp logs)
             $configHash.userLogMapping |
                 Where-Object -FilterScript { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } |
-                    ForEach-Object -Process {
-                        # populate custom dock items
-                        $customField++
-                        $syncHash.Window.Dispatcher.Invoke([Action] {
-                                $syncHash.('customPropDock' + $customField) = New-Object System.Windows.Controls.StackPanel
-                                $syncHash.('customPropLabel' + $customField) = New-Object System.Windows.Controls.Label
-                                $syncHash.('customPropText' + $customField) = New-Object System.Windows.Controls.Textbox
-                                $syncHash.('customPropLabel' + $customField).Content = $_.Header
-                                $syncHash.('customPropDock' + $customField).VerticalAlignment = 'Top'
-                                $syncHash.('customPropDock' + $customField).Margin = '0,-10,0,0'
-                
-
-                                $syncHash.('customPropDock' + $customField).AddChild(($syncHash.('customPropLabel' + $customField)))
-                                $syncHash.('customPropDock' + $customField).AddChild(($syncHash.('customPropText' + $customField)))
-     
-
-                                $syncHash.('customPropLabel' + $customField).FontSize = '10'
-                                $syncHash.('customPropLabel' + $customField).Foreground = $syncHash.Window.FindResource('MahApps.Brushes.SystemControlBackgroundBaseMediumLow')
-                                $syncHash.('customPropText' + $customField).Style = $syncHash.Window.FindResource('compItemBox') 
-                                $syncHash.userLogExtraPropGrid.AddChild(($syncHash.('customPropDock' + $customField)))
-
-                                # Create and set a binding on the textbox object
-                                $Binding = New-Object System.Windows.Data.Binding
-                                $Binding.UpdateSourceTrigger = 'PropertyChanged'
-                                $Binding.Source = $syncHash.userCompGrid
-                                $Binding.Path = "SelectedItem.$($_.Header)"
-                                $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-     
-
-                                [void][System.Windows.Data.BindingOperations]::SetBinding(($syncHash.('customPropText' + $customField)), [System.Windows.Controls.TextBox]::TextProperty, $Binding)
-                            })
-                    }
-
-            $customField = 0
-            $sizeToExpand = ([math]::Ceiling(($configHash.compLogMapping | Where-Object -FilterScript { $_.FieldSel -ne 'Ignore' }).Count / 5) - 1) * 55 + $syncHash.compUserControlRow.Height.Value
-            $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.compUserControlRow.Height = $sizeToExpand }) 
+                   New-CustomLogHeader -SyncHash $syncHash -ConfigHash $configHash -Type User   
+          
             $configHash.compLogMapping |
                 Where-Object -FilterScript { $_.FieldSel -eq 'Custom' -and $_.Ignore -eq $false } |
-                    ForEach-Object -Process {
-                        # populate custom dock items
-                        $customField++
-                        $syncHash.Window.Dispatcher.Invoke([Action] {
-                                $syncHash.('customCompPropDock' + $customField) = New-Object System.Windows.Controls.StackPanel
-                                $syncHash.('customCompPropLabel' + $customField) = New-Object System.Windows.Controls.Label
-                                $syncHash.('customCompPropText' + $customField) = New-Object System.Windows.Controls.Textbox
-                                $syncHash.('customCompPropLabel' + $customField).Content = $_.Header
-                                $syncHash.('customCompPropDock' + $customField).VerticalAlignment = 'Top'
-                                $syncHash.('customCompPropDock' + $customField).Margin = '0,-10,0,0'
+                      New-CustomLogHeader -SyncHash $syncHash -ConfigHash $configHash -Type Comp
 
-                                $syncHash.('customCompPropDock' + $customField).AddChild(($syncHash.('customCompPropLabel' + $customField)))
-                                $syncHash.('customCompPropDock' + $customField).AddChild(($syncHash.('customCompPropText' + $customField)))
-     
-
-                                $syncHash.('customCompPropLabel' + $customField).FontSize = '10'
-                                $syncHash.('customCompPropLabel' + $customField).Foreground = $syncHash.Window.FindResource('MahApps.Brushes.SystemControlBackgroundBaseMediumLow')
-                                $syncHash.('customCompPropText' + $customField).Style = $syncHash.Window.FindResource('compItemBox') 
-                                $syncHash.compLogExtraPropGrid.AddChild(($syncHash.('customCompPropDock' + $customField)))
-
-                                # Create and set a binding on the textbox object
-                                $Binding = New-Object System.Windows.Data.Binding
-                                $Binding.UpdateSourceTrigger = 'PropertyChanged'
-                                $Binding.Source = $syncHash.compUserGrid
-                                $Binding.Path = "SelectedItem.$($_.Header)"
-                                $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-     
-
-                                [void][System.Windows.Data.BindingOperations]::SetBinding(($syncHash.('customCompPropText' + $customField)), [System.Windows.Controls.TextBox]::TextProperty, $Binding)
-                            })
-                    }
+            # resize the panel under historical view to accomodate custom fields and extra context buttons
+            Set-ItemControlPanelSize -SyncHash $syncHash -ConfigHash $configHash
         }
 
         else { 
@@ -1521,13 +1454,12 @@ $syncHash.tabMenu.add_Loaded( {
     })
                 
 $syncHash.tabControl.add_SelectionChanged( {
+
         if ($configHash.itemRefreshing -eq $true) {
             $configHash.itemRefreshing = $false 
-            $syncHash.expanderDisplay.Content = $null
-            $syncHash.expanderTypeDisplay.Content = $null
-            $syncHash.compExpanderTypeDisplay.Content = $null
-            $syncHash.userExpander.IsExpanded = $false
-            $syncHash.compExpander.IsExpanded = $false
+          
+            Set-ItemExpanders -SyncHash $syncHash -ConfigHash $configHash -IsActive Disable -ClearContent
+
             $syncHash.settingToolParent.Visibility = 'Collapsed'
             $syncHash.userToolControlPanel.Visibility = 'Collapsed'
             $syncHash.compToolControlPanel.Visibility = 'Collapsed'
@@ -1541,53 +1473,43 @@ $syncHash.tabControl.add_SelectionChanged( {
             $configHash.currentTabItem = $syncHash.tabControl.SelectedItem.Name
             $queryHash.Keys | ForEach-Object -Process { $queryHash.$_.ActiveItem = $false }
     
-    
-    
-            $currentTabItem = $syncHash.tabControl.SelectedItem.Name
-
             $rsArgs = @{
                 Name            = 'VisualChange'
-                ArgumentList    = @($syncHash, $queryHash, $configHash, $currentTabItem)
+                ArgumentList    = @($syncHash, $queryHash, $configHash)
                 ModulesToImport = $configHash.modList
             }
 
             Start-RSJob @rsArgs -ScriptBlock {
-                Param($syncHash, $queryHash, $configHash, $currentTabItem)
+                Param($syncHash, $queryHash, $configHash)
             
-                $queryHash.$currentTabItem.ActiveItem = $true
-
-                $syncHash.Window.Dispatcher.Invoke([Action] {
-                        $syncHash.expanderDisplay.Content = $null
-                        $syncHash.expanderTypeDisplay.Content = $null
-                        $syncHash.compExpanderTypeDisplay.Content = $null
-                        $syncHash.userExpander.IsExpanded = $false
-                        $syncHash.compExpander.IsExpanded = $false
-                        $syncHash.settingToolParent.Visibility = 'Collapsed'
-                        $syncHash.userToolControlPanel.Visibility = 'Collapsed'
-                        $syncHash.compToolControlPanel.Visibility = 'Collapsed'
-                        $syncHash.compExpanderProgressBar.Visibility = 'Visible'
-                        $syncHash.expanderProgressBar.Visibility = 'Visible'
-
-                        if ($queryHash.($syncHash.tabControl.SelectedItem.Name).ObjectClass -eq 'Computer') {
+                Set-ItemExpanders -SyncHash $syncHash -ConfigHash $configHash -IsActive Disable -ClearContent
+         
+                if ($null -ne $configHash.currentTabItem) {
+                
+                    # to do - set vis to this to collapsed by default (in xaml)
+                    $syncHash.Window.Dispatcher.Invoke([Action] {
+                        if ($queryHash.($configHash.currentTabItem).ObjectClass -eq 'Computer') {
                             if (($syncHash.compToolControlPanel.Children | Measure-Object).Count -eq 0) { $syncHash.settingTools.Visibility = 'Collapsed' }
                         }
                         else {
                             if (($syncHash.userToolControlPanel.Children | Measure-Object).Count -eq 0) { $syncHash.settingTools.Visibility = 'Collapsed' }
                         }
                     })
-           
-                if ($null -ne $currentTabItem) {
-                
+
+                    $queryHash.($configHash.currentTabItem).ActiveItem = $true
+
                     $rsArgs = @{
                         Name            = 'displayUpdate'
-                        ArgumentList    = @($syncHash, $queryHash, $configHash, $currentTabItem)
+                        ArgumentList    = @($syncHash, $queryHash, $configHash)
                         ModulesToImport = $configHash.modList
                     }
 
                     Start-RSJob @rsArgs -ScriptBlock {        
-                        Param($syncHash, $queryHash, $configHash, $currentTabItem)                     
+                        Param($syncHash, $queryHash, $configHash)                     
                         #Start-Sleep -Milliseconds 500
                
+                        $currentTabItem = $configHash.currentTabItem
+
                         $type = $queryHash[$currentTabItem].ObjectClass -replace 'Computer', 'Comp'
                         for ($i = 1; $i -le $configHash.boxMax; $i++) {
                             if ($i -le $configHash.($type + 'boxCount')) {
@@ -1674,16 +1596,17 @@ $syncHash.tabControl.add_SelectionChanged( {
 
                     $rsArgs = @{
                         Name            = 'displayLogUpdate'
-                        ArgumentList    = @($syncHash, $queryHash, $configHash, $currentTabItem)
+                        ArgumentList    = @($syncHash, $queryHash, $configHash)
                         ModulesToImport = $configHash.modList
                     }
 
                     Start-RSJob @rsArgs  -ScriptBlock {        
-                        Param($syncHash, $queryHash, $configHash, $currentTabItem)        
+                        Param($syncHash, $queryHash, $configHash)        
 
+                        $currentTabItem = $configHash.currentTabItem
                         $type = $queryHash[$currentTabItem].ObjectClass -replace 'Computer', 'Comp'
            
-                        do { } until ($queryHash[$currentTabItem].logsSearched -eq $true)
+                        do { Start-Sleep -Seconds 1 } until ($queryHash[$currentTabItem].logsSearched -eq $true)
 
                         if ($null -ne ($queryHash[$currentTabItem]).LoginLogListView) {
                             if ($type -eq 'User') {
@@ -1749,9 +1672,13 @@ $syncHash.itemToolGridExport.Add_Click({
 })
 
 $syncHash.tabControl.add_tabItemClosingEvent( {
+
+      
         $queryHash.Remove($configHash.currentTabItem)
 
-        if ($syncHash.tabControl.Items.Count -le 1) { Set-ItemExpanders -SyncHash $syncHash -ConfigHash $configHash -IsActive Disable }
+        if ($syncHash.tabControl.Items.Count -le 1) { Set-ItemExpanders -SyncHash $syncHash -ConfigHash $configHash -IsActive Disable -ClearContent }
+
+        
     })
 
 $syncHash.userCompGrid.Add_SelectionChanged( { Set-GridButtons -SyncHash $syncHash -ConfigHash $configHash -Type User })
@@ -1839,12 +1766,12 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
 
         $rsArgs = @{
             Name            = 'ItemTool'
-            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash, $syncHash.Window, $syncHash.adHocConfirmWindow, $varHash)
+            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $syncHash.itemToolDialogConfirmButton.Tag, $configHash, $queryHash, $syncHash.Window, $syncHash.adHocConfirmWindow, $syncHash.adHocConfirmText, $varHash)
             ModulesToImport = $configHash.modList
         }
 
         Start-RSJob @rsArgs -ScriptBlock {
-            Param($queue, $toolID, $configHash, $queryHash, $window, $confirmWindow, $varHash)
+            Param($queue, $toolID, $configHash, $queryHash, $window, $confirmWindow, $textBlock, $varHash)
 
             $item = ($configHash.currentTabItem).toLower()
             $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
@@ -2014,12 +1941,12 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
 
         $rsArgs = @{
             Name            = 'CommandGridAllRun'
-            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd, $syncHash.adHocConfirmWindow, $syncHash.Window, $varHash)
+            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd, $syncHash.adHocConfirmWindow, $syncHash.Window, $syncHash.adHocConfirmText, $varHash)
             ModulesToImport = $configHash.modList
         }
 
         Start-RSJob @rsArgs -ScriptBlock {
-            Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window)
+            Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window, $textBlock, $varhash)
 
             Set-CustomVariables -VarHash $varHash
 
@@ -2340,15 +2267,21 @@ $syncHash.settingNameDialogClose.Add_Click( {
         $configHash.nameMapListView.Refresh()
     })
 
-$syncHash.settingInfoDialogClose.Add_Click( { $syncHash.settingInfoDialog.IsOpen = $false })
+$syncHash.settingInfoDialogClose.Add_Click({ 
+    $syncHash.settingInfoDialog.IsOpen = $false 
+
+    Start-RSJob -ArgumentList ($syncHash.settingInfoDialogScroller, $syncHash.Window) -ScriptBlock {
+    param ($scroller, $window) 
+        Start-Sleep -Seconds 1 
+        $window.Dispatcher.Invoke([action]{$scroller.ScrollToTop()})
+    }
+})
 
 $syncHash.settingInfoDialogOpen.Add_Click( {
         if ($syncHash.settingInfoDialog.IsOpen) { $syncHash.settingInfoDialog.IsOpen = $false }
         else { $syncHash.settingInfoDialog.IsOpen = $true }
         Set-InfoPaneContent -SyncHash $syncHash -SettingInfoHash $settingInfoHash -ConfigHash $configHash
     })
-
-
 
 $syncHash.SearchBoxButton.Add_Click( {
         if ($syncHash.SearchBox.Text.Length -eq 0) {
@@ -2515,12 +2448,12 @@ $syncHash.itemRefresh.Add_Click( {
 
         $rsArgs = @{
             Name            = 'CommandGridRun'
-            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd, $syncHash.adHocConfirmWindow, $syncHash.Window)
+            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd, $syncHash.adHocConfirmWindow, $syncHash.Window, $syncHash.adHocConfirmText)
             ModulesToImport = $configHash.modList
         }
 
         Start-RSJob @rsArgs -ScriptBlock {
-            Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window)
+            Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window, $textBlock)
 
             $item = $rsCmd.item
             $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
@@ -2736,12 +2669,27 @@ $syncHash.itemRefresh.Add_Click( {
     }
 
     if ($button.Name -match 'resultsQueryItem') {
+        
+        if ($syncHash.tabMenu.SelectedIndex -ne 0) { $syncHash.tabMenu.SelectedIndex = 0 }
+
         $searchVal = $syncHash.historySideDataGrid.SelectedItem.SubjectName       
-        $syncHash.SearchBox.Tag = $searchVal
-        $syncHash.historySidePane.IsOpen = $false
-        $syncHash.SearchBox.Focus()
-        $wshell = New-Object -ComObject wscript.shell
-        $wshell.SendKeys('{ESCAPE}')
+
+        if ($searchVal -in $syncHash.tabControl.Items.Name) {
+            if ($searchVal -ne $syncHash.tabControl.SelectedItem.Name) {
+               $caseCorrectedSearchVal = $syncHash.tabControl.Items.Name | Where-Object {$_ -eq $searchVal}
+               $syncHash.tabControl.SelectedIndex = [Array]::IndexOf($syncHash.tabControl.Items.Name, $caseCorrectedSearchVal)
+            }
+        }
+        
+        else {  
+            $syncHash.SearchBox.Tag = $searchVal
+            $syncHash.SearchBox.Focus()
+            $wshell = New-Object -ComObject wscript.shell
+            $wshell.SendKeys('{ESCAPE}')
+        }
+    
+    $syncHash.historySidePane.IsOpen = $false
+    
     }       
 }
 
@@ -2948,7 +2896,7 @@ $syncHash.itemRefresh.Add_Click( {
     $button = $_.OriginalSource
 
     if ($button.Name -match 'settingModClearItem') { 
-        $id = $syncHash.settingModDataGrid.SelectedItem.VarNum 
+        $id = $syncHash.settingModDataGrid.SelectedItem.modNum 
         $configHash.modConfig.RemoveAt($syncHash.settingModDataGrid.SelectedItem.modNum - 1)
         $configHash.modConfig |
             Where-Object -FilterScript { $_.modNum -gt $id } |

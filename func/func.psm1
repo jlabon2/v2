@@ -80,7 +80,7 @@ function Resolve-Location {
 
         if ($computerName -and $IPAddress) {
             foreach ($ip in $ipList) {
-                if (IPInRange -IPAddress ([string]$ipAddress) -NetworkIP $ip.Network.IPAddressToString -Mask $ip.Mask)  {$location = $ip.Location; break} 
+                if (IPInRange -IPAddress ([string]$ipAddress) -NetworkIP $ip.Network -Mask $ip.Mask)  {$location = $ip.Location; break} 
                 }
             }   
         }
