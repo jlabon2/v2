@@ -113,30 +113,40 @@ When querying for users or computers, each of the items added as query definitio
 }
     'settingRTContent' =  [PSCustomObject]@{
         'Body'  = @' 
- Remote Connection Clients reference tools used in establishing remote connections into computers, user sessions, or other systems. The tools defined in this section will appear as buttons in a computer or user's historical view. Based on the settings defined for each item, the respective remote tool's button with initiate a connection using that tool.
+Remote Connection Clients reference tools used in establishing remote connections into computers, user sessions, or other systems. The tools defined in this section will appear as buttons in a computer or user's historical view. Based on the settings defined for each item, the respective remote tool's button with initiate a connection using that tool.
  
- Microsoft’s RDP and Remote Assistant clients are added by default. Additional third party clients can be added by using the ‘+’ button or removed using the 'trash' button. Clients can be configured by selecting the tool’s respective gear button.
+Microsoft’s RDP and Remote Assistant clients are added by default. Additional third party clients can be added by using the ‘+’ button or removed using the 'trash' button. Clients can be configured by selecting the tool’s respective gear button.
 '@
 }
     'settingNetContent' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingNetContent
+Network mapping allows the ability to define your environment’s IP space by location to better assess where a particular computer is located. When querying users, login logs (if defined) are analyzed. During this process, the IP address of each computer from each log entry is evaluated to determine if the address is part of any of the networks defined in this section. If it matches a network, the historical view will display the location defined for that network.
+
+There are several mechanisms available to import existing network information described in the Types section below. Networks can also be manually added and defined. The NETWORK field corresponds to the IP address of the network, while the MASK is its subnet mask. Invalid IP addresses or an invalid subnet will flag after input and the entry will not be not saved. The LOCATION field is the value returned when an evaluated IP address is found to be within that network’s IP space.
 '@
-        'Types' = @{}
+   'Types' = [ordered]@{          
+        'Import from current computer''s NIC' = 'This will import the network information from the NICs found on the current computer.'
+        'Import from defined ADDS subnets'    = 'This will import the IP and mask defined in the domain'’s ADDS replication subnets. It will use the location property set on that subnet in AD to populate the LOCATION field. If this is undefined, it will use its AD Site’'s location property. If this is also undefined, it will use the value in the description property for the subnet.'
+        'Import from defined DHCP scopes'     = 'This will import the IP and mask defined in the domain''s DHCP servers'’ scopes. It will use the scope’’s name as the LOCATION.’
+    
+        
+
+    }
 }
     'settingNameContent' =  [PSCustomObject]@{
         'Body'  = @' 
-Computer categorization allows defining how computer objects are grouped. Contextual actions and remote tools rely on these categories to restrict or allow access.
+Computer categorization allows defining distinct sets of computer types. Contextual actions and remote tools rely on these categories to restrict or allow access.
 
-When querying objects login logs are analyzed, conditions defined in this section are evaluted against the given computer to determine its category. The rules are evaluated in descending order based on the RULE number. Once a rule's condition is TRUE, the evaluation is stopped and the object is categoriezed by the value in the NAME field for the corresponding condition.
+When querying users, login logs (if defined) are analyzed. During this process, the conditions defined in this section are evaluated against the given computer from each log entry to determine its category. The rules are evaluated in descending order based on the RULE number. Once a rule's CONDITION is returned as TRUE, the evaluation is stopped and the object is categorized by the value in the NAME field for the corresponding condition. If ‘clientname’ is defined in the logs, this is also evaluated. When querying computers, the computer itself is analyzed, but each entry, if ‘clientname’ is defined, will be evaluated similarly. 
 
+When creating a condition, selecting the respective rule’s condition field will expand the scriptblock to allow entry. The block should be written to return a boolean value and should the variable list below.
 
-
-
-
-
+Since entries are evaluated in reverse order, the last rule - after all others have been evaluated - will categorize the evaluated computer in the generic ‘computer’ category. Custom rules can be repositioned to change the order they are evaluated in.
 '@
-        'Types' = @{}
+        'Vars' = [ordered]@{
+            '$comp'           = 'The computer name of the evalauted system.'
+            '$clientLocation' = 'If the computer has an A record resolvable through DNS, this value will populate with the LOCATION field of the matched network defined in the ''NETWORK MAPPINGS'' configuration section'          
+        }
 }
     'settingGeneralContent' =  [PSCustomObject]@{
         'Body'  = @' 
@@ -151,9 +161,9 @@ The logging path defines where this tool's actions are logged. Ideally, this sho
 
 Login log view depth refers to how far back login logs will be searched, analyzed, and displayed on the historical view. Larger depth will result in longer overall querying time, but this number may need to be adjusted to best fit your enviornment's usage.
 
-Active directory mappings are an index of the entire list of the AD object properties and their related data. If the AD schema is updated, these should be refreshed using the button below.
+Active Directory mappings are an index of the entire list of the AD object properties and their related data. If the AD schema is updated, these should be refreshed using the button below.
 
-Header context allows you to select whether the domain and username of the current user shows on the header of the application. Additionally, you can add a custom label and select the color of its font.
+Header content allows you to select whether the domain and username of the current user shows on the header of the application. Additionally, you can add a custom label and select the color of its font.
 '@
 }
  'rtConfigFlyout' =  [PSCustomObject]@{
@@ -639,6 +649,7 @@ $syncHash.settingCommandGridAddClick.Add_Click( {
             })
  
         $syncHash.settingCommandGridDataGrid.Items.Refresh()
+        $syncHash.SettingToolFlyoutScroller.ScrollToBottom()
     })
 
 
@@ -922,7 +933,7 @@ $syncHash.tabMenu.add_Loaded( {
             }
        
             New-VarUpdater -ConfigHash $configHash
-            Start-VarUpdater -ConfigHash $configHash -VarHash $varHash
+            Start-VarUpdater -ConfigHash $configHash -VarHash $varHash -QueryHash $queryHash
             Set-WPFHeader -ConfigHash $configHash -SyncHash $syncHash
         }
 
@@ -1489,9 +1500,11 @@ $syncHash.tabControl.add_SelectionChanged( {
                     # to do - set vis to this to collapsed by default (in xaml)
                     $syncHash.Window.Dispatcher.Invoke([Action] {
                         if ($queryHash.($configHash.currentTabItem).ObjectClass -eq 'Computer') {
+                            Set-QueryVarsToUpdate -ConfigHash $ConfigHash -Type Comp                          
                             if (($syncHash.compToolControlPanel.Children | Measure-Object).Count -eq 0) { $syncHash.settingTools.Visibility = 'Collapsed' }
                         }
                         else {
+                            Set-QueryVarsToUpdate -ConfigHash $ConfigHash -Type User
                             if (($syncHash.userToolControlPanel.Children | Measure-Object).Count -eq 0) { $syncHash.settingTools.Visibility = 'Collapsed' }
                         }
                     })
@@ -1773,8 +1786,6 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
         Start-RSJob @rsArgs -ScriptBlock {
             Param($queue, $toolID, $configHash, $queryHash, $window, $confirmWindow, $textBlock, $varHash)
 
-            $item = ($configHash.currentTabItem).toLower()
-            $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
             $toolName = ($configHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
             Set-CustomVariables -VarHash $varHash
 
@@ -1787,8 +1798,8 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
                 }
 
                 else {
-                    Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success -SubjectName $item
-                    Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -ActionName $toolName -SubjectType $targetType -ArrayList $configHash.actionLog 
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success -SubjectName $activeObject
+                    Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Succeed -SubjectName $activeObject -SubjectType $activeObjectType -ActionName $toolName  -ArrayList $configHash.actionLog 
                 }
             }
             catch {
@@ -1797,8 +1808,8 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
                     Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
                 }
                 else {
-                    Write-SnackMsg -Queue $queue -ToolName $toolName -Status Fail -SubjectName $item
-                    Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Fail -SubjectName $item -ActionName $toolName -SubjectType $targetType -ArrayList $configHash.actionLog -Error $_
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -Status Fail -SubjectName $activeObject
+                    Write-LogMessage -syncHashWindow $window -Path $configHash.actionlogPath -Message Fail -SubjectName $activeObject -SubjectType $activeObjectType -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
                 }
             }
         }
@@ -1821,7 +1832,8 @@ $syncHash.itemToolDialog.Add_ClosingFinished( {
         $syncHash.itemToolCustomDialog.Visibility = 'Collapsed'
         $syncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
         $syncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
-         $syncHash.itemToolGridItemsEmptyText.Visibility = 'Collapsed'
+        $syncHash.itemToolGridItemsEmptyText.Visibility = 'Collapsed'
+        $syncHash.itemToolListItemsEmptyText.Visibility = 'Collapsed'
     })
 
 $syncHash.compExpanderOpenLog.Add_Click({  Invoke-Item $queryHash[$configHash.currentTabItem].LoginLogPath })
@@ -1949,9 +1961,7 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
             Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window, $textBlock, $varhash)
 
             Set-CustomVariables -VarHash $varHash
-
-            $item = $rsCmd.item
-            $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
+            $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].ToolName
 
             try {
                 foreach ($gridItem in ($rsCmd.cmdGridItems | Where-Object { $_.Result -ne 'True' })) {
@@ -1965,25 +1975,23 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
 
                     ([scriptblock]::Create($actionCmd)).Invoke() 
 
-                    $result = (([scriptblock]::Create($queryCmd)).Invoke()).ToString()
+                    $result = (Invoke-Expression $queryCmd).ToString()
 
                     $syncHash.Window.Dispatcher.Invoke([action] { $syncHash.itemToolCommandGridDataGrid.Items[$gridItem.Index].Result = $result })
                 }
 
                 $syncHash.Window.Dispatcher.Invoke([action] { $syncHash.itemToolCommandGridDataGrid.Items.Refresh() })
 
-                if (($syncHash.itemToolCommandGridDataGrid.Items.Result -match 'False' | Measure-Object).Count -eq 0) { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.toolsCommandGridExecuteAll.Tag = 'False' }) }
-           
-                $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].ToolName
-
+                if (($syncHash.itemToolCommandGridDataGrid.Items | Where-Object {$_.Result -notmatch 'True'} | Measure-Object).Count -eq 0){ $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.toolsCommandGridExecuteAll.Tag = 'False' }) }
+                  
                 if ($configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].objectType -eq 'Standalone') {
                     Write-SnackMsg -Queue $queue -ToolName $toolName -Status Success
                     Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -ActionName $toolName -SubjectType 'Standalone' -ArrayList $configHash.actionLog
                 }
                 
                 else {
-                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rsCmd.cmdGridItemName -Status Success -SubjectName $item
-                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -SubjectType $targetType -ActionName $toolName -ArrayList $configHash.actionLog 
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rsCmd.cmdGridItemName -Status Success -SubjectName $activeObject
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -SubjectName $activeObject -SubjectType $activeObjectType -ActionName $toolName -ArrayList $configHash.actionLog 
                 }
             }    
          
@@ -1994,8 +2002,8 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
                     Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -SubjectType 'Standalone' -Message Fail -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
                 }
                 else {
-                    Write-SnackMsg -Queue $queue -ToolName $toolName -Status Fail -SubjectName $item
-                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -SubjectName $item -SubjectType $targetType -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -Status Fail -SubjectName $activeObject
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -SubjectName $activeObject -SubjectType $activeObjectType -ActionName $toolName -ArrayList $configHash.actionLog -Error $_
                 }
             }
         }
@@ -2271,7 +2279,7 @@ $syncHash.settingInfoDialogClose.Add_Click({
     $syncHash.settingInfoDialog.IsOpen = $false 
 
     Start-RSJob -ArgumentList ($syncHash.settingInfoDialogScroller, $syncHash.Window) -ScriptBlock {
-    param ($scroller, $window) 
+    param ($scroller, $window)
         Start-Sleep -Seconds 1 
         $window.Dispatcher.Invoke([action]{$scroller.ScrollToTop()})
     }
@@ -2400,7 +2408,6 @@ $syncHash.itemRefresh.Add_Click( {
     
     $temp = Get-InitialValues -GroupName 'toolCommandGridConfig'
     $temp | ForEach-Object { $configHash.objectToolConfig[$i - 1].toolCommandGridConfig.Add($_) }
-
     $configHash.objectToolCount = ($configHash.objectToolConfig | Measure-Object).Count
 }
 
@@ -2443,30 +2450,29 @@ $syncHash.itemRefresh.Add_Click( {
             cmdGridParentIndex = $syncHash.itemToolCommandGridDataGrid.SelectedItem.ParentToolIndex
             result             = $syncHash.itemToolCommandGridDataGrid.SelectedItem.Result
             cmdGridItemName    = $syncHash.itemToolCommandGridDataGrid.SelectedItem.ItemName
-            item               = ($configHash.currentTabItem).toLower()
         }
 
         $rsArgs = @{
             Name            = 'CommandGridRun'
-            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd, $syncHash.adHocConfirmWindow, $syncHash.Window, $syncHash.adHocConfirmText)
+            ArgumentList    = @($syncHash.snackMsg.MessageQueue, $configHash, $queryHash, $syncHash, $rsCmd, $syncHash.adHocConfirmWindow, $syncHash.Window, $syncHash.adHocConfirmText, $varHash)
             ModulesToImport = $configHash.modList
         }
 
         Start-RSJob @rsArgs -ScriptBlock {
-            Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window, $textBlock)
-
-            $item = $rsCmd.item
-            $targetType = $queryHash[$item].ObjectClass -replace 'c', 'C' -replace 'u', 'U'
+            Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window, $textBlock, $varHash)
+            
+            Set-CustomVariables -VarHash $varHash
 
             $actionCmd = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].actionCmd
             $queryCmd = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].queryCmd
-            $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].SetName
+            $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolName
 
             try {
                 $result = $rsCmd.Result                     
                 ([scriptblock]::Create($actionCmd)).Invoke() 
-                $result = (([scriptblock]::Create($queryCmd)).Invoke() ).ToString()
+                $result = (Invoke-Expression $queryCmd).ToString()
                 
+                                
                 $syncHash.Window.Dispatcher.Invoke([action] {
                         $syncHash.itemToolCommandGridDataGrid.SelectedItem.Result = $result
                         $syncHash.itemToolCommandGridDataGrid.Items.Refresh()               
@@ -2475,24 +2481,26 @@ $syncHash.itemRefresh.Add_Click( {
                 if ($configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].objectType -eq 'Standalone') {
                     Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rsCmd.cmdGridItemName -Status Success
                     Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -ActionName ($($($toolName) + '-' + $($rsCmd.cmdGridItemName))) -SubjectType 'Standalone' -ArrayList $configHash.actionLog
+                
                 }
                 
                 else {
-                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rsCmd.cmdGridItemName -Status Success -SubjectName $item
-                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -SubjectName $item -SubjectType $targetType -ActionName ($($($toolName) + '-' + $($rsCmd.cmdGridItemName))) -ArrayList $configHash.actionLog 
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rsCmd.cmdGridItemName -Status Success -SubjectName $activeObject
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Succeed -SubjectName $activeObject -SubjectType $activeObjectType -ActionName ($($($toolName) + '-' + $($rsCmd.cmdGridItemName))) -ArrayList $configHash.actionLog 
                 }
                 
-                if (($syncHash.itemToolCommandGridDataGrid.Items.Result -notmatch 'True' | Measure-Object).Count -eq 0) { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.toolsCommandGridExecuteAll.Tag = 'False' }) }                                          
+                if (($syncHash.itemToolCommandGridDataGrid.Items | Where-Object {$_.Result -notmatch 'True'} | Measure-Object).Count -eq 0) { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.toolsCommandGridExecuteAll.Tag = 'False' }) }                                          
             }
 
             catch {
                 if ($configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].objectType -eq 'Standalone') {
                     Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rsCmd.cmdGridItemName -Status Fail
-                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -ActionName ($($($toolName) + '-' + $($rsCmd.cmdGridItemName))) -ArrayList $configHash.actionLog -Error $_
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -ActionName ($($($toolName) + '-' + $($rsCmd.cmdGridItemName))) -SubjectName 'Standalone' -ArrayList $configHash.actionLog -Error $_
+              
                 }
                 else {
-                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rsCmd.cmdGridItemName -Status Fail -SubjectName $item
-                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -SubjectName $item -SubjectType $targetType -ActionName ($($($toolName) + '-' + $($rsCmd.cmdGridItemName))) -SubjectType 'Standalone' -ArrayList $configHash.actionLog -Error $_
+                    Write-SnackMsg -Queue $queue -ToolName $toolName -SubtoolName $rsCmd.cmdGridItemName -Status Fail -SubjectName $activeObject
+                    Write-LogMessage -syncHashWindow $syncHash.window -Path $configHash.actionlogPath -Message Fail -SubjectName $activeObject -SubjectType $activeObjectType -ActionName ($($($toolName) + '-' + $($rsCmd.cmdGridItemName))) -ArrayList $configHash.actionLog -Error $_
                 }
             }
         }

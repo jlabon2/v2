@@ -1804,19 +1804,19 @@
                                     </Style>
                                 </ListBox.Style>
                             </ListBox>
-                            <Label
-                                Name="itemToolListItemsEmptyText"
-                                Margin="0,-50,0,0"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Content="Gray"
-                                DockPanel.Dock="Top"
-                                FontFamily="Segoe UI Light"
-                                FontSize="16"
-                                Foreground="DarkGray"
-                                Visibility="Collapsed" />
-                            <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
 
+                            <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
+                                <Label
+                                    Name="itemToolListItemsEmptyText"
+                                    Margin="0,-25,0,5"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Content="Query returned no items"
+                                    DockPanel.Dock="Top"
+                                    FontFamily="Segoe UI Light"
+                                    FontSize="16"
+                                    Foreground="DarkGray"
+                                    Visibility="Collapsed" />
                                 <Button
                                     Name="itemToolListSelectConfirmButton"
                                     Width="60"
@@ -1858,6 +1858,7 @@
 
                             <TextBlock
                                 Name="itemToolGridSelectText"
+                                MaxWidth="250"
                                 Margin="10,10,10,35"
                                 HorizontalAlignment="Center"
                                 DockPanel.Dock="Top"
@@ -1903,6 +1904,7 @@
                                 <ProgressBar
                                     Name="itemToolGridProgress"
                                     Width="175"
+                                    Margin="0,10,0,0"
                                     HorizontalAlignment="Center"
                                     IsIndeterminate="True"
                                     Style="{StaticResource MaterialDesignLinearProgressBar}"
@@ -1984,11 +1986,13 @@
                                     DockPanel.Dock="Left"
                                     FontFamily="Segoe MDL2 Assets"
                                     FontSize="12"
+                                    IsEnabled="True"
                                     ToolTip="Export grid contents">
 
                                     <Button.Style>
-                                        <Style BasedOn="{StaticResource itemButton}" TargetType="Button">
+                                        <Style BasedOn="{StaticResource actiontoolbtn}" TargetType="Button">
                                             <Setter Property="Visibility" Value="Collapsed" />
+
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Visibility}" Value="Visible">
                                                     <Setter Property="Visibility" Value="Visible" />
@@ -2073,19 +2077,20 @@
                                     </Style>
                                 </DataGrid.Style>
                             </DataGrid>
-                            <Label
-                                Name="itemToolGridItemsEmptyText"
-                                Margin="0,-50,0,20"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Content="Query returned no items"
-                                DockPanel.Dock="Top"
-                                FontFamily="Segoe UI Light"
-                                FontSize="16"
-                                Foreground="DarkGray"
-                                Visibility="Collapsed" />
+
 
                             <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
+                                <Label
+                                    Name="itemToolGridItemsEmptyText"
+                                    Margin="0,-25,0,5"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Content="Query returned no items"
+                                    DockPanel.Dock="Top"
+                                    FontFamily="Segoe UI Light"
+                                    FontSize="16"
+                                    Foreground="DarkGray"
+                                    Visibility="Collapsed" />
                                 <Button
                                     Name="itemToolGridSelectConfirmButton"
                                     Width="60"
@@ -2168,12 +2173,17 @@
                                 Focusable="True"
                                 HorizontalScrollBarVisibility="Disabled"
                                 KeyboardNavigation.TabNavigation="Contained"
+                                MinRowHeight="40"
                                 RowHeaderWidth="0"
-                                RowHeight="40"
                                 RowStyle="{StaticResource dataGridRowStyle}"
                                 ScrollViewer.CanContentScroll="False"
                                 SelectionMode="Single"
                                 VerticalScrollBarVisibility="Auto">
+                                <DataGrid.Resources>
+                                    <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
+                                        <Setter Property="Margin" Value="0" />
+                                    </Style>
+                                </DataGrid.Resources>
                                 <DataGrid.Style>
                                     <Style BasedOn="{StaticResource MaterialDesignDataGrid}" TargetType="DataGrid">
                                         <Setter Property="Visibility" Value="Visible" />
@@ -2196,38 +2206,43 @@
                                         HeaderStyle="{StaticResource datagridColumnNoTab}">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-
-                                                <TextBox
-                                                    Padding="0"
+                                                <Viewbox
+                                                    Margin="2,0,5,0"
+                                                    HorizontalAlignment="Left"
                                                     VerticalAlignment="Center"
-                                                    Background="Transparent"
-                                                    BorderBrush="Transparent"
-                                                    BorderThickness="0"
-                                                    Foreground="WhiteSmoke"
-                                                    Style="{StaticResource gridTextItem}"
-                                                    Text="{Binding ItemName}"
-                                                    TextWrapping="Wrap" />
+                                                    StretchDirection="DownOnly">
+                                                    <TextBox
+                                                        Padding="0"
+                                                        VerticalAlignment="Center"
+                                                        Background="Transparent"
+                                                        BorderBrush="Transparent"
+                                                        BorderThickness="0"
+                                                        Foreground="WhiteSmoke"
+                                                        Style="{StaticResource gridTextItem}"
+                                                        Text="{Binding ItemName}"
+                                                        TextWrapping="Wrap" />
+                                                </Viewbox>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
                                     <DataGridTemplateColumn
-                                        Width="125"
+                                        Width="165"
                                         Header=""
                                         HeaderStyle="{StaticResource datagridColumnNoTab}">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
 
                                                 <TextBox
-                                                    Width="125"
-                                                    Margin="0,-12,0,-12"
-                                                    Padding="0,2.5,0,2.5"
+                                                    Width="165"
+                                                    Margin="0,-12,10,-12"
+                                                    Padding="0,5,5,5"
                                                     VerticalAlignment="Center"
                                                     HorizontalContentAlignment="Center"
                                                     Background="Transparent"
                                                     BorderBrush="Transparent"
                                                     BorderThickness="0"
                                                     Tag="{Binding Result, UpdateSourceTrigger=PropertyChanged}"
-                                                    TextWrapping="Wrap">
+                                                    TextWrapping="WrapWithOverflow">
 
                                                     <TextBox.Style>
                                                         <Style BasedOn="{StaticResource gridTextItem}" TargetType="TextBox">
@@ -2254,7 +2269,7 @@
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
                                     <DataGridTemplateColumn
-                                        Width="100"
+                                        Width="*"
                                         Header=""
                                         HeaderStyle="{StaticResource datagridColumnNoTab}">
                                         <DataGridTemplateColumn.CellTemplate>
@@ -2264,8 +2279,9 @@
                                                     x:Name="toolsCommandGridExecute"
                                                     Width="40"
                                                     Height="25"
-                                                    Margin="-8,-7,-8,-7"
-                                                    Padding="0"
+                                                    Margin="0"
+                                                    Padding="0,5,0,5"
+                                                    HorizontalAlignment="Left"
                                                     Content=""
                                                     FontFamily="Segoe MDL2 Assets"
                                                     FontSize="14"
@@ -2281,6 +2297,7 @@
                                                         </Style>
                                                     </Button.Style>
                                                 </Button>
+
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -2288,7 +2305,7 @@
                             </DataGrid>
                             <StackPanel
                                 Name="toolsCommandGridExecuteAllPanel"
-                                Margin="0,-10,37.5,0"
+                                Margin="0,-10,30,0"
                                 HorizontalAlignment="Right"
                                 DockPanel.Dock="Top">
                                 <Label
@@ -5264,11 +5281,12 @@
                                         md:HintAssist.IsFloating="True"
                                         Style="{StaticResource flyoutItemBox}"
                                         Text="{Binding Path=ActionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
+                                    <Separator Margin="-15,-25,0,0" />
                                     <ScrollViewer
+                                        Name="settingContextFlyoutScroller"
                                         Grid.ColumnSpan="4"
-                                        Height="300"
-                                        Margin="0,0,3,-200"
+                                        Height="305"
+                                        Margin="0,-10,3,-180"
                                         VerticalScrollBarVisibility="Auto">
 
                                         <StackPanel>
@@ -5709,9 +5727,11 @@
                                             </TextBox.Style>
                                         </TextBox>
                                     </UniformGrid>
+                                    <Separator Margin="-15,-5,0,0" />
                                     <ScrollViewer
+                                        Name="settingFlyoutScroller"
                                         Grid.ColumnSpan="4"
-                                        Height="250"
+                                        Height="285"
                                         Margin="0,0,3,-200"
                                         VerticalScrollBarVisibility="Auto">
 
@@ -6711,10 +6731,11 @@
                                             Style="{StaticResource flyoutItemBox}"
                                             Text="{Binding Path=toolType, Mode=Twoway}" />
                                     </UniformGrid>
-
+                                    <Separator Margin="-15,-5,0,0" />
                                     <ScrollViewer
+                                        Name="SettingToolFlyoutScroller"
                                         Grid.ColumnSpan="4"
-                                        Height="250"
+                                        Height="285"
                                         Margin="0,0,0,-200"
                                         VerticalScrollBarVisibility="Auto">
                                         <DockPanel>
@@ -7171,7 +7192,6 @@
 
                                                 <DataGrid
                                                     Name="settingCommandGridDataGrid"
-                                                    Height="260"
                                                     Margin="0,-22.5,0,0"
                                                     HorizontalAlignment="Stretch"
                                                     VerticalAlignment="Top"
@@ -7189,6 +7209,7 @@
                                                     CanUserSortColumns="True"
                                                     CellStyle="{StaticResource dataGridCellLog}"
                                                     Focusable="True"
+                                                    HorizontalScrollBarVisibility="Disabled"
                                                     KeyboardNavigation.TabNavigation="Contained"
                                                     RowHeaderWidth="0"
                                                     RowHeight="40"
@@ -8909,7 +8930,7 @@
                                                     Grid.RowSpan="2"
                                                     Width="15"
                                                     Height="15"
-                                                    Margin="0,3.5,0,0"
+                                                    Margin="0,2.5,2.5,0"
                                                     Padding="0"
                                                     HorizontalAlignment="Right"
                                                     VerticalAlignment="Top"
@@ -8918,19 +8939,20 @@
                                                     md:RippleAssist.RippleSizeMultiplier="5"
                                                     Content=""
                                                     FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="10"
+                                                    FontSize="13"
                                                     Foreground="Silver"
                                                     IsTabStop="False"
                                                     Style="{DynamicResource MaterialDesignIconButton}" />
                                                 <HeaderedContentControl
                                                     Grid.Row="1"
-                                                    Margin="40,30,0,0"
+                                                    Margin="25,30,0,0"
                                                     FontFamily="Segoe UI"
+                                                    FontSize="14"
                                                     Header="Logging Info" />
                                                 <Grid Grid.Row="1">
                                                     <DockPanel HorizontalAlignment="Stretch">
                                                         <DockPanel
-                                                            Margin="0,0,50,-50"
+                                                            Margin="0,0,25,-50"
                                                             HorizontalAlignment="Right"
                                                             DockPanel.Dock="Top">
                                                             <TextBox
@@ -9164,7 +9186,10 @@
 
                                                                             <DataTemplate>
                                                                                 <Viewbox HorizontalAlignment="Center" StretchDirection="DownOnly">
-                                                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Date}" />
+                                                                                    <TextBlock
+                                                                                        Style="{StaticResource toolLabel}"
+                                                                                        Text="{Binding Date}"
+                                                                                        ToolTip="{Binding DateFull}" />
                                                                                 </Viewbox>
                                                                             </DataTemplate>
                                                                         </DataGridTemplateColumn.CellTemplate>
