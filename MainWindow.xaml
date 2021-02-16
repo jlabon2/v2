@@ -115,7 +115,33 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
-
+            <DrawingBrush
+                x:Key="ThatchBackground"
+                Stretch="None"
+                TileMode="Tile"
+                Viewport="0,0,15,15"
+                ViewportUnits="Absolute">
+                <DrawingBrush.Drawing>
+                    <DrawingGroup>
+                        <GeometryDrawing Brush="#FF363333">
+                            <GeometryDrawing.Geometry>
+                                <GeometryGroup>
+                                    <RectangleGeometry Rect="0,0,60,60" />
+                                    <RectangleGeometry Rect="60,60,60,60" />
+                                </GeometryGroup>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                        <GeometryDrawing Brush="#FF363338">
+                            <GeometryDrawing.Geometry>
+                                <GeometryGroup>
+                                    <RectangleGeometry Rect="0,0,60,60" />
+                                    <RectangleGeometry Rect="60,60,60,60" />
+                                </GeometryGroup>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                    </DrawingGroup>
+                </DrawingBrush.Drawing>
+            </DrawingBrush>
             <Style
                 x:Key="flyoutItemBox"
                 BasedOn="{StaticResource MaterialDesignTextBox}"
@@ -259,7 +285,19 @@
                 TargetType="DataGridColumnHeader">
                 <Setter Property="IsTabStop" Value="False" />
             </Style>
-
+            <Style x:Key="FlyoutSeparator" TargetType="Separator">
+                <Setter Property="RenderTransform">
+                    <Setter.Value>
+                        <ScaleTransform ScaleY="2" />
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Badged.Background.Disabled}" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type simpleChildWindow:ChildWindow}}, Path=IsWindowHostActive}" Value="True">
+                        <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
             <Style
                 x:Key="actionbtn"
                 BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}"
@@ -1567,9 +1605,10 @@
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Center">
                             <Label
+                                Name="customInputLabel"
                                 HorizontalAlignment="Center"
-                                Content="Paste or insert required content to proceed"
                                 DockPanel.Dock="Top" />
+
                             <TextBox
                                 Name="itemToolCustomContent"
                                 Width="225"
@@ -1578,6 +1617,7 @@
                                 DockPanel.Dock="Top"
                                 FontSize="10"
                                 Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}" />
+
                             <Button
                                 Name="itemToolCustomConfirm"
                                 Width="60"
@@ -1586,6 +1626,7 @@
                                 Content="Confirm"
                                 DockPanel.Dock="Top"
                                 FontFamily="Segoe UI Light"
+                                IsEnabled="False"
                                 Style="{StaticResource itemButton}" />
                         </DockPanel>
                     </Controls:Flyout>
@@ -5281,7 +5322,7 @@
                                         md:HintAssist.IsFloating="True"
                                         Style="{StaticResource flyoutItemBox}"
                                         Text="{Binding Path=ActionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <Separator Margin="-15,-25,0,0" />
+                                    <Separator Margin="-15,-25,0,0" Style="{StaticResource FlyoutSeparator}" />
                                     <ScrollViewer
                                         Name="settingContextFlyoutScroller"
                                         Grid.ColumnSpan="4"
@@ -5727,7 +5768,7 @@
                                             </TextBox.Style>
                                         </TextBox>
                                     </UniformGrid>
-                                    <Separator Margin="-15,-5,0,0" />
+                                    <Separator Margin="-15,-5,0,0" Style="{StaticResource FlyoutSeparator}" />
                                     <ScrollViewer
                                         Name="settingFlyoutScroller"
                                         Grid.ColumnSpan="4"
@@ -6731,12 +6772,12 @@
                                             Style="{StaticResource flyoutItemBox}"
                                             Text="{Binding Path=toolType, Mode=Twoway}" />
                                     </UniformGrid>
-                                    <Separator Margin="-15,-5,0,0" />
+                                    <Separator Margin="-15,-5,0,0" Style="{StaticResource FlyoutSeparator}" />
                                     <ScrollViewer
                                         Name="SettingToolFlyoutScroller"
                                         Grid.ColumnSpan="4"
-                                        Height="285"
-                                        Margin="0,0,0,-200"
+                                        Height="280"
+                                        Margin="0,5,0,-200"
                                         VerticalScrollBarVisibility="Auto">
                                         <DockPanel>
                                             <StackPanel>
@@ -6796,7 +6837,7 @@
                                                             Name="settingSelectTextOption"
                                                             HorizontalAlignment="Right"
                                                             md:CheckBoxAssist.CheckBoxSize="15"
-                                                            Content="Prompt custom input"
+                                                            Content="Prompt custom value"
                                                             FontSize="10"
                                                             IsChecked="{Binding toolActionSelectCustom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                             IsEnabled="True">
@@ -6811,6 +6852,31 @@
                                                                 </Style>
                                                             </CheckBox.Style>
                                                         </CheckBox>
+                                                        <ComboBox
+                                                            Name="settingSelectCustomOption"
+                                                            Width="100"
+                                                            Height="20"
+                                                            Margin="5,0,0,0"
+                                                            Padding="8,-15,0,0"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalContentAlignment="Center"
+                                                            FontSize="10"
+                                                            IsEnabled="{Binding toolActionSelectCustom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            ItemsSource="{Binding toolActionCustomOptions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            SelectedItem="{Binding toolActionCustomSel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                            <ComboBox.Style>
+                                                                <Style BasedOn="{StaticResource MaterialDesignFilledComboBox}" TargetType="ComboBox">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </ComboBox.Style>
+                                                        </ComboBox>
+
+
                                                     </StackPanel>
                                                 </DockPanel>
                                                 <StackPanel Margin="15,0,32.5,0">

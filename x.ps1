@@ -342,6 +342,26 @@ $syncHash.itemToolCustomContent.add_KeyDown({
     } 
 })
 
+$syncHash.itemToolCustomContent.Add_TextChanged({
+    if (![string]::IsNullOrEmpty($syncHash.itemToolCustomContent.Text)) {
+        if ($syncHash.itemToolCustomContent.Tag -eq 'int') {
+            try {
+                [int]$syncHash.itemToolCustomContent.Text 
+                 $syncHash.itemToolCustomConfirm.IsEnabled = $true  
+            }
+            catch { $syncHash.itemToolCustomConfirm.IsEnabled = $false }
+        }
+        else {
+            try {
+             [string]$syncHash.itemToolCustomContent.Text
+              $syncHash.itemToolCustomConfirm.IsEnabled = $true  
+            }
+            catch {  $syncHash.itemToolCustomConfirm.IsEnabled = $true }
+        }
+    }
+    else { $syncHash.itemToolCustomConfirm.IsEnabled = $false }
+})
+
 $syncHash.itemToolGridItemsGrid.Add_AutoGeneratingColumn( {
         if ($_.Column.Header -eq 'Image') {
             $_.Cancel = $true 
@@ -368,7 +388,11 @@ $syncHash.ItemToolADSelectionButton.Add_Click( {
     switch ($syncHash.ItemToolADSelectionButton.Tag) {
         'AD' { Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox }
         'OU' { Set-OUItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox }
-        'Custom' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox }
+        'Custom.String' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox -Type String}
+        'Custom.Integer' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox -Type Int }
+        'Custom.File' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox -Type File }
+        'Custom.Path' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox -Type Path }
+
     }
 })
 
@@ -876,8 +900,8 @@ $syncHash.settingConfigClick.add_Click( {
 
 ###### MAIN WINDOW
 $syncHash.TabMenu.add_SelectionChanged( {
-        $syncHash.TabMenu.Items | ForEach-Object -Process { $_.Background = '#FF444444' }
-        $syncHash.tabMenu.SelectedItem.Background = '#576573'
+       $syncHash.TabMenu.Items | ForEach-Object -Process { $_.Background = '#FF444444' }
+       $syncHash.tabMenu.SelectedItem.Background = '#576573'
         $syncHash.TabMenu.Items.Header | ForEach-Object -Process { $_.Foreground = 'Gray' }
         $syncHash.tabMenu.SelectedItem.Header.Foreground = 'AliceBlue'
 
@@ -2400,6 +2424,8 @@ $syncHash.itemRefresh.Add_Click( {
             toolActionSelectAD     = $false
             toolActionSelectOU     = $false
             toolActionSelectCustom = $false
+            toolActionCustomOptions= @('String','Integer','File','Path')
+            toolActionCustomSel    = $null
             toolFetchCmd           = 'Get-Something'
             toolActionMultiSelect  = $false
             toolDescription        = 'Generic tool description'

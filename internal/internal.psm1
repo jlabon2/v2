@@ -1028,9 +1028,10 @@ function Add-CustomToolControls {
                                         $syncHash.itemToolADSelectionButton.Tag = 'OU' 
                                         $syncHash.itemToolItemText.Content = "OU Selection:"
                                     }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {
-                                        $syncHash.itemToolADSelectionButton.Tag = 'Custom' 
-                                        $syncHash.itemToolItemText.Content = "Custom Item Selection:"
+                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom -and $ConfigHash.objectToolConfig[$toolID - 1].toolActionCustomSel -ne $null) {
+                                        $type = $ConfigHash.objectToolConfig[$toolID - 1].toolActionCustomSel
+                                        $syncHash.itemToolADSelectionButton.Tag = "Custom.$($type)" 
+                                        $syncHash.itemToolItemText.Content = "Custom $type Selection:"
                                     }
 
                                     $SyncHash.ItemToolADSelectionPanel.Visibility = 'Visible'                            
@@ -1988,7 +1989,8 @@ function Set-CustomItemBox {
     param(
         [Parameter(Mandatory)][hashtable]$ConfigHash, 
         [Parameter(Mandatory)][hashtable]$SyncHash,
-        [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
+        [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control,
+        [Parameter(Mandatory)][ValidateSet('String', 'Int')][string]$Type) 
 
     if ($Control -eq 'Grid') { $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag }
     else { $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag }
@@ -1997,14 +1999,22 @@ function Set-CustomItemBox {
     $syncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
     $syncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
 
+    if ($type -eq 'int') { 
+        $syncHash.customInputLabel.Content = "Paste or insert number required for query"
+        $syncHash.itemToolCustomContent.Tag = 'int' }
+    else  { 
+        $syncHash.customInputLabel.Content = "Paste or insert text required for query"
+        $syncHash.itemToolCustomContent.Tag = 'string' 
+    }
+
     $rsArgs = @{
         Name            = ('populate' + $Control)
-        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
+        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash, $type)
         ModulesToImport = $configHash.modList
     }
 
     Start-RSJob @rsArgs -ScriptBlock {
-        param($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
+        param($ConfigHash, $SyncHash, $toolID, $Control, $varHash, $type)
 
         Set-CustomVariables -VarHash $varHash
        
