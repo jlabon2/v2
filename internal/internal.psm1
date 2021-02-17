@@ -973,9 +973,7 @@ function Add-CustomToolControls {
                                 $SyncHash.itemToolDialog.IsOpen = $true 
                         
 
-                            if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD -eq $false -and
-                                $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU -eq $false -and
-                                $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom -eq $false) {
+                            if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom -eq $false) {
                                     $SyncHash.ItemToolADSelectionPanel.Visibility = 'Collapsed'
 
                                     $rsVars = @{
@@ -1020,23 +1018,12 @@ function Add-CustomToolControls {
 
                                 else {
                                   
-                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD) {
-                                        $syncHash.itemToolADSelectionButton.Tag = 'AD' 
-                                        $syncHash.itemToolItemText.Content = "AD Object Selection:" 
+                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {
+                                        $syncHash.itemToolADSelectionButton.Tag = $ConfigHash.objectToolConfig[$toolID - 1].toolActionCustomSelect
+                                        $SyncHash.ItemToolADSelectionPanel.Visibility = 'Visible'                            
+                                        $SyncHash.itemToolListSelect.Visibility = 'Visible'
+                                        $SyncHash.itemToolListSelectListBox.ItemsSource = $null
                                     }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU) {
-                                        $syncHash.itemToolADSelectionButton.Tag = 'OU' 
-                                        $syncHash.itemToolItemText.Content = "OU Selection:"
-                                    }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom -and $ConfigHash.objectToolConfig[$toolID - 1].toolActionCustomSel -ne $null) {
-                                        $type = $ConfigHash.objectToolConfig[$toolID - 1].toolActionCustomSel
-                                        $syncHash.itemToolADSelectionButton.Tag = "Custom.$($type)" 
-                                        $syncHash.itemToolItemText.Content = "Custom $type Selection:"
-                                    }
-
-                                    $SyncHash.ItemToolADSelectionPanel.Visibility = 'Visible'                            
-                                    $SyncHash.itemToolListSelect.Visibility = 'Visible'
-                                    $SyncHash.itemToolListSelectListBox.ItemsSource = $null
                                 }                          
                           
                             }
@@ -1060,9 +1047,7 @@ function Add-CustomToolControls {
                                     $syncHash.itemToolGridSelectConfirmCancel.Content = 'Cancel'
                                 }
 
-                                if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD -eq $false -and 
-                                    $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU -eq $false -and 
-                                    $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom -eq $false) {
+                                if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom -eq $false) {
 
                                     $SyncHash.itemToolGridADSelectionPanel.Visibility = 'Collapsed'
                             
@@ -1141,22 +1126,12 @@ function Add-CustomToolControls {
                                 }
 
                                 else {
-                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectAD) {
-                                        $SyncHash.itemToolGridADSelectionButton.Tag = 'AD' 
-                                        $syncHash.itemToolGridItemText.Content = "AD Object Selection:" 
+                                    if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {
+                                        $syncHash.itemToolGridADSelectionButton.Tag = $ConfigHash.objectToolConfig[$toolID - 1].toolActionCustomSelect                                                                       
+                                        $SyncHash.itemToolGridADSelectionPanel.Visibility = 'Visible'                           
+                                        $SyncHash.itemToolGridSelect.Visibility = 'Visible'
+                                        $SyncHash.itemToolGridItemsGrid.ItemsSource = $null
                                     }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectOU) {  
-                                        $SyncHash.itemToolGridADSelectionButton.Tag = 'OU' 
-                                        $syncHash.itemToolGridItemText.Content = "OU Selection:"
-                                    }
-                                    elseif ($ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectCustom) {
-                                        $SyncHash.itemToolGridADSelectionButton.Tag = 'Custom' 
-                                        $syncHash.itemToolGridItemText.Content = "Custom Item Selection:" 
-                                    }
-                                                                            
-                                    $SyncHash.ItemToolADSelectionPanel.Visibility = 'Visible'                           
-                                    $SyncHash.itemToolGridSelect.Visibility = 'Visible'
-                                    $SyncHash.itemToolGridItemsGrid.ItemsSource = $null
                                 }  
                             
                                
@@ -1826,6 +1801,8 @@ function Suspend-ToolControls {
 
         else { $syncHash.itemToolGridItemsEmptyText.Visibility = 'Visible' }
 
+        $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
+
     }
 
     else {
@@ -1848,80 +1825,90 @@ function Suspend-ToolControls {
 
         else { $syncHash.itemToolListItemsEmptyText.Visibility = 'Visible' }
 
+        $SyncHash.itemTooListBoxProgress.Visibility = 'Collapsed'
+
     }
 }
 
-function Set-ADItemBox {
-    param(
-        [Parameter(Mandatory)][hashtable]$ConfigHash, 
-        [Parameter(Mandatory)][hashtable]$SyncHash,
-        [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
-
-    if ($Control -eq 'Grid') { $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag }
-    else { $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag  }
+function Start-CustomItemSelection {
+    param (
+            $SyncHash, 
+            $ConfigHash, 
+            [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control
+        )
     
-    $syncHash.itemToolGridExport.Visibility = 'Collapsed'
-    $syncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
-    $syncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
+    if ($control -eq 'ListBox') { $switchValue = $syncHash.ItemToolADSelectionButton.Tag}
+    else { $switchValue = $syncHash.ItemToolGridADSelectionButton.Tag }
 
-    $rsArgs = @{
-        Name            = ('populate' + $Control)
-        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
-        ModulesToImport = $configHash.modList
+    switch ($switchValue) {
+        'AD Object (any)' { Get-CustomItem -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type AD -Scope All}
+        'AD User' { Get-CustomItem -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type AD -Scope Users }
+        'AD Computer' { Get-CustomItem -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type AD -Scope Computers}
+        'AD Group' { Get-CustomItem -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type AD -Scope Groups }
+        'OU' { Get-CustomItem -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type OU }
+        'String' { Get-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type String}
+        'Integer' { Get-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type Int }
+        'Choice' { Get-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type Choice }
+        'File' { Get-CustomItem -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type File }
+        'Directory' { Get-CustomItem -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type Folder }
     }
-
-    Start-RSJob @rsArgs -ScriptBlock {
-        param($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
-
-        Set-CustomVariables -VarHash $varHash
-        
-
-        $SyncHash.Window.Dispatcher.Invoke([Action] {
-                if ($Control -eq 'ListBox') { $SyncHash.itemToolListSelectListBox.ItemsSource = $null }
-                else { $SyncHash.itemToolGridItemsGrid.ItemsSource = $null }
-            })
-
-        $inputObject = (Select-ADObject -Type All).FetchedAttributes -replace '$'
-     
-        $SyncHash.Window.Dispatcher.Invoke([Action] {
-                if ($Control -eq 'ListBox') { 
-                    $SyncHash.itemToolADSelectedItem.Content = $inputObject
-                    $SyncHash.itemTooListBoxProgress.Visibility = 'Visible'                      
-                }
-                else {
-                    $SyncHash.itemToolGridADSelectedItem.Content = $inputObject
-                    $SyncHash.itemToolGridProgress.Visibility = 'Visible'
-                }
-            })
-     
-        $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-        
-        if ($Control -eq 'ListBox') { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
-        else { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add($_) } }
-
-        $SyncHash.Window.Dispatcher.Invoke([Action] {
-                if ($Control -eq 'ListBox') {
-                    $SyncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list
-                    $SyncHash.itemTooListBoxProgress.Visibility = 'Collapsed'
-
-                    Suspend-ToolControls -ConfigHash $configHash -SyncHash $syncHash -ToolID $toolID -Control ListBox
-
-                }
-                else { 
-                    $SyncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list 
-                    $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
-
-                    Suspend-ToolControls -ConfigHash $configHash -SyncHash $syncHash -ToolID $toolID -Control Grid
-                }
-            })
-    }      
 }
 
-function Set-OUItemBox {
+
+
+function Set-SelectedItem {
+     param(
+        [Parameter(Mandatory)][hashtable]$ConfigHash, 
+        [Parameter(Mandatory)][hashtable]$SyncHash,
+        [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control,
+        [Parameter(Mandatory)][string]$InputObject,
+        [Parameter(Mandatory)]$ToolID
+        )
+
+    $SyncHash.Window.Dispatcher.Invoke([Action] {
+            if ($Control -eq 'ListBox') { 
+                $SyncHash.itemToolADSelectedItem.Content = $inputObject
+                $SyncHash.itemTooListBoxProgress.Visibility = 'Visible'
+            }
+            else {
+                $SyncHash.itemToolGridADSelectedItem.Content = $inputObject
+                $SyncHash.itemToolGridProgress.Visibility = 'Visible'
+            }
+        })
+     
+    $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+        
+    if ($Control -eq 'ListBox') { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
+    else { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add($_) } }
+
+    $SyncHash.Window.Dispatcher.Invoke([Action] {
+        if ($Control -eq 'ListBox') {
+            if (($list.Name | Measure-Object).Count -ge 1) { $SyncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list }
+                $SyncHash.itemTooListBoxProgress.Visibility = 'Collapsed'
+            
+
+            Suspend-ToolControls -ConfigHash $configHash -SyncHash $syncHash -ToolID $toolID -Control ListBox
+
+        }
+        else { 
+            if (($list | Measure-Object).Count -ge 1) { $SyncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list }   
+            $SyncHash.itemToolGridProgress.Visibility = 'Collapsed' 
+            Suspend-ToolControls -ConfigHash $configHash -SyncHash $syncHash -ToolID $toolID -Control Grid
+
+        }
+    })
+
+    
+}
+
+function Get-CustomItem {
     param(
         [Parameter(Mandatory)][hashtable]$ConfigHash, 
         [Parameter(Mandatory)][hashtable]$SyncHash,
-        [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control) 
+        [Parameter(Mandatory)][ValidateSet('ListBox','Grid')][string]$Control,
+        [Parameter(Mandatory)][ValidateSet('AD','OU','File','Folder')][string]$Type,
+        [ValidateSet('All', 'Users','Computers','Groups')][string]$Scope
+    ) 
 
     if ($Control -eq 'Grid') {  $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag  }
     else { $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag }
@@ -1933,12 +1920,12 @@ function Set-OUItemBox {
 
     $rsArgs = @{
         Name            = ('populate' + $Control)
-        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
+        ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash, $Type, $scope)
         ModulesToImport = $configHash.modList
     }
 
     Start-RSJob @rsArgs -ScriptBlock {
-        param($ConfigHash, $SyncHash, $toolID, $Control, $varHash)
+        param($ConfigHash, $SyncHash, $toolID, $Control, $varHash, $Type, $Scope)
 
         Set-CustomVariables -VarHash $varHash
         
@@ -1948,49 +1935,24 @@ function Set-OUItemBox {
                 else { $SyncHash.itemToolGridItemsGrid.ItemsSource = $null  }
             })
 
-        $inputObject = (Choose-ADOrganizationalUnit -HideNewOUFeature $true).DistinguishedName
+        $inputObject = switch ($Type) {
+            'AD'     { (Select-ADObject -Type $Scope).FetchedAttributes -replace '$'}
+            'OU'     { (Choose-ADOrganizationalUnit -HideNewOUFeature $true).DistinguishedName }
+            'File'   { New-FileDialog -InitialDirectory 'C:\' -Header "Select file" } 
+            'Folder' { New-FolderSelection }
+
+        }
      
-        $SyncHash.Window.Dispatcher.Invoke([Action] {
-                if ($Control -eq 'ListBox') { 
-                    $SyncHash.itemToolADSelectedItem.Content = $inputObject
-                    $SyncHash.itemTooListBoxProgress.Visibility = 'Visible'
-                }
-                else {
-                    $SyncHash.itemToolGridADSelectedItem.Content = $inputObject
-                    $SyncHash.itemToolGridProgress.Visibility = 'Visible'
-                }
-            })
-     
-        $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-        
-        if ($Control -eq 'ListBox') { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
-        else { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add($_) } }
-
-        $SyncHash.Window.Dispatcher.Invoke([Action] {
-                if ($Control -eq 'ListBox') {
-                    $SyncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list
-                    $SyncHash.itemTooListBoxProgress.Visibility = 'Collapsed'
-
-                   Suspend-ToolControls -ConfigHash $configHash -SyncHash $syncHash -ToolID $toolID -Control ListBox
-
-                }
-                else { 
-                    $SyncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list 
-                    $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
-                    
-                    Suspend-ToolControls -ConfigHash $configHash -SyncHash $syncHash -ToolID $toolID -Control Grid
-
-                }
-            })
+        if ($inputObject) { Set-SelectedItem -ConfigHash $configHash -SyncHash $syncHash -Control $control -InputObject $inputObject -ToolID $toolID }
     }      
 }
 
-function Set-CustomItemBox {
+function Get-CustomItemBox {
     param(
         [Parameter(Mandatory)][hashtable]$ConfigHash, 
         [Parameter(Mandatory)][hashtable]$SyncHash,
         [Parameter(Mandatory)][ValidateSet('ListBox', 'Grid')][string]$Control,
-        [Parameter(Mandatory)][ValidateSet('String', 'Int')][string]$Type) 
+        [Parameter(Mandatory)][ValidateSet('String', 'Int', 'Choice')][string]$Type) 
 
     if ($Control -eq 'Grid') { $toolID = $SyncHash.itemToolGridSelectConfirmButton.Tag }
     else { $toolID = $SyncHash.itemToolListSelectConfirmButton.Tag }
@@ -1998,13 +1960,23 @@ function Set-CustomItemBox {
     $syncHash.itemToolGridExport.Visibility = 'Collapsed'
     $syncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
     $syncHash.itemToolGridSelectAllButton.Visibility = 'Collapsed'
+    $syncHash.itemToolCustomContent.Visibility = 'Collapsed'
+    $syncHash.itemToolCustomContentChoice.Visibility = 'Collapsed'
 
     if ($type -eq 'int') { 
         $syncHash.customInputLabel.Content = "Paste or insert number required for query"
-        $syncHash.itemToolCustomContent.Tag = 'int' }
-    else  { 
+        $syncHash.itemToolCustomContent.Tag = 'int' 
+        $syncHash.itemToolCustomContent.Visibility = 'Visible'
+    }
+    elseif ($type -eq 'String')  { 
         $syncHash.customInputLabel.Content = "Paste or insert text required for query"
         $syncHash.itemToolCustomContent.Tag = 'string' 
+        $syncHash.itemToolCustomContent.Visibility = 'Visible'
+    }
+    else {
+        $syncHash.customInputLabel.Content = "Select option from list"
+        $syncHash.itemToolCustomContent.Tag = 'choice' 
+        $syncHash.itemToolCustomContentChoice.Visibility = 'Visible'
     }
 
     $rsArgs = @{
@@ -2012,6 +1984,8 @@ function Set-CustomItemBox {
         ArgumentList    = @($ConfigHash, $SyncHash, $toolID, $Control, $varHash, $type)
         ModulesToImport = $configHash.modList
     }
+
+
 
     Start-RSJob @rsArgs -ScriptBlock {
         param($ConfigHash, $SyncHash, $toolID, $Control, $varHash, $type)
@@ -2023,53 +1997,38 @@ function Set-CustomItemBox {
         $configHash.customInput = $null
 
         $SyncHash.Window.Dispatcher.Invoke([Action] {
-                if ($Control -eq 'ListBox') { $SyncHash.itemToolListSelectListBox.ItemsSource = $null }
-                else { $SyncHash.itemToolGridItemsGrid.ItemsSource = $null }
+            if ($Control -eq 'ListBox') { $SyncHash.itemToolListSelectListBox.ItemsSource = $null }
+            else { $SyncHash.itemToolGridItemsGrid.ItemsSource = $null }
+        })
+
+        if ($type -ne 'choice') {
+            $SyncHash.Window.Dispatcher.Invoke([Action] {
                 $syncHash.itemToolCustomContent.Text = $null
                 $syncHash.itemToolCustomDialog.Visibility = 'Visible'
                 $syncHash.itemToolCustomDialog.IsOpen = $true
             })
+        }
 
-        
+        else {
+            $choiceList = $ConfigHash.objectToolConfig[$toolID - 1].toolActionSelectChoice -replace ', ', ',' -split ','
+           
+             $SyncHash.Window.Dispatcher.Invoke([Action] {
+                $syncHash.itemToolCustomContentChoice.ItemsSource = $choiceList
+                $syncHash.itemToolCustomContentChoice.SelectedIndex = 0
+                $syncHash.itemToolCustomDialog.Visibility = 'Visible'
+                $syncHash.itemToolCustomConfirm.IsEnabled = $true
+                $syncHash.itemToolCustomDialog.IsOpen = $true
+            })
+        }
+
         do { } until ($configHash.customDialogClosed -eq $true)
         
         $SyncHash.Window.Dispatcher.Invoke([Action] {$syncHash.itemToolCustomDialog.IsOpen = $false })
         Start-Sleep -Seconds 1
         $inputObject = $configHash.customInput
 
-        $SyncHash.Window.Dispatcher.Invoke([Action] {
-                if ($Control -eq 'ListBox') { 
-                    $SyncHash.itemToolADSelectedItem.Content = $inputObject
-                    $SyncHash.itemTooListBoxProgress.Visibility = 'Visible'
-                }
-                else {
-                    $SyncHash.itemToolGridADSelectedItem.Content = $inputObject
-                    $SyncHash.itemToolGridProgress.Visibility = 'Visible'
-                }
-            })
-     
-        $list = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-        
-        if ($Control -eq 'ListBox') { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add([PSCustomObject]@{'Name' = $_ }) } }
-        else { ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolFetchCmd)).Invoke() | ForEach-Object { $list.Add($_) } }
-
-        $SyncHash.Window.Dispatcher.Invoke([Action] {
-                if ($Control -eq 'ListBox') {
-                    $SyncHash.itemToolListSelectListBox.ItemsSource = [System.Windows.Data.ListCollectionView]$list
-                    $SyncHash.itemTooListBoxProgress.Visibility = 'Collapsed'
-                    
-                    Suspend-ToolControls -ConfigHash $configHash -SyncHash $syncHash -ToolID $toolID -Control ListBox                    
-                }
-                else { 
-                    $SyncHash.itemToolGridItemsGrid.ItemsSource = [System.Windows.Data.ListCollectionView]$list 
-                    $SyncHash.itemToolGridProgress.Visibility = 'Collapsed'
-                    $syncHash.itemToolCustomDialog.Visibility = 'Collapsed'
-
-                   Suspend-ToolControls -ConfigHash $configHash -SyncHash $syncHash -ToolID $toolID -Control Grid
-
-
-                }
-            })
+        if ($inputObject) { Set-SelectedItem -ConfigHash $configHash -SyncHash $syncHash -Control $control -InputObject $inputObject -ToolID $toolID }
+      
     }      
 }
 

@@ -316,22 +316,16 @@ $sysCheckHash.missingCheckFail = $false
 
 #region Item Tool Events
 #region Item Tools - Grid
-$syncHash.ItemToolGridADSelectionButton.Add_Click( { 
-    switch ($syncHash.ItemToolGridADSelectionButton.Tag) {
-        'AD' { Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control Grid }
-        'OU' { Set-OUItemBox -ConfigHash $configHash -SyncHash $syncHash -Control Grid }
-        'Custom' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control Grid }
-    }
-
-})
-
+$syncHash.ItemToolGridADSelectionButton.Add_Click({ Start-CustomItemSelection -SyncHash $syncHash -ConfigHash $configHash -Control Grid })
+  
 $syncHash.itemToolGridItemsGrid.Add_SelectionChanged( {
         if ($syncHash.itemToolGridItemsGrid.SelectedItem.Image) { $syncHash.itemToolImageSource.Source = [byte[]]($syncHash.itemToolGridItemsGrid.SelectedItem.Image) }
     })
 
 $syncHash.itemToolCustomConfirm.Add_Click({
         $configHash.customDialogClosed = $true
-        $configHash.customInput = $syncHash.itemToolCustomContent.Text
+        if ($syncHash.itemToolCustomContent.Tag  -eq 'Choice') { $configHash.customInput = $syncHash.itemToolCustomContentChoice.SelectedValue }
+        else { $configHash.customInput = $syncHash.itemToolCustomContent.Text }
 
 })
 
@@ -384,17 +378,7 @@ $syncHash.itemToolGridSelectAllButton.Add_Click( {
 #endregion
 
 #region Item Tools - List
-$syncHash.ItemToolADSelectionButton.Add_Click( {
-    switch ($syncHash.ItemToolADSelectionButton.Tag) {
-        'AD' { Set-ADItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox }
-        'OU' { Set-OUItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox }
-        'Custom.String' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox -Type String}
-        'Custom.Integer' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox -Type Int }
-        'Custom.File' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox -Type File }
-        'Custom.Path' { Set-CustomItemBox -ConfigHash $configHash -SyncHash $syncHash -Control ListBox -Type Path }
-
-    }
-})
+$syncHash.ItemToolADSelectionButton.Add_Click({ Start-CustomItemSelection -SyncHash $syncHash -ConfigHash $configHash -Control ListBox })
 
 
 
@@ -2264,35 +2248,6 @@ $syncHash.settingObjectToolExtraScriptBox.Add_TextChanged({
     }
 })
 
-    
-$syncHash.settingSelectTextOption.Add_Click({
-     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectAD = $false
-     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectOU = $false
-     $syncHash.settingSelectOUOption.IsChecked = $false
-     $syncHash.settingSelectADOption.IsChecked = $false
-})
-
-$syncHash.settingSelectOUOption.Add_Click({
-     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectAD = $false
-     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectCustom = $false
-     $syncHash.settingSelectTextOption.IsChecked = $false
-     $syncHash.settingSelectADOption.IsChecked = $false
-})
-
-$syncHash.settingSelectADOption.Add_Click({
-     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectCustom = $false
-     $configHash.objectToolConfig[($syncHash.settingObjectToolsPropGrid.SelectedItem.ToolID - 1)].toolActionSelectOU = $false
-     $syncHash.settingSelectOUOption.IsChecked = $false
-     $syncHash.settingSelectTextOption.IsChecked = $false
-})
-
-
-
-
-
-
-
-
 
 $syncHash.settingNameDialogClose.Add_Click( {
         $syncHash.settingNameDialog.IsOpen = $false
@@ -2421,11 +2376,10 @@ $syncHash.itemRefresh.Add_Click( {
             toolActionExportable   = $false
             toolActionToolTip      = $null
             toolActionIcon         = $null
-            toolActionSelectAD     = $false
-            toolActionSelectOU     = $false
             toolActionSelectCustom = $false
-            toolActionCustomOptions= @('String','Integer','File','Path')
-            toolActionCustomSel    = $null
+            toolActionCustomOptions= @('AD Object (any)','AD User', 'AD Computer','AD Group','OU','String','Integer','Choice','File','Directory')
+            toolActionCustomSelect = $null
+            toolActionSelectChoice = $null
             toolFetchCmd           = 'Get-Something'
             toolActionMultiSelect  = $false
             toolDescription        = 'Generic tool description'

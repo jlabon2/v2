@@ -349,6 +349,46 @@
                 </Style.Triggers>
             </Style>
 
+            <Style x:Key="customItemText" TargetType="TextBlock">
+                <Setter Property="Margin" Value="0,15,0,0" />
+                <Setter Property="FontFamily" Value="Segoe UI Light" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="White" />
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="AD Object (any)">
+                        <Setter Property="Text" Value="AD Object Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="AD User">
+                        <Setter Property="Text" Value="AD User Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="AD Computer">
+                        <Setter Property="Text" Value="AD Computer Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="AD Group">
+                        <Setter Property="Text" Value="AD Group Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="OU">
+                        <Setter Property="Text" Value="ou Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="String">
+                        <Setter Property="Text" Value="Text Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Choice">
+                        <Setter Property="Text" Value="Choice Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Integer">
+                        <Setter Property="Text" Value="Number Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="File">
+                        <Setter Property="Text" Value="File Path Selection:" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Directory">
+                        <Setter Property="Text" Value="Folder Path Selection:" />
+                    </Trigger>
+                </Style.Triggers>
+
+            </Style>
+
             <Style
                 x:Key="actionbtnstatic"
                 BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}"
@@ -1617,7 +1657,14 @@
                                 DockPanel.Dock="Top"
                                 FontSize="10"
                                 Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}" />
-
+                            <ComboBox
+                                Name="itemToolCustomContentChoice"
+                                Width="100"
+                                Height="40"
+                                Margin="0,0,0,0"
+                                Padding="5,0,5,0"
+                                DockPanel.Dock="Top"
+                                Style="{StaticResource MaterialDesignFilledComboBox}" />
                             <Button
                                 Name="itemToolCustomConfirm"
                                 Width="60"
@@ -1701,16 +1748,18 @@
                                 VerticalAlignment="Center"
                                 DockPanel.Dock="Top">
                                 <StackPanel Margin="0,0,0,-25">
-                                    <Label
+                                    <TextBlock
                                         Name="itemToolItemText"
-                                        Margin="0,5,0,0"
-                                        Content="AD Object Selection:" />
+                                        Style="{StaticResource customItemText}"
+                                        Tag="{Binding ElementName=ItemToolADSelectionButton, Path=Tag, UpdateSourceTrigger=PropertyChanged}" />
                                     <Label
                                         Name="itemToolADSelectedItem"
+                                        MaxWidth="175"
                                         Margin="15,-5,0,0"
                                         Content=""
                                         FontSize="10"
-                                        Foreground="{StaticResource MahApps.Brushes.Accent}" />
+                                        Foreground="{StaticResource MahApps.Brushes.Accent}"
+                                        ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Content}" />
                                 </StackPanel>
                                 <Button
                                     Name="ItemToolADSelectionButton"
@@ -1914,16 +1963,18 @@
                                 VerticalAlignment="Center"
                                 DockPanel.Dock="Top">
                                 <StackPanel Margin="0,0,0,-25">
-                                    <Label
+                                    <TextBlock
                                         Name="itemToolGridItemText"
-                                        Margin="0,5,0,0"
-                                        Content="AD Object Selection:" />
+                                        Style="{StaticResource customItemText}"
+                                        Tag="{Binding ElementName=itemToolGridADSelectionButton, Path=Tag, UpdateSourceTrigger=PropertyChanged}" />
                                     <Label
                                         Name="itemToolGridADSelectedItem"
+                                        MaxWidth="175"
                                         Margin="15,-5,0,0"
                                         Content=""
                                         FontSize="10"
-                                        Foreground="{StaticResource MahApps.Brushes.Accent}" />
+                                        Foreground="{StaticResource MahApps.Brushes.Accent}"
+                                        ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Content}" />
                                 </StackPanel>
                                 <Button
                                     Name="itemToolGridADSelectionButton"
@@ -6793,46 +6844,7 @@
                                                         HorizontalAlignment="Right"
                                                         DockPanel.Dock="Right"
                                                         Orientation="Horizontal">
-                                                        <CheckBox
-                                                            Name="settingSelectADOption"
-                                                            Margin="0,0,5,0"
-                                                            HorizontalAlignment="Right"
-                                                            md:CheckBoxAssist.CheckBoxSize="15"
-                                                            Content="Choose AD object"
-                                                            FontSize="10"
-                                                            IsChecked="{Binding toolActionSelectAD, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            IsEnabled="True">
-                                                            <CheckBox.Style>
-                                                                <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
-                                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </CheckBox.Style>
-                                                        </CheckBox>
-                                                        <CheckBox
-                                                            Name="settingSelectOUOption"
-                                                            Margin="0,0,5,0"
-                                                            HorizontalAlignment="Right"
-                                                            md:CheckBoxAssist.CheckBoxSize="15"
-                                                            Content="Choose OU"
-                                                            FontSize="10"
-                                                            IsChecked="{Binding toolActionSelectOU, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            IsEnabled="True">
-                                                            <CheckBox.Style>
-                                                                <Style BasedOn="{StaticResource MaterialDesignAccentCheckBox}" TargetType="CheckBox">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
-                                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </CheckBox.Style>
-                                                        </CheckBox>
+
                                                         <CheckBox
                                                             Name="settingSelectTextOption"
                                                             HorizontalAlignment="Right"
@@ -6863,7 +6875,7 @@
                                                             FontSize="10"
                                                             IsEnabled="{Binding toolActionSelectCustom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                             ItemsSource="{Binding toolActionCustomOptions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            SelectedItem="{Binding toolActionCustomSel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                            SelectedItem="{Binding toolActionCustomSelect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                                                             <ComboBox.Style>
                                                                 <Style BasedOn="{StaticResource MaterialDesignFilledComboBox}" TargetType="ComboBox">
                                                                     <Setter Property="Visibility" Value="Visible" />
@@ -6875,6 +6887,32 @@
                                                                 </Style>
                                                             </ComboBox.Style>
                                                         </ComboBox>
+                                                        <TextBox
+                                                            Width="100"
+                                                            Height="20"
+                                                            Margin="5,0,0,0"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalContentAlignment="Center"
+                                                            FontSize="10"
+                                                            Text="{Binding toolActionSelectChoice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                            <TextBox.Style>
+                                                                <Style BasedOn="{StaticResource MaterialDesignTextBox}" TargetType="TextBox">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Setter Property="IsEnabled" Value="False" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding toolActionCustomSelect}" Value="Choice">
+                                                                            <Setter Property="IsEnabled" Value="True" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBox.Style>
+
+
+
+                                                        </TextBox>
 
 
                                                     </StackPanel>

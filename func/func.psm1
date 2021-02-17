@@ -55,6 +55,7 @@ function New-FileDialog {
     $openFileDialog.Multiselect = $true
     $openFileDialog.ShowDialog() | Out-Null
 
+    $openFileDialog.FileName
 }
 
 function Resolve-Location {
@@ -296,7 +297,7 @@ Param (
     $MultiSelect,
 
     [Parameter()]
-    [ValidateSet('All','Users','Computers','Groups','UsersComputers')]
+    [ValidateSet('All','Users','Computers','Groups','UsersComputers', 'Default')]
     [string[]]
     $Type,
 
@@ -322,7 +323,8 @@ Param (
 
         else {           
             $DialogPicker.AllowedObjectTypes = [CubicOrange.Windows.Forms.ActiveDirectory.ObjectTypes]::Groups, [CubicOrange.Windows.Forms.ActiveDirectory.ObjectTypes]::Users, [CubicOrange.Windows.Forms.ActiveDirectory.ObjectTypes]::Computers
-            $DialogPicker.DefaultObjectTypes = [CubicOrange.Windows.Forms.ActiveDirectory.ObjectTypes]::Users
+            if ($type -eq 'Default') { $DialogPicker.DefaultObjectTypes = [CubicOrange.Windows.Forms.ActiveDirectory.ObjectTypes]::Users }
+            else { $DialogPicker.DefaultObjectTypes = [CubicOrange.Windows.Forms.ActiveDirectory.ObjectTypes]::Groups, [CubicOrange.Windows.Forms.ActiveDirectory.ObjectTypes]::Users, [CubicOrange.Windows.Forms.ActiveDirectory.ObjectTypes]::Computers }
         }
 
 
