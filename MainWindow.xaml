@@ -1609,6 +1609,118 @@
             </simpleChildWindow:ChildWindow>
 
             <simpleChildWindow:ChildWindow
+                x:Name="importDialog"
+                Title="Import Selection"
+                AllowMove="True"
+                BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
+                BorderThickness="1"
+                CloseByEscape="True"
+                EnableDropShadow="False"
+                IsOpen="False"
+                ShowCloseButton="False">
+                <simpleChildWindow:ChildWindow.OverlayBrush>
+                    <SolidColorBrush Color="Transparent" />
+                </simpleChildWindow:ChildWindow.OverlayBrush>
+                <Grid
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+
+                    <DockPanel
+                        Width="350"
+                        HorizontalAlignment="Center"
+                        Background="{DynamicResource MahApps.Brushes.ThemeBackground}">
+
+                        <TextBlock
+                            Margin="10,10,0,0"
+                            HorizontalAlignment="Center"
+                            DockPanel.Dock="Top"
+                            FontFamily="Segoe UI Light"
+                            Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                            Text="Select items to import. Confirming will restart and load new configuration."
+                            TextWrapping="Wrap" />
+                        <DockPanel
+                            Margin="15,0,15,35"
+                            HorizontalAlignment="Center"
+                            DockPanel.Dock="Top">
+                            <Button
+                                Name="importSelectAllButton"
+                                Width="25"
+                                Height="25"
+                                Margin="10,22.5,0,0"
+                                Content=""
+                                DockPanel.Dock="Left"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="12"
+                                IsEnabled="True" />
+                        </DockPanel>
+                        <ListBox
+                            Name="importListBox"
+                            Width="200"
+                            Height="300"
+                            Margin="15,-25,15,15"
+                            BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
+                            BorderThickness="1"
+                            DockPanel.Dock="Top"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                            SelectionMode="Multiple"
+                            Style="{StaticResource MaterialDesignListBox}">
+
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox
+                                        Foreground="White"
+                                        IsChecked="{Binding Path=IsSelected, RelativeSource={RelativeSource AncestorLevel=1, AncestorType={x:Type ListBoxItem}, Mode=FindAncestor}}"
+                                        IsThreeState="False"
+                                        Style="{StaticResource MaterialDesignAccentCheckBox}">
+                                        <CheckBox.Content>
+                                            <Viewbox HorizontalAlignment="Left" StretchDirection="DownOnly">
+                                                <TextBlock Text="{Binding}" />
+                                            </Viewbox>
+                                        </CheckBox.Content>
+                                    </CheckBox>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
+                            <Button
+                                Name="importConfirmButton"
+                                Width="60"
+                                Height="40"
+                                Margin="0,0,15,10"
+                                Content="Import"
+                                DockPanel.Dock="Left"
+                                FontFamily="Segoe UI Light">
+                                <Button.Style>
+                                    <Style BasedOn="{StaticResource itemButton}" TargetType="Button">
+                                        <Setter Property="IsEnabled" Value="True" />
+                                        <Style.Triggers>
+
+                                            <DataTrigger Binding="{Binding ElementName=importListBox, Path=SelectedItems.Count}" Value="0">
+                                                <Setter Property="IsEnabled" Value="False" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button
+                                Name="importCancel"
+                                Width="60"
+                                Height="40"
+                                Margin="15,0,0,10"
+                                Content="Cancel"
+                                DockPanel.Dock="Right"
+                                FontFamily="Segoe UI Light"
+                                Style="{StaticResource itemButton}" />
+                        </DockPanel>
+                    </DockPanel>
+
+                </Grid>
+            </simpleChildWindow:ChildWindow>
+
+
+            <simpleChildWindow:ChildWindow
                 x:Name="itemToolDialog"
                 Title="Confirm"
                 AllowMove="True"

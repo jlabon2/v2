@@ -271,7 +271,7 @@ $glyphList = 'C:\TempData\segoeGlyphs.txt'
 ######
 
 $savedConfig = 'C:\TempData\config.json'
-
+$script:ConfigMap = Set-ConfigMap
 
 # generated hash tables used throughout tool
 New-HashTables
@@ -538,9 +538,10 @@ $syncHash.settingRtRDPClick.Add_Click( { Set-StaticRTContent -SyncHash $syncHash
 
 $syncHash.settingRtMSRAClick.Add_Click( { Set-StaticRTContent -SyncHash $syncHash -ConfigHash $configHash -Tool MSRA })
 
-$syncHash.settingRemoteFlyout.Add_OpeningFinished( { 
-$syncHash.settingChildWindow.ShowCloseButton = $false
-Get-RTFlyoutContent -ConfigHash $configHash -SyncHash $syncHash })
+$syncHash.settingRemoteFlyout.Add_OpeningFinished({ 
+    $syncHash.settingChildWindow.ShowCloseButton = $false
+    Get-RTFlyoutContent -ConfigHash $configHash -SyncHash $syncHash 
+})
 
 $syncHash.settingRemoteFlyoutExit.Add_Click( {
         $syncHash.settingChildWindow.ShowCloseButton = $true
@@ -869,7 +870,18 @@ $syncHash.settingCloseClick.add_Click( { $syncHash.Window.Close() })
     
 $syncHash.settingConfigCancelClick.add_Click( { $syncHash.Window.Close() })
 
-$syncHash.settingImportClick.add_Click( { Import-Config -SyncHash $syncHash })
+$syncHash.settingImportClick.add_Click( { Import-Config -SyncHash $syncHash -ConfigMap $configMap })
+
+$synchash.importConfirmButton.add_Click({ Start-Import -ImportItems $importItems -SelectedItems $syncHash.importListBox.SelectedItems -ConfigMap $configMap -ConfigHash $configHash -savedConfig $savedConfig })
+
+$syncHash.importSelectAllButton.add_Click({  
+    if ($syncHash.importListBox.Items.Count -eq $syncHash.importListBox.SelectedItems.Count) { $syncHash.importListBox.UnselectAll() } 
+    else { $syncHash.importListBox.SelectAll() }
+})   
+
+$syncHash.importCancel.add_Click({ $syncHash.importDialog.IsOpen = $false })
+       
+
 
 $syncHash.settingConfigClick.add_Click( {
         Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash

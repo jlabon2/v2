@@ -19,11 +19,11 @@ function New-HashTables {
     # Stores data related to queried objects
     $global:queryHash = [hashtable]::Synchronized(@{ })
 }
+
 function Set-CurrentPane {
     param ($SyncHash, $Panel)
     $SyncHash.infoPaneContent.Tag = $Panel
 }
-
 
 function Get-RelatedClass {
     param( [string]$ClassName )
@@ -103,7 +103,6 @@ function Reset-ScriptBlockValidityStatus {
     $itemSet.$StatusName = $null
 }
 
-
 function Update-ScriptBlockValidityStatus {
     param ($syncHash, $ResultBoxName, $itemSet, $statusName)
     
@@ -116,7 +115,6 @@ function Update-ScriptBlockValidityStatus {
         
     }
 }
-
 
 function Test-UserScriptBlock {
     param ($errorControl, $scriptBlock, $syncHash, $StatusName, $itemSet)
@@ -210,7 +208,6 @@ function Test-UserScriptBlock {
     $errorControlTool.ToolTip = $toolTipBox
     
 }
-
 
 function Set-InfoPaneContent {
     param ($SyncHash , $SettingInfoHash, $ConfigHash) 
@@ -397,6 +394,8 @@ function Set-Config {
             }
         }
         'Export' {
+
+        #null all session based data - no need to store
             @('User', 'Comp') | ForEach-Object -Process {
                 $ConfigHash.($_ + 'PropList') | ForEach-Object { $_.PropList = $null }
                 $ConfigHash.($_ + 'PropListSelection') = $null
@@ -415,8 +414,9 @@ function Set-Config {
             $configHash.QueryADValues = $null
             $configHash.rawADValues = $null
             $configHash.currentTabItem = $null
+            $configHash.logCollection = $null
 
-            $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString()
+            #$configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString()
 
             $ConfigHash |
                 ConvertTo-Json -Depth 8 |
@@ -427,8 +427,26 @@ function Set-Config {
     }
 }
 
+function Set-ConfigMap {
+
+     @{
+        'Network Mapping' = 'netMapList'
+        'Computer Categorization' = 'nameMapListView'
+        'User/Comp Log Configuration' = @('userLogPath','pcLogPath')
+        'Item Tools'  = 'objectToolConfig'
+        'Importable Modules' = 'modConfig'
+        'User AD Properties' = 'userPropList'
+        'Computer AD Properties' = 'compPropList'
+        'Query Definitions' = 'queryDefConfig'
+        'Queriable OUs'     = 'searchBaseConfig'
+        'Contextual Actions' = 'contextConfig' 
+        'Tool Logging Path'  = 'actionLogPath'
+    }
+}
+
+
 function Import-Config {
-    param ($SyncHash)
+    param ($SyncHash, $configMap)
 
     $configSelection = New-Object -TypeName System.Windows.Forms.OpenFileDialog -Property @{
         InitialDirectory = [Environment]::GetFolderPath('MyComputer')
@@ -437,13 +455,28 @@ function Import-Config {
     }
     
     $null = $configSelection.ShowDialog()
+    
 
     if (![string]::IsNullOrEmpty($configSelection.fileName)) {
-        Copy-Item -Path $configSelection.fileName -Destination $PSScriptRoot -Force
+        $global:importItems = Get-Content $configSelection.FileName | ConvertFrom-Json    
+        $syncHash.importListBox.ItemsSource = $configMap.Keys
+        $syncHash.importDialog.IsOpen = $true
+    }
+}
+
+#
+function Start-Import {
+    param ($ConfigMap, $ImportItems, $ConfigHash, $SavedConfig, $SelectedItems)
+
+    foreach ($selectedItem in $selectedItems) {
+        if (($ConfigMap.$selectedItem) -is [Array]) { $ConfigMap.$selectedItem | ForEach-Object { $configHash.($ConfigMap.$_) = $ImportItems.($ConfigMap.$_) }}
+        else {  $configHash.($ConfigMap.$selectedItem) = $ImportItems.($ConfigMap.$selectedItem) }
+    }
+        
+        Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
         $SyncHash.Window.Close()
         Start-Process -WindowStyle Minimized -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $($PSCommandPath)"
         exit
-    }
 }
 
 function Suspend-FailedItems {
@@ -503,8 +536,6 @@ function Suspend-FailedItems {
             $SyncHash.tabMenu.SelectedIndex = 3
         })
 } 
-
-
 
 # gets initial values saved in json and loads into PCO
 function Get-InitialValues {
@@ -2117,9 +2148,9 @@ function Get-RTFlyoutContent {
     
     Set-CurrentPane -SyncHash $syncHash -Panel "rtConfigFlyout"
 
-    $SyncHash.settingRemoteListTypes.ItemsSource = $ConfigHash.nameMapList
+    $SyncHash.settingRemoteListTypes.ItemsSource = $ConfigHash.nameMapList | Select-Object Name
 
-    switch ($SyncHash.settingRALabel.Content) {
+    switch ($SyncHash.settingRALabel.Text) {
             
         'MSTSC' {
             if ($ConfigHash.rtConfig.MSTSC.Icon) { $SyncHash.settingRTIcon.Source = ([Convert]::FromBase64String($ConfigHash.rtConfig.MSTSC.Icon)) }
@@ -2140,7 +2171,7 @@ function Get-RTFlyoutContent {
         }
 
         Default {
-            $rtID = 'rt' + [string]($SyncHash.settingRALabel.Content -replace '.[A-Z]* ')
+            $rtID = 'rt' + [string]($SyncHash.settingRALabel.Text -replace '.[A-Z]* ')
 
             if ($ConfigHash.rtConfig.$rtID.Icon) { $SyncHash.settingRTIcon.Source = ([Convert]::FromBase64String($ConfigHash.rtConfig.$rtID.Icon)) }
                
