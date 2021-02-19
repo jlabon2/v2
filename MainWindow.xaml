@@ -2714,7 +2714,6 @@
                                                     md:TextFieldAssist.NewSpecHighlightingEnabled="False"
                                                     md:TextFieldAssist.UnderlineBrush="Transparent"
                                                     BorderThickness="0"
-                                                    Cursor="Arrow"
                                                     FontFamily="Segoe UI Light"
                                                     FontSize="11"
                                                     Foreground="GhostWhite"
