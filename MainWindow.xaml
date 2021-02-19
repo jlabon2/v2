@@ -63,7 +63,7 @@
             </Style>
 
             <Style x:Key="varDescRun" TargetType="Run">
-                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontFamily" Value="Segoe UI Light" />
                 <Setter Property="Foreground" Value="GhostWhite" />
                 <Setter Property="FontSize" Value="11" />
             </Style>
@@ -722,7 +722,7 @@
                 <Setter Property="MinHeight" Value="20" />
                 <Setter Property="StretchDirection" Value="Both" />
                 <Setter Property="Stretch" Value="Uniform" />
-                <Setter Property="VerticalAlignment" Value="Bottom" />
+                <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 
             <Style x:Key="itemBorder" TargetType="{x:Type Border}">
@@ -2704,20 +2704,29 @@
                                                     FontSize="14"
                                                     FontWeight="SemiBold"
                                                     Foreground="{StaticResource MahApps.Brushes.AccentBase}" />
-                                                <TextBlock
+
+                                                <TextBox
                                                     Name="settingInfoBody"
                                                     Width="{Binding ElementName=settingInfoDialog, Path=Width, UpdateSourceTrigger=PropertyChanged}"
                                                     Margin="0,0,0,15"
+                                                    Padding="0"
                                                     md:TextFieldAssist.DecorationVisibility="Hidden"
                                                     md:TextFieldAssist.NewSpecHighlightingEnabled="False"
                                                     md:TextFieldAssist.UnderlineBrush="Transparent"
+                                                    BorderThickness="0"
                                                     Cursor="Arrow"
-                                                    FontFamily="Segoe Light UI"
-                                                    FontSize="12"
+                                                    FontFamily="Segoe UI Light"
+                                                    FontSize="11"
+                                                    Foreground="GhostWhite"
                                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                                    Style="{StaticResource MaterialDesignBody1TextBlock}"
                                                     Text="{Binding Body}"
-                                                    TextWrapping="Wrap" />
+                                                    TextWrapping="Wrap">
+                                                    <TextBox.Style>
+                                                        <Style BasedOn="{StaticResource MahApps.Styles.TextBox}" TargetType="TextBox">
+                                                            <Setter Property="IsReadOnly" Value="True" />
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
 
                                                 <StackPanel Name="infoPaneTypesPanel">
                                                     <Controls:MetroHeader
@@ -6972,6 +6981,9 @@
                                                                         <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
                                                                             <Setter Property="Visibility" Value="Collapsed" />
                                                                         </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="CommandGrid">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
                                                             </CheckBox.Style>
@@ -6995,6 +7007,9 @@
                                                                         <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
                                                                             <Setter Property="Visibility" Value="Collapsed" />
                                                                         </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="CommandGrid">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
                                                             </ComboBox.Style>
@@ -7015,7 +7030,10 @@
                                                                         <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="Execute">
                                                                             <Setter Property="Visibility" Value="Collapsed" />
                                                                         </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding toolActionCustomSelect}" Value="Choice">
+                                                                        <DataTrigger Binding="{Binding ElementName=settingObjectToolBox, Path=Text}" Value="CommandGrid">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding toolActionCustomSelect, UpdateSourceTrigger=PropertyChanged}" Value="Choice">
                                                                             <Setter Property="IsEnabled" Value="True" />
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
@@ -7613,7 +7631,7 @@
                                 </Grid.ColumnDefinitions>
                                 <DockPanel Grid.Column="1">
                                     <Label
-                                        Content="Object Tools"
+                                        Content="Tools"
                                         DockPanel.Dock="Top"
                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                         FontSize="16" />
@@ -10186,7 +10204,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
                                                     <Label
-                                                        Content="Item Tools"
+                                                        Content="Tools"
                                                         DockPanel.Dock="Top"
                                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                                         FontSize="16" />
@@ -10195,7 +10213,7 @@
                                                         FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                                                         FontSize="14"
                                                         Foreground="LightGray"
-                                                        Text="Configure computer/user tools" />
+                                                        Text="Configure computer, user, and standalone tools" />
                                                 </DockPanel>
                                                 <Button
                                                     x:Name="settingObjectToolsClick"

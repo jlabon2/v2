@@ -429,10 +429,13 @@ function Set-Config {
 
 function Set-ConfigMap {
 
-     @{
+     [ordered]@{
         'Network Mapping' = 'netMapList'
         'Computer Categorization' = 'nameMapListView'
-        'User/Comp Log Configuration' = @('userLogPath','pcLogPath')
+        'User Logs Path' = 'userLogPath'
+        'User Log Mapping' = 'userLogMapping'
+        'Comp Logs Path' = 'compLogPath'
+        'Comp Log Mapping ' = 'compLogMapping'
         'Item Tools'  = 'objectToolConfig'
         'Importable Modules' = 'modConfig'
         'User AD Properties' = 'userPropList'
@@ -466,16 +469,16 @@ function Import-Config {
 
 #
 function Start-Import {
-    param ($ConfigMap, $ImportItems, $ConfigHash, $SavedConfig, $SelectedItems)
+    param ($ConfigMap, $ImportItems, $ConfigHash, $SavedConfig, $SelectedItems, $baseConfigPath)
 
-    foreach ($selectedItem in $selectedItems) {
-        if (($ConfigMap.$selectedItem) -is [Array]) { $ConfigMap.$selectedItem | ForEach-Object { $configHash.($ConfigMap.$_) = $ImportItems.($ConfigMap.$_) }}
-        else {  $configHash.($ConfigMap.$selectedItem) = $ImportItems.($ConfigMap.$selectedItem) }
+    foreach ($selectedItem in $selectedItems) {  $configHash.($ConfigMap.$selectedItem) = $ImportItems.($ConfigMap.$selectedItem) 
     }
-        
+     #   @('userPropList', 'compPropList', 'contextConfig', 'objectToolConfig', 'nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig', 'modConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
+     #   @('userLogMapping', 'compLogMapping', 'settingHeaderConfig') | Set-InitialValues -ConfigHash $configHash
         Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
+
         $SyncHash.Window.Close()
-        Start-Process -WindowStyle Minimized -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $($PSCommandPath)"
+        Start-Process -WindowStyle Minimized -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $(Join-Path $baseConfigPath -ChildPath 'x.ps1')"
         exit
 }
 

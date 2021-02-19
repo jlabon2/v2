@@ -1,6 +1,7 @@
 ﻿# TODO
 #
 #- Color switches on glyph buttons???
+Remove-Variable -Name * -ErrorAction SilentlyContinue
 if ($host.name -eq 'ConsoleHost') {
 
 $SW_HIDE, $SW_SHOW = 0, 5
@@ -8,12 +9,13 @@ $TypeDef = '[DllImport("User32.dll")]public static extern bool ShowWindow(IntPtr
 Add-Type -MemberDefinition $TypeDef -Namespace Win32 -Name Functions
 $hWnd = (Get-Process -Id $PID).MainWindowHandle
 $Null = [Win32.Functions]::ShowWindow($hWnd,$SW_HIDE)
-
+$global:baseConfigPath = Split-Path $PSCommandPath
 }
 
+else { $global:baseConfigPath ='C:\TempData' }
 # update default rdp / msra values (command AND default to comp'
 
-Remove-Variable -Name * -ErrorAction SilentlyContinue
+
 Add-Type -AssemblyName 'System.Windows.Forms'
 $settingInfoHash = @{
     'settingCompPropContent' = [PSCustomObject]@{
@@ -72,9 +74,14 @@ The variables below can be referenced or manipulated within the scriptblocks.
     }
     'settingItemToolsContent' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingItemToolsContent
+Tools are advanced actions that can be used on queried users or computers or as standalone tools independent of either. Each tool is defined below. The TOOL NAME field is the name used on the tool label, and is used when the results of the tool is logged. The TOOL TYPE defines the template and presentation of tools. These are defined below and are described in detail within the definition window’s information section. The OBJECT TYPE refers to where the tool will be accessible - either on users, computers, both, or as a standalone tool in the tool tab. 
 '@
-        'Types' = @{}
+    'Types' = [ordered]@{
+	    ‘Execute’ = ‘Execute tools are the most basic tool types. They simply execute the defined scriptblock.’
+	    ‘Select’ = ‘Selection tools query data from a defined source and allow the returned data, populated into a list, to be selected and then used to manipulate the current, queried user or computer (or the listed items themselves) through a defined action. These are designed for single property arrays.’
+	    ‘Grid’ = 'Grid tools are similar to select tools - they similarly allow querying data but allow items with multiple properties. These need not be tied to any action - the grid contents can be exported into HTML reports.'
+	    'CommandGrid' = 'The command grid tool allows defining a series of queries. Each defined query has an associated action - if the query returns anything but the boolean ''true'' the action will be eligible to run. This is useful for running a set of actions for similar processes (e.g. diagnostics, user outboarding, etc).'
+    }
 }
     'settingContextPropContent' =  [PSCustomObject]@{
         'Body'  = @' 
@@ -225,9 +232,27 @@ Adding the following line at any point within the scriptblock will launch a conf
 '@         
         }
 }
-'settingObjectToolDefFlyout' =  [PSCustomObject]@{
+'settingObjectToolCommandGrid' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingObjectToolDefFlyout
+To be completed.. settingObjectToolCommandGrid
+'@
+        'Types' = @{}
+}
+'settingObjectToolSelect' =  [PSCustomObject]@{
+        'Body'  = @' 
+To be completed.. settingObjectToolSelect
+'@
+        'Types' = @{}
+}
+'settingObjectToolExecute' =  [PSCustomObject]@{
+        'Body'  = @' 
+To be completed.. settingObjectToolExecute
+'@
+        'Types' = @{}
+}
+'settingObjectToolGrid' =  [PSCustomObject]@{
+        'Body'  = @' 
+To be completed.. settingObjectToolGrid
 '@
         'Types' = @{}
 }
@@ -257,7 +282,7 @@ To be completed.. settingAdminContent
 
 
 
-$modList = @('C:\TempData\func\func.psm1', 'C:\TempData\internal\internal.psm1')
+$modList = @((Join-Path $baseConfigPath -ChildPath '\func\func.psm1'), (Join-Path $baseConfigPath -ChildPath '\internal\internal.psm1'))
 Import-Module $modList -Force -DisableNameChecking
 
 
@@ -271,7 +296,7 @@ $glyphList = 'C:\TempData\segoeGlyphs.txt'
 ######
 
 $savedConfig = 'C:\TempData\config.json'
-$script:ConfigMap = Set-ConfigMap
+$global:ConfigMap = Set-ConfigMap
 
 # generated hash tables used throughout tool
 New-HashTables
@@ -425,7 +450,7 @@ $syncHash.settingUserPropClick.add_Click( { Set-ChildWindow -Panel settingUserPr
 
 $syncHash.settingCompPropClick.add_Click( { Set-ChildWindow -Panel settingCompPropContent -Title 'Computer Property Mappings' -SyncHash $syncHash -Height 365 -Width 600 })
 
-$syncHash.settingObjectToolsClick.add_Click( { Set-ChildWindow -Panel settingItemToolsContent -Title 'Object Tools Mappings' -SyncHash $syncHash -Height 365 -Width 600 })
+$syncHash.settingObjectToolsClick.add_Click( { Set-ChildWindow -Panel settingItemToolsContent -Title 'Tools' -SyncHash $syncHash -Height 365 -Width 600 })
 
 $syncHash.settingContextClick.add_Click( { Set-ChildWindow -Panel settingContextPropContent -Title 'Contextual Actions Mappings'-SyncHash $syncHash -Height 365 -Width 390 })
 
@@ -872,7 +897,7 @@ $syncHash.settingConfigCancelClick.add_Click( { $syncHash.Window.Close() })
 
 $syncHash.settingImportClick.add_Click( { Import-Config -SyncHash $syncHash -ConfigMap $configMap })
 
-$synchash.importConfirmButton.add_Click({ Start-Import -ImportItems $importItems -SelectedItems $syncHash.importListBox.SelectedItems -ConfigMap $configMap -ConfigHash $configHash -savedConfig $savedConfig })
+$synchash.importConfirmButton.add_Click({ Start-Import -ImportItems $importItems -SelectedItems $syncHash.importListBox.SelectedItems -ConfigMap $configMap -ConfigHash $configHash -savedConfig $savedConfig -BaseConfigPath $baseConfigPath})
 
 $syncHash.importSelectAllButton.add_Click({  
     if ($syncHash.importListBox.Items.Count -eq $syncHash.importListBox.SelectedItems.Count) { $syncHash.importListBox.UnselectAll() } 
@@ -2524,7 +2549,17 @@ $syncHash.itemRefresh.Add_Click( {
         $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingObjectToolDefFlyout.Background.Color).ToString()
         $syncHash.settingChildWindow.Title = 'Define Tool'
         $syncHash.settingChildWindow.ShowCloseButton = $false
-        Set-CurrentPane -SyncHash $syncHash -Panel 'settingObjectToolDefFlyout'
+
+        switch ($syncHash.settingObjectToolsPropGrid.SelectedItem.toolType) {
+            'CommandGrid' {  Set-CurrentPane -SyncHash $syncHash -Panel 'settingObjectToolCommandGrid'; break }
+            'Select' {  Set-CurrentPane -SyncHash $syncHash -Panel 'settingObjectToolSelect' }
+            'Execute' {  Set-CurrentPane -SyncHash $syncHash -Panel 'settingObjectToolExecute' }
+            'Grid' {  Set-CurrentPane -SyncHash $syncHash -Panel 'settingObjectToolGrid' }
+            
+        }
+            
+
+       # Set-CurrentPane -SyncHash $syncHash -Panel 'settingObjectToolDefFlyout'
     }
 
     elseif ($button.Name -match 'settingObjectToolsClearItem') {
