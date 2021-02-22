@@ -2795,9 +2795,10 @@ function Find-ObjectLogs {
                                                                               
                         if ($hostConnectivity.Online) { 
                             if (Test-Path "\\$($log.ComputerName)\c$") {
-                                $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue }
+                                $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue 
                             }
-                            else { $hostConnectivity.Online = 'Failed' }
+                            else { $sessionInfo = 'Failed' }
+                        }
 
                         if ($hostConnectivity.IPV4Address) { $hostLocation = Resolve-Location -computerName $log.ComputerName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
                         
@@ -2815,12 +2816,13 @@ function Find-ObjectLogs {
                             
                                     UserName        = $match.SamAccountName
                             
-                                    Connectivity    = 'failed' #($hostConnectivity.Online).toString()
+                                    Connectivity    = ($hostConnectivity.Online).toString()
                             
                                     IPAddress       = $hostConnectivity.IPV4Address
                             
-                                    userOnline      = if ($sessionInfo) { $true }
-                                    else { $false }
+                                    userOnline      = if ($sessionInfo -eq 'Failed') { 'Failed' }
+                                                      elseif ($sessionInfo) { $true }
+                                                      else { $false }
                             
                                     sessionID       = if ($sessionInfo) { $sessionInfo.sessionID }
                                     else { $null }
@@ -2899,6 +2901,10 @@ function Find-ObjectLogs {
                     } 
                     
                     $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.SamAccountName).LoginLogListView.Refresh() })
+
+                    if (!($queryHash[$match.SamAccountName])) {
+                        exit
+                    }
                                                                                                  
                 }
                 else { $queryHash[$match.SamAccountName].logsSearched = $true }
@@ -2949,8 +2955,10 @@ function Find-ObjectLogs {
                     }
 
                     $compPing = Test-OnlineFast $match.Name
+                    if ($compPing.Online) { 
+                        if (Test-Path "\\$($match.Name)\c$") { $sessionInfo = Get-RDSession -ComputerName $match.Name -ErrorAction SilentlyContinue }                          
+                    }
 
-                    if ($compPing.Online) { $sessionInfo = Get-RDSession -ComputerName $match.Name -ErrorAction SilentlyContinue }
                     if ($compPing.IPV4Address) { $hostLocation = Resolve-Location -computerName $match.Name -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
 
                     foreach ($log in ($queryHash.$($match.Name).LoginLogRaw |

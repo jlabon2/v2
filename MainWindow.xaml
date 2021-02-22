@@ -893,16 +893,19 @@
 
                         <Setter Property="Content" Value="" />
                         <Setter Property="Foreground" Value="LightGreen" />
+                        <Setter Property="ToolTip" Value="Session exists for user" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding userOnline, Mode=OneWay}" Value="Failed">
 
-                        <Setter Property="Content" Value="" />
-                        <Setter Property="Foreground" Value="Purple" />
+                        <Setter Property="Content" Value="" />
+                        <Setter Property="Foreground" Value="Yellow" />
+                        <Setter Property="ToolTip" Value="Could not determine session" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding userOnline, Mode=OneWay}" Value="False">
 
                         <Setter Property="Content" Value="" />
                         <Setter Property="Foreground" Value="IndianRed" />
+                        <Setter Property="ToolTip" Value="No session exists for user" />
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
