@@ -244,7 +244,10 @@ function Set-InfoPaneContent {
 
     foreach ($type in $typeArray) {
         $SyncHash.('infoPane' + $type + 'List').Blocks.Clear()
-        $flowPara = New-Object -TypeName System.Windows.Documents.Paragraph
+        $flowPara = New-Object -TypeName System.Windows.Documents.Paragraph -Property @{
+                    Margin  = 0
+                    Padding = 0
+        }
 
         if ($type -ne 'customvars') {
 
@@ -709,7 +712,7 @@ function Add-CustomItemBoxControls {
                         Name  = ($type + $i + 'Border')
                     }
 
-                    ($type + $i + 'Grid')        = New-Object -TypeName System.Windows.Controls.Grid
+                    ($type + $i + 'Grid')        = New-Object -TypeName System.Windows.Controls.Grid 
                     ($type + $i + 'DockPanel')   = New-Object -TypeName System.Windows.Controls.DockPanel
                     ($type + $i + 'StackPanel')  = New-Object -TypeName System.Windows.Controls.StackPanel -Property @{Style = $SyncHash.Window.FindResource('itemStackPanel') }
 
@@ -717,6 +720,8 @@ function Add-CustomItemBoxControls {
                         Style = $SyncHash.Window.FindResource('itemBoxHeader')
                         Name  = ($type + $i + 'Header')           
                     }
+
+                    ($type + $i + 'HeaderViewBox')     = New-Object -TypeName System.Windows.Controls.ViewBox -Property @{Style = $SyncHash.Window.FindResource('itemHeaderViewBox') }
 
                     ($type + $i + 'EditClip')    = New-Object -TypeName System.Windows.Controls.Label -Property @{
                         Style = $SyncHash.Window.FindResource('itemEditClip')
@@ -761,7 +766,8 @@ function Add-CustomItemBoxControls {
 
                 $SyncHash.(($type + $i + 'resources')).($type + $i + 'Border').AddChild($SyncHash.(($type + $i + 'resources')).($type + $i + 'Grid'))
                 $SyncHash.(($type + $i + 'resources')).($type + $i + 'Grid').AddChild($SyncHash.(($type + $i + 'resources')).($type + $i + 'DockPanel'))
-                $SyncHash.(($type + $i + 'resources')).($type + $i + 'DockPanel').AddChild($SyncHash.(($type + $i + 'resources')).($type + $i + 'Header'))
+                $SyncHash.(($type + $i + 'resources')).($type + $i + 'HeaderViewBox').AddChild($SyncHash.(($type + $i + 'resources')).($type + $i + 'Header'))
+                  $SyncHash.(($type + $i + 'resources')).($type + $i + 'DockPanel').AddChild($SyncHash.(($type + $i + 'resources')).($type + $i + 'HeaderViewBox'))
                 $SyncHash.(($type + $i + 'resources')).($type + $i + 'DockPanel').AddChild($SyncHash.(($type + $i + 'resources')).($type + $i + 'EditClip'))
                 $SyncHash.(($type + $i + 'resources')).($type + $i + 'Grid').AddChild($SyncHash.(($type + $i + 'resources')).($type + $i + 'ViewBox'))
                 $SyncHash.(($type + $i + 'resources')).($type + $i + 'ViewBox').AddChild($SyncHash.(($type + $i + 'resources')).($type + $i + 'TextBox'))
@@ -961,12 +967,12 @@ function Add-CustomToolControls {
 
                                     $rsArgs = @{
                                         Name            = 'ItemTool'
-                                        ArgumentList    = @($SyncHash.snackMsg.MessageQueue, $toolID, $ConfigHash, $queryHash, $SyncHash.Window, $varHash)
+                                        ArgumentList    = @($toolID, $ConfigHash, $queryHash, $SyncHash.Window, $varHash, $syncHash.adHocConfirmWindow, $syncHash.adHocConfirmText, $SyncHash.snackMsg.MessageQueue)
                                         ModulesToImport = $configHash.modList
                                     }
 
                                     Start-RSJob @rsArgs -ScriptBlock {
-                                        Param($queue, $toolID, $ConfigHash, $queryHash, $window, $varHash)
+                                        Param($toolID, $ConfigHash, $queryHash, $window, $varHash, $confirmWindow, $textBlock, $queue)
 
                                         $toolName = ($ConfigHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
                                         Set-CustomVariables -VarHash $varHash
@@ -1541,9 +1547,9 @@ function Set-QueryVarsToUpdate {
 
     
     switch ($type) {
-        'User' { if ($ConfigHash.varListConfig.UpdateFrequency -match 'User Queries|All Queries') { $ConfigHash.varData.UpdateUser = $true } }
+        'User' { $ConfigHash.varData.UpdateUser = $true } 
 
-        'Comp' { if ($ConfigHash.varListConfig.UpdateFrequency -match 'Comp Queries|All Queries') { $ConfigHash.varData.UpdateComp = $true } }
+        'Comp' { $ConfigHash.varData.UpdateComp = $true }
     }
 }
 
@@ -1873,6 +1879,7 @@ function Start-CustomItemSelection {
     
     if ($control -eq 'ListBox') { $switchValue = $syncHash.ItemToolADSelectionButton.Tag}
     else { $switchValue = $syncHash.ItemToolGridADSelectionButton.Tag }
+
 
     switch ($switchValue) {
         'AD Object (any)' { Get-CustomItem -ConfigHash $configHash -SyncHash $syncHash -Control $Control -Type AD -Scope All}
@@ -2786,7 +2793,12 @@ function Find-ObjectLogs {
                                             
                         $hostConnectivity = Test-OnlineFast -ComputerName $log.ComputerName
                                                                               
-                        if ($hostConnectivity.Online) { $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue }
+                        if ($hostConnectivity.Online) { 
+                            if (Test-Path "\\$($log.ComputerName)\c$") {
+                                $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue }
+                            }
+                            else { $hostConnectivity.Online = 'Failed' }
+
                         if ($hostConnectivity.IPV4Address) { $hostLocation = Resolve-Location -computerName $log.ComputerName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
                         
                         if ($log.ClientName) { $clientOnline = Test-OnlineFast -ComputerName ($log.ClientName -replace ' ') }      
@@ -2803,7 +2815,7 @@ function Find-ObjectLogs {
                             
                                     UserName        = $match.SamAccountName
                             
-                                    Connectivity    = ($hostConnectivity.Online).toString()
+                                    Connectivity    = 'failed' #($hostConnectivity.Online).toString()
                             
                                     IPAddress       = $hostConnectivity.IPV4Address
                             

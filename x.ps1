@@ -74,12 +74,12 @@ The variables below can be referenced or manipulated within the scriptblocks.
     }
     'settingItemToolsContent' =  [PSCustomObject]@{
         'Body'  = @' 
-Tools are advanced actions that can be used on queried users or computers or as standalone tools independent of either. Each tool is defined below. The TOOL NAME field is the name used on the tool label, and is used when the results of the tool is logged. The TOOL TYPE defines the template and presentation of tools. These are defined below and are described in detail within the definition window’s information section. The OBJECT TYPE refers to where the tool will be accessible - either on users, computers, both, or as a standalone tool in the tool tab. 
+Tools are advanced actions that can be used on queried users or computers or as standalone tools independent of either. Configuring and adding new tools can be done in the preceding table. For each entry, the TOOL NAME field is the name used on the tool label, and is used when the results of the tool is logged. The TOOL TYPE defines the template and presentation of tools. There are several different tool types - these are defined below and are described in detail within the information pane when defining the respective tool. The OBJECT TYPE refers to where the tool will be used - either on users, computers, both, or as a standalone tool in the tool tab. The DEF button opens the definition pane for the respective tool.
 '@
     'Types' = [ordered]@{
-	    ‘Execute’ = ‘Execute tools are the most basic tool types. They simply execute the defined scriptblock.’
-	    ‘Select’ = ‘Selection tools query data from a defined source and allow the returned data, populated into a list, to be selected and then used to manipulate the current, queried user or computer (or the listed items themselves) through a defined action. These are designed for single property arrays.’
-	    ‘Grid’ = 'Grid tools are similar to select tools - they similarly allow querying data but allow items with multiple properties. These need not be tied to any action - the grid contents can be exported into HTML reports.'
+	    ‘Execute’ = ‘Execute tools are the most basic tool types. When accessed, they simply execute the defined scriptblock.’
+	    ‘Select’ = ‘Selection tools query data from a defined source and allow the returned data, populated as a list, to be selected and then used to manipulate the current, queried user or computer (or the listed items themselves) through a defined action. These are designed for single property lists.’
+	    ‘Grid’ = 'Grid tools are similar to select tools - they allow querying data but allow items with multiple properties. These need not be tied to any action - the grid contents can be exported into HTML reports.'
 	    'CommandGrid' = 'The command grid tool allows defining a series of queries. Each defined query has an associated action - if the query returns anything but the boolean ''true'' the action will be eligible to run. This is useful for running a set of actions for similar processes (e.g. diagnostics, user outboarding, etc).'
     }
 }
@@ -240,9 +240,41 @@ To be completed.. settingObjectToolCommandGrid
 }
 'settingObjectToolSelect' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingObjectToolSelect
+Selection tools query data from a defined source and allow the returned data, populated into a list, to be selected and then used to manipulate the current, queried user or computer (or the listed items themselves) through a defined action. These are designed for single property arrays.
+
+There are several sections to configure for a select tool definition. Firstly, a short description of what the tool does can be added in the DESCRIPTION block. This will appear in the dialog after the tool is opened and allows the opportunity to give a short explanation to the administrator of what the tool queries and what actions it will execute. 
+
+Next, the selection query must be defined. This can be done through a variety of ways. A reference object can be defined (see the TYPES list below for a full listing and explanation of each) by selecting the PROMPT REFERENCE OBJECT option, and selecting the desired object type in the combo box. This will allow an administrator, when using the tool, to be prompted to select a reference object of that type. This reference object can then be used in the SELECTION scriptblock to query and return a set of data. Or, conversely, no reference object can be set for selection and the scriptblock defined without relying on one as a data source. The output will be used in populating the select list. The output of the scriptblock should have only one property, and that property must be expanded (i.e. by using Select-Object’s –ExpandProperty option to remove the data’s property name header).
+
+A secondary query can be optionally defined in the TARGET ITEM ADDITIONAL DATA scriptblock. The target item refers to the currently active user or computer. Using this block, variables can be set and later used in the execution scriptblock.
+
+Then, an action itself must be defined in the SCRIPTBLOCK block. When executed, this will script for each item selected in the list. 
+
+Lastly, miscellaneous settings can be configured. The name of the tool – to be used in the tool’s respective action button as the tool tip – can be added. This can be more descriptive than the name previously set in the tool table that is used as the button’s label. The icon can also be set – which is also displayed on the button. Finally, the MULTISELECT option allows selecting more than one item in the list.
 '@
-        'Types' = @{}
+        'Vars' = [ordered]@{
+        '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+        '$activeObjectData' = 'A collection of the AD properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+        '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
+        '$inputObject' = 'The value returned from the reference object selection. Only applicable in the SELECTION sciptblock.'
+        '$selectedItem' = 'While executing, each selected item will be iterated through and given this variable. Only appliable to the SCRIPTBLOCK block for execution.'
+        }
+
+        'Types' = [ordered]@{	
+        ‘AD User’ = ‘Prompts for the selection of an AD user.’
+        ‘AD Computer' = ‘Prompts for the selection of an AD computer.’
+        ‘AD Group' = ‘Prompts for the selection of an AD group.’
+        ‘AD Object (any)’ = ‘Prompts for the selection of any of the above AD objects.’
+        ‘OU’ = ‘Prompts for the selection of an organization unit or container.’
+        ‘String’ = ‘Prompts for the input of a string.’
+        ‘Integer’= ‘Prompts for the input of a number.’
+        ‘Choice' = ‘Prompts for the selection from a defined list. This list can be defined in the nearby textbox after selecting CHOICE as the reference object. Entries must be separated by a comma.’
+        ‘File’ = ‘Prompts for the selection of a file.’
+        ‘Directory’ = ‘Prompts for the selection of a directory.’
+        } 
+
+
+
 }
 'settingObjectToolExecute' =  [PSCustomObject]@{
         'Body'  = @' 
@@ -1302,11 +1334,11 @@ $syncHash.tabMenu.add_Loaded( {
                     }
                 }
         
-                if ($configHash.($type + 'boxCount') -le 7) { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.($type + 'detailGrid').Columns = 1 }) }
+                if ($configHash.($type + 'boxCount') -ge 7) { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.($type + 'detailGrid').Columns = 2 }) }
 
-                elseif ($configHash.($type + 'boxCount') -gt 7 -and $configHash.($type + 'boxCount') -le 14) { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.($type + 'detailGrid').Columns = 2 }) }
+               
             
-                else { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.($type + 'detailGrid').Columns = 3 }) }
+                else { $syncHash.Window.Dispatcher.Invoke([Action] { $syncHash.($type + 'detailGrid').Columns = 1 }) }
             }
             # populate compgrid connection button icons           
             foreach ($buttonType in @('rbut', 'rcbut')) {

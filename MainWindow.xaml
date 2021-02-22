@@ -59,7 +59,7 @@
             <Style x:Key="varNameRun" TargetType="Run">
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentBase}" />
-                <Setter Property="FontSize" Value="12.5" />
+                <Setter Property="FontSize" Value="11" />
             </Style>
 
             <Style x:Key="varDescRun" TargetType="Run">
@@ -710,19 +710,25 @@
                 TargetType="{x:Type Label}">
                 <Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.SystemControlBackgroundBaseMediumLow}" />
                 <Setter Property="FontSize" Value="14" />
-                <Setter Property="Margin" Value="-2,-6,0,0" />
+                <Setter Property="Margin" Value="0,-6,0,0" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
             </Style>
 
             <Style x:Key="itemViewBox" TargetType="{x:Type Viewbox}">
                 <Setter Property="HorizontalAlignment" Value="Left" />
-                <Setter Property="Margin" Value="-2,0,0,0" />
-                <Setter Property="MaxHeight" Value="35" />
+                <Setter Property="Margin" Value="0,0,0,0" />
                 <Setter Property="MinWidth" Value="30" />
-                <Setter Property="MinHeight" Value="20" />
-                <Setter Property="StretchDirection" Value="Both" />
+                <Setter Property="MinHeight" Value="30" />
+                <Setter Property="StretchDirection" Value="DownOnly" />
                 <Setter Property="Stretch" Value="Uniform" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style
+                x:Key="itemHeaderViewBox"
+                BasedOn="{StaticResource itemViewBox}"
+                TargetType="{x:Type Viewbox}">
+                <Setter Property="VerticalAlignment" Value="Top" />
             </Style>
 
             <Style x:Key="itemBorder" TargetType="{x:Type Border}">
@@ -888,7 +894,11 @@
                         <Setter Property="Content" Value="" />
                         <Setter Property="Foreground" Value="LightGreen" />
                     </DataTrigger>
+                    <DataTrigger Binding="{Binding userOnline, Mode=OneWay}" Value="Failed">
 
+                        <Setter Property="Content" Value="" />
+                        <Setter Property="Foreground" Value="Purple" />
+                    </DataTrigger>
                     <DataTrigger Binding="{Binding userOnline, Mode=OneWay}" Value="False">
 
                         <Setter Property="Content" Value="" />
@@ -1242,8 +1252,11 @@
                                                             <Setter Property="FontSize" Value="14" />
                                                             <Setter Property="ToolTip" Value="Search object" />
                                                             <Setter Property="Foreground" Value="Silver" />
+                                                            <Setter Property="IsEnabled" Value="True" />
                                                             <Style.Triggers>
-
+                                                                <DataTrigger Binding="{Binding SubjectName, UpdateSourceTrigger=PropertyChanged}" Value="[N/A]">
+                                                                    <Setter Property="IsEnabled" Value="False" />
+                                                                </DataTrigger>
                                                                 <Trigger Property="IsMouseOver" Value="True">
                                                                     <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
                                                                 </Trigger>
@@ -1723,6 +1736,7 @@
             <simpleChildWindow:ChildWindow
                 x:Name="itemToolDialog"
                 Title="Confirm"
+                Padding="50,0,50,0"
                 AllowMove="True"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
                 BorderThickness="1"
@@ -1736,9 +1750,53 @@
 
                 <Grid
                     Name="itemToolDialogContent"
-                    HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+
+
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ElementName=itemToolGridSelect, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Visible" />
+                                        <Condition Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Visible" />
+                                    </MultiDataTrigger.Conditions>
+                                    <MultiDataTrigger.Setters>
+                                        <Setter Property="MaxWidth" Value="1500" />
+                                    </MultiDataTrigger.Setters>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ElementName=itemToolListSelectListBox, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Visible" />
+                                        <Condition Binding="{Binding ElementName=itemToolListSelect, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Visible" />
+                                    </MultiDataTrigger.Conditions>
+                                    <MultiDataTrigger.Setters>
+                                        <Setter Property="MaxWidth" Value="1500" />
+                                    </MultiDataTrigger.Setters>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ElementName=itemToolGridSelect, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Visible" />
+                                        <Condition Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Collapsed" />
+                                    </MultiDataTrigger.Conditions>
+                                    <MultiDataTrigger.Setters>
+                                        <Setter Property="MaxWidth" Value="300" />
+                                    </MultiDataTrigger.Setters>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ElementName=itemToolListSelectListBox, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Collapsed" />
+                                        <Condition Binding="{Binding ElementName=itemToolListSelect, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Visible" />
+                                    </MultiDataTrigger.Conditions>
+                                    <MultiDataTrigger.Setters>
+                                        <Setter Property="MaxWidth" Value="300" />
+                                    </MultiDataTrigger.Setters>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
                     <Controls:Flyout
                         Name="itemToolCustomDialog"
                         Width="{Binding ElementName=itemToolDialogContent, Path=ActualWidth}"
@@ -1771,7 +1829,7 @@
                                 Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}" />
                             <ComboBox
                                 Name="itemToolCustomContentChoice"
-                                Width="100"
+                                Width="260"
                                 Height="40"
                                 Margin="0,0,0,0"
                                 Padding="5,0,5,0"
@@ -1839,10 +1897,21 @@
                         </DockPanel>
                         <DockPanel
                             Name="itemToolListSelect"
-                            Width="350"
-                            HorizontalAlignment="Center"
+                            MinWidth="300"
                             Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
                             Visibility="Collapsed">
+                            <DockPanel.Style>
+                                <Style TargetType="DockPanel">
+                                    <Setter Property="MaxWidth" Value="300" />
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=itemToolListSelectListBox, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Visible">
+                                            <Setter Property="MaxWidth" Value="1500" />
+                                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DockPanel.Style>
 
                             <TextBlock
                                 Name="itemToolListSelectText"
@@ -1891,7 +1960,7 @@
                                 <ProgressBar
                                     Name="itemTooListBoxProgress"
                                     Width="175"
-                                    Margin="40,20,0,0"
+                                    Margin="0,20,0,0"
                                     HorizontalAlignment="Center"
                                     IsIndeterminate="True"
                                     Style="{StaticResource MaterialDesignLinearProgressBar}"
@@ -1966,8 +2035,8 @@
                             </DockPanel>
                             <ListBox
                                 Name="itemToolListSelectListBox"
-                                Width="300"
                                 Height="300"
+                                MaxWidth="1500"
                                 Margin="15,-25,15,15"
                                 BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
                                 BorderThickness="1"
@@ -2053,10 +2122,20 @@
                         <DockPanel
                             Name="itemToolGridSelect"
                             MinWidth="300"
-                            MaxWidth="850"
-                            HorizontalAlignment="Stretch"
                             Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
                             Visibility="Collapsed">
+                            <DockPanel.Style>
+                                <Style TargetType="DockPanel">
+                                    <Setter Property="MaxWidth" Value="300" />
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Visibility, UpdateSourceTrigger=PropertyChanged}" Value="Visible">
+                                            <Setter Property="MaxWidth" Value="1600" />
+                                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DockPanel.Style>
 
                             <TextBlock
                                 Name="itemToolGridSelectText"
@@ -2223,10 +2302,10 @@
                             <DataGrid
                                 Name="itemToolGridItemsGrid"
                                 Height="315"
-                                MaxWidth="800"
+                                MaxWidth="1500"
                                 Margin="25,-5,25,15"
                                 Padding="0"
-                                HorizontalAlignment="Center"
+                                HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
                                 HorizontalContentAlignment="Stretch"
                                 Panel.ZIndex="0"
@@ -2737,6 +2816,7 @@
                                                     <FlowDocumentScrollViewer
                                                         Margin="-17.5,-17.5,0,0"
                                                         HorizontalScrollBarVisibility="Disabled"
+                                                        SelectionBrush="#FF4A5763"
                                                         VerticalScrollBarVisibility="Disabled">
                                                         <FlowDocument
                                                             Name="infoPaneTypesList"
@@ -2754,6 +2834,7 @@
                                                     <FlowDocumentScrollViewer
                                                         Margin="-17.5,-17.5,0,0"
                                                         HorizontalScrollBarVisibility="Disabled"
+                                                        SelectionBrush="#FF4A5763"
                                                         VerticalScrollBarVisibility="Disabled">
                                                         <FlowDocument
                                                             Name="infoPaneTipsList"
@@ -2770,7 +2851,9 @@
 
                                                     <FlowDocumentScrollViewer
                                                         Margin="-17.5,-17.5,0,0"
+                                                        Padding="0"
                                                         HorizontalScrollBarVisibility="Disabled"
+                                                        SelectionBrush="#FF4A5763"
                                                         VerticalScrollBarVisibility="Disabled">
                                                         <FlowDocument
                                                             Name="infoPaneVarsList"
@@ -2788,6 +2871,7 @@
                                                     <FlowDocumentScrollViewer
                                                         Margin="-17.5,-17.5,0,0"
                                                         HorizontalScrollBarVisibility="Disabled"
+                                                        SelectionBrush="#FF4A5763"
                                                         VerticalScrollBarVisibility="Disabled">
                                                         <FlowDocument
                                                             Name="infoPaneCustomVarsList"
@@ -7950,20 +8034,29 @@
                                                 </DockPanel>
                                             </Expander.Header>
 
-                                            <StackPanel>
-                                                <StackPanel Name="userDetailMainPanel">
+                                            <DockPanel>
+                                                <DockPanel Name="userDetailMainPanel">
+                                                    <ScrollViewer Margin="6,0,0,0">
+                                                        <ScrollViewer.Resources>
+                                                            <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
+                                                                <Setter Property="Margin" Value="-4,0,-6,0" />
+                                                            </Style>
+                                                        </ScrollViewer.Resources>
+                                                        <UniformGrid Name="userDetailGrid" Columns="3" />
+                                                    </ScrollViewer>
+                                                </DockPanel>
 
-                                                    <UniformGrid Name="userDetailGrid" Columns="3">
-                                                        <!--  Replicate  -->
-                                                    </UniformGrid>
-                                                </StackPanel>
-
-                                                <StackPanel Name="compDetailMainPanel">
-                                                    <UniformGrid Name="compDetailGrid" Columns="3">
-                                                        <!--  CompReplicate  -->
-                                                    </UniformGrid>
-                                                </StackPanel>
-                                            </StackPanel>
+                                                <DockPanel Name="compDetailMainPanel">
+                                                    <ScrollViewer Margin="6,0,0,0">
+                                                        <ScrollViewer.Resources>
+                                                            <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
+                                                                <Setter Property="Margin" Value="-4,0,-6,0" />
+                                                            </Style>
+                                                        </ScrollViewer.Resources>
+                                                        <UniformGrid Name="compDetailGrid" Columns="3" />
+                                                    </ScrollViewer>
+                                                </DockPanel>
+                                            </DockPanel>
                                         </Expander>
                                         <GridSplitter
                                             Grid.Row="1"
@@ -8926,6 +9019,9 @@
                                                         HorizontalScrollBarVisibility="Disabled"
                                                         PanningRatio=".5"
                                                         VerticalScrollBarVisibility="Auto">
+                                                        <ScrollViewer.Resources>
+                                                            <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}" />
+                                                        </ScrollViewer.Resources>
                                                         <StackPanel>
                                                             <WrapPanel
                                                                 Name="userToolControlPanel"
@@ -9511,18 +9607,23 @@
                                                                                     Content=""
                                                                                     FontFamily="Segoe MDL2 Assets"
                                                                                     FontSize="14"
-                                                                                    IsTabStop="False">
+                                                                                    IsTabStop="False"
+                                                                                    Tag="{Binding SubjectName}">
                                                                                     <Button.Style>
                                                                                         <Style BasedOn="{StaticResource MaterialDesignToolButton}" TargetType="Button">
                                                                                             <Setter Property="Content" Value="" />
                                                                                             <Setter Property="FontSize" Value="14" />
                                                                                             <Setter Property="ToolTip" Value="Search object" />
                                                                                             <Setter Property="Foreground" Value="Silver" />
+                                                                                            <Setter Property="IsEnabled" Value="True" />
                                                                                             <Style.Triggers>
-
                                                                                                 <Trigger Property="IsMouseOver" Value="True">
                                                                                                     <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
                                                                                                 </Trigger>
+                                                                                                <DataTrigger Binding="{Binding SubjectName, UpdateSourceTrigger=PropertyChanged}" Value="[N/A]">
+                                                                                                    <Setter Property="IsEnabled" Value="False" />
+                                                                                                </DataTrigger>
+
                                                                                             </Style.Triggers>
                                                                                         </Style>
                                                                                     </Button.Style>
