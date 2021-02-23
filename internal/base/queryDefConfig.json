@@ -1,0 +1,6 @@
+{
+    "ID":  1,
+    "Name":  "Username",
+    "QueryDefTypeList":  null,
+	"QueryDefType":  "SamAccountName"
+}

@@ -1,0 +1,9 @@
+{
+    "ToolID":  1,
+    "SetName":  null,
+    "queryCmd":  "Check-Something -UserName $user",
+    "actionCmd": "Do-Something -UserName $user",
+	"actionCmdValid":  "null",
+	"queryCmdValid":  "null"
+	
+}
