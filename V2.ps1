@@ -11,7 +11,7 @@ if ($host.name -eq 'ConsoleHost') {
     $global:baseConfigPath = Split-Path $PSCommandPath
 }
 
-else { $global:baseConfigPath ='C:\TempData' }
+else { $global:baseConfigPath ='C:\v2' }
 # update default rdp / msra values (command AND default to comp'
 
 
@@ -59,16 +59,36 @@ The variables below can be referenced or manipulated within the scriptblocks.
             '$result [Result Presentation]'      = 'The actual value of the returned Active Directory property.'
             '$resultColor [Result Presentation]' = 'Setting the resultColor will determine the color of the returned value. This uses all valid .NET brush names and HEX values.'
             '$user [Actionable Items]'           = 'The value of the current, queried user. Only populated on action buttons for user properties.'
+            '$actionObject [Actionable Items] '  = 'General variable containing hte name of queried object (i.e. the user or computer)'
+            '$propName [Actionable Items]'       = 'The name of the property attached to the field. Not applicable to non-AD queries.'
+            '$prop [Actionable Items]'           = 'The value of the queried property attached to the field.'
+            '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+            '$activeObjectData' = 'A collection of the AD properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+            '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
+        }
+    }
+    'settingPropCompDefine'  = [PSCustomObject]@{
+        'Body' = @'
+These fields define how the selected property will function in regards to the button type selected in the previous table. 
+
+The 'Result Presentation' scriptblock is present in any non-raw type. This will allow the property returned to be presented as an alternative value (e.g. a TRUE or FALSE value can be passed through an if statement and alternate text can be returned and displayed.
+
+The 'Attached Actions I-II' are buttons that will attach to the returned value when queried. Their respective scriptblock will run when the button is processed. Along each attached action, an icon can be selected for use with the button. The 'Refresh Prop' option will requery Active Directory after the action completes and update the value in the display. The 'New Thread' option will run the action in a new thread, though this may not neccarrily be faster overall for quicker actions.
+
+All script blocks must be validated using the 'Execute' button. This will only execute fully for the results scriptblock, but will altert for syntaxical errors for each button's respective scriptblock.
+
+The variables below can be referenced or manipulated within the scriptblocks.
+'@
+        'Vars' = [ordered]@{          
+            '$result [Result Presentation]'      = 'The actual value of the returned Active Directory property.'
+            '$resultColor [Result Presentation]' = 'Setting the resultColor will determine the color of the returned value. This uses all valid .NET brush names and HEX values.'          
             '$comp [Actionable Items]'           = 'The value of the current, queried computer. Only populated on action buttons for computer properties.'
             '$actionObject [Actionable Items] '  = 'General variable containing hte name of queried object (i.e. the user or computer)'
             '$propName [Actionable Items]'       = 'The name of the property attached to the field. Not applicable to non-AD queries.'
             '$prop [Actionable Items]'           = 'The value of the queried property attached to the field.'
-        }
-    }
-    'settingPropCompDefine'  = [PSCustomObject]@{
-        'Body' = 'TestEdit'
-        'Vars' = @{
-            'One' = 'Test'
+            '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+            '$activeObjectData' = 'A collection of the AD properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+            '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
         }
     }
     'settingItemToolsContent' =  [PSCustomObject]@{
@@ -156,12 +176,14 @@ Since entries are evaluated in reverse order, the last rule - after all others h
 }
     'settingGeneralContent' =  [PSCustomObject]@{
         'Body'  = @' 
-These are general options related to querying and logging.
+These are general options related to querying, logging, and general tool settings.
 '@
 }
    'settingMiscGrid' =  [PSCustomObject]@{
         'Body'  = @' 
 Miscellaneous settings.
+
+The minimum window size sets the smallest size the tool will shrink down to when resized. This is helpful if a lot of content is configured and requires a larger window to show without relying on scroll bars.
 
 The logging path defines where this tool's actions are logged. Ideally, this should be the same network location for all administrators using this tool. 
 
@@ -220,6 +242,9 @@ The TARGET USER MUST BE LOGGED IN option will only allow this action's button to
             '$comp'      = 'The computer name of the targeted system. If the queried object is a computer, this variable refers to that item. If it is not, it refers to the selected computer in the queried user''s historical view'
             '$user'      = 'The username of the targeted user.  If the queried object is a user, this variable refers to that item. If it is not, it refers to the selected user in the queried computer''s historical view'
             '$sessionID' = 'The session ID of the targeted user, if the selected item in the historical view has an active session.'
+            '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+            '$activeObjectData' = 'A collection of the AD properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+            '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
                      
         }
 
@@ -283,9 +308,41 @@ To be completed.. settingObjectToolExecute
 }
 'settingObjectToolGrid' =  [PSCustomObject]@{
         'Body'  = @' 
-To be completed.. settingObjectToolGrid
+Grid tools query data from a defined source and allow the returned data, populated into a grid supporting multiple properties, to be selected and then used to manipulate the current, queried user or computer (or the listed items themselves) through a defined action. These are designed for multiple property collections.
+
+There are several sections to configure for a grid tool definition. Firstly, a short description of what the tool does can be added in the DESCRIPTION block. This will appear in the dialog after the tool is opened and allows the opportunity to give a short explanation to the administrator of what the tool queries and what actions it will execute. 
+
+Next, the selection query must be defined. This can be done through a variety of ways. A reference object can be defined (see the TYPES list below for a full listing and explanation of each) by selecting the PROMPT REFERENCE OBJECT option, and selecting the desired object type in the combo box. This will allow an administrator, when using the tool, to be prompted to select a reference object of that type. This reference object can then be used in the SELECTION scriptblock to query and return a set of data. Or, conversely, no reference object can be set for selection and the scriptblock defined without relying on one as a data source. The output will be used in populating the select list. The output of the scriptblock should have only one property, and that property must be expanded (i.e. by using Select-Object’s –ExpandProperty option to remove the data’s property name header).
+
+A secondary query can be optionally defined in the TARGET ITEM ADDITIONAL DATA scriptblock. The target item refers to the currently active user or computer. Using this block, variables can be set and later used in the execution scriptblock.
+
+Then, an action itself must be defined in the SCRIPTBLOCK block. When executed, this will script for each item selected in the list. 
+
+Lastly, miscellaneous settings can be configured. The name of the tool – to be used in the tool’s respective action button as the tool tip – can be added. This can be more descriptive than the name previously set in the tool table that is used as the button’s label. The icon can also be set – which is also displayed on the button. Finally, the MULTISELECT option allows selecting more than one item in the list.
 '@
-        'Types' = @{}
+        'Vars' = [ordered]@{
+        '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+        '$activeObjectData' = 'A collection of the AD properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+        '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
+        '$inputObject' = 'The value returned from the reference object selection. Only applicable in the SELECTION sciptblock.'
+        '$selectedItem' = 'While executing, each selected item will be iterated through and given this variable. Only appliable to the SCRIPTBLOCK block for execution.'
+        }
+
+        'Types' = [ordered]@{	
+        ‘AD User’ = ‘Prompts for the selection of an AD user.’
+        ‘AD Computer' = ‘Prompts for the selection of an AD computer.’
+        ‘AD Group' = ‘Prompts for the selection of an AD group.’
+        ‘AD Object (any)’ = ‘Prompts for the selection of any of the above AD objects.’
+        ‘OU’ = ‘Prompts for the selection of an organization unit or container.’
+        ‘String’ = ‘Prompts for the input of a string.’
+        ‘Integer’= ‘Prompts for the input of a number.’
+        ‘Choice' = ‘Prompts for the selection from a defined list. This list can be defined in the nearby textbox after selecting CHOICE as the reference object. Entries must be separated by a comma.’
+        ‘File’ = ‘Prompts for the selection of a file.’
+        ‘Directory’ = ‘Prompts for the selection of a directory.’
+        } 
+
+
+
 }
 'settingVarDataGrid' =  [PSCustomObject]@{
         'Body'  = @' 
@@ -318,8 +375,8 @@ Import-Module $modList -Force -DisableNameChecking
 
 
 $ConfirmPreference = 'None'
-#Copy-Item -Path  C:\TempData\v3\MainWindow.xaml -Destination C:\TempData\WindowContent.xaml -Force
-Copy-Item -Path '\\labtop\TempData\v3\v3\MainWindow.xaml'  -Destination C:\TempData\WindowContent.xaml -Force
+#Copy-Item -Path  C:\TempData\v3\MainWindow.xaml -Destination C:\v2\WindowContent.xaml -Force
+Copy-Item -Path '\\labtop\TempData\v3\v3\MainWindow.xaml'  -Destination C:\v2\WindowContent.xaml -Force
 $xamlPath = Join-Path $baseConfigPath WindowContent.xaml
 $glyphList = Join-Path $baseConfigPath \internal\base\segoeGlyphs.txt
 
@@ -336,7 +393,7 @@ Set-Config -ConfigPath $savedConfig -Type Import -ConfigHash $configHash
 
 # process loaded data or creates initial item templates for various config datagrids
 @('userPropList', 'compPropList', 'contextConfig', 'objectToolConfig', 'nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig', 'modConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
-@('userLogMapping', 'compLogMapping', 'settingHeaderConfig') | Set-InitialValues -ConfigHash $configHash
+@('userLogMapping', 'compLogMapping', 'settingHeaderConfig', 'SACats') | Set-InitialValues -ConfigHash $configHash
 
 # matches config'd user/comp logins with default headers, creates new headers from custom values
 $defaultList = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
@@ -548,7 +605,7 @@ $syncHash.settingLogo.add_Loaded( {
                
                 $sysCheckHash.checkComplete = $true
 
-                Start-Sleep -Seconds 2
+                Start-Sleep -Seconds 1
 
                 if ($sysCheckHash.sysChecks[0].ADDS -eq $false -or 
                     $sysCheckHash.sysChecks[0].Modules -eq $false -or 
@@ -1568,7 +1625,10 @@ $syncHash.tabControl.add_SelectionChanged( {
         else {
             Get-RSJob -State Completed | Remove-RSJob
             $syncHash.tabControl.IsEnabled = $true
-    
+            
+            $SyncHash.userCompGrid.ItemsSource = $null           
+            $SyncHash.compUserGrid.ItemsSource = $null 
+   
             $configHash.currentTabItem = $syncHash.tabControl.SelectedItem.Name
             $queryHash.Keys | ForEach-Object -Process { $queryHash.$_.ActiveItem = $false }
     
@@ -1612,19 +1672,23 @@ $syncHash.tabControl.add_SelectionChanged( {
                         $currentTabItem = $configHash.currentTabItem
 
                         $type = $queryHash[$currentTabItem].ObjectClass -replace 'Computer', 'Comp'
+                        $statusTable = [hashtable]::Synchronized(@{ })
                         for ($i = 1; $i -le $configHash.boxMax; $i++) {
+                          
                             if ($i -le $configHash.($type + 'boxCount')) {
                             
+                               
+
                                 $rsArgs = @{
                                     Name            = 'displayUpdateSub'
                                     Batch           = 'displayUpdateSub'
-                                    Throttle        = 24
-                                    ArgumentList    = @($syncHash, $queryHash, $configHash, $currentTabItem, $i, $varHash)
+                                    Throttle        = ($configHash.($type + 'boxCount'))
+                                    ArgumentList    = @($syncHash, $queryHash, $configHash, $currentTabItem, $i, $varHash, ($configHash.($type + 'boxCount')), $statusTable)
                                     ModulesToImport = $configHash.modList
                                 }
 
                                 Start-RSJob @rsArgs -ScriptBlock {        
-                                    Param($syncHash, $queryHash, $configHash, $currentTabItem, $i, $varHash)   
+                                    Param($syncHash, $queryHash, $configHash, $currentTabItem, $i, $varHash, $boxCount, $statusTable)   
                                     $type = $queryHash[$currentTabItem].ObjectClass -replace 'Computer', 'Comp'
 
                                     Set-CustomVariables -VarHash $varHash
@@ -1645,27 +1709,32 @@ $syncHash.tabControl.add_SelectionChanged( {
 
                                     if ($selectedBox.PropName -eq 'Non-Ad Property') { ($queryHash[$currentTabItem]) | Add-Member -Force -MemberType NoteProperty -Name ($selectedBox.FieldName) -Value $value }
    
-                                    $syncHash.Window.Dispatcher.invoke([action] {
-
-                                            $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Textbox').Text = $updateHash.Text
-                                            if ($updateHash.Foreground) { $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Textbox').Foreground = $updateHash.Foreground }        
+                                     $statusTable.([string]$i) = $updateHash
                               
-                                        })
                                 }
                             }
                         }
 
-                     
-                        Wait-RSJob -Batch displayUpdateSub
+                        do { Start-Sleep -Seconds 1 } while ($statusTable.Keys.Count -lt ($configHash.($type + 'boxCount')))
+                   
+                        $syncHash.Window.Dispatcher.Invoke([action] {
+                         foreach ($key in $statusTable.Keys) {
+                            $syncHash.($type[0] + 'box' + $key + 'resources').($type[0] + 'box' + $key + 'Textbox').Text = $statusTable.$key.Text
+                            if ($statusTable.$key.Foreground) { $syncHash.($type[0] + 'box' + $key + 'resources').($type[0] + 'box' +$key + 'Textbox').Foreground = $statusTable.$key.Foreground }        
+                         }
+                        })
+                   
+
+
                         if ($queryHash[$currentTabItem].ObjectClass -eq 'User') {  
-                            $syncHash.Window.Dispatcher.invoke([action] {            
+                            $syncHash.Window.Dispatcher.invoke([action] {       
                                     $syncHash.expanderTypeDisplay.Content = 'USER   '
                                     $syncHash.compExpanderTypeDisplay.Content = 'COMPUTERS   '
                                     $syncHash.compDetailMainPanel.Visibility = 'Collapsed'
                                     $syncHash.userDetailMainPanel.Visibility = 'Visible'
                                     $syncHash.expanderDisplay.Content = "$($queryHash[$currentTabItem].Name)"
                                     $syncHash.userExpander.IsExpanded = $true
-                                    $syncHash.userCompGrid.Visibility = 'Visible'
+                                    
                                     $syncHash.expanderProgressBar.Visibility = 'Hidden'
 
                        
@@ -1678,7 +1747,7 @@ $syncHash.tabControl.add_SelectionChanged( {
                         }  
 
                         elseif ($queryHash[$currentTabItem].ObjectClass -eq 'Computer') {  
-                            $syncHash.Window.Dispatcher.invoke([action] {            
+                            $syncHash.Window.Dispatcher.invoke([action] {               
                                     $syncHash.expanderTypeDisplay.Content = 'COMPUTER   '
                                     $syncHash.userDetailMainPanel.Visibility = 'Collapsed'
                                     $syncHash.compDetailMainPanel.Visibility = 'Visible'
@@ -1714,32 +1783,21 @@ $syncHash.tabControl.add_SelectionChanged( {
                             if ($type -eq 'User') {
                                 $syncHash.userCompGrid.Dispatcher.Invoke([Action] { $syncHash.userCompGrid.ItemsSource = ($queryHash[$currentTabItem]).LoginLogListView })
                                 $syncHash.Window.Dispatcher.invoke([action] {
-                                        $syncHash.userCompNotFound.Visibility = 'Hidden'
-                                        $syncHash.userCompDockPanel.Visibility = 'Visible'
-                                        $syncHash.compUserDockPanel.Visibility = 'Collapsed'
                                         $syncHash.compExpander.IsExpanded = $true
                                         $syncHash.compExpanderProgressBar.Visibility = 'Hidden'
-                                        #$syncHash.userCompGrid.UpdateLayout()
                                     })
                             }
                             else {
                                 $syncHash.userCompGrid.Dispatcher.Invoke([Action] { $syncHash.compUserGrid.ItemsSource = ($queryHash[$currentTabItem]).LoginLogListView })
                                 $syncHash.Window.Dispatcher.invoke([action] {
-                                        $syncHash.userCompNotFound.Visibility = 'Hidden'
-                                        $syncHash.userCompDockPanel.Visibility = 'Collapsed'
-                                        $syncHash.compUserDockPanel.Visibility = 'Visible'
                                         $syncHash.compExpander.IsExpanded = $true
                                         $syncHash.compExpanderProgressBar.Visibility = 'Hidden'
-                                        #$syncHash.compUserGrid.UpdateLayout()
                                     })
                             }            
                         }
 
                         else {
                             $syncHash.Window.Dispatcher.invoke([action] {
-                                    $syncHash.userCompNotFound.Visibility = 'Visible'
-                                    $syncHash.compUserDockPanel.Visibility = 'Collapsed'
-                                    $syncHash.userCompDockPanel.Visibility = 'Collapsed'
                                     $syncHash.compExpander.IsExpanded = $true
                                     $syncHash.compExpanderProgressBar.Visibility = 'Hidden'
                                 })
@@ -1751,6 +1809,12 @@ $syncHash.tabControl.add_SelectionChanged( {
         }
     })
         
+$syncHash.settingObjectToolDefFlyout.Add_ClosingFinished({
+    if ($null -ne $syncHash.settingObjectStandaloneCat.Text -and $syncHash.settingObjectStandaloneCat.Text -notin $configHash.SACats) {
+        $configHash.SACats.Add($syncHash.settingObjectStandaloneCat.Text)
+    }
+})
+
 $syncHash.itemToolGridExport.Add_Click({
 
     
@@ -1877,6 +1941,7 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
 
             $toolName = ($configHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
             Set-CustomVariables -VarHash $varHash
+            if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {Remove-Variable ActiveObject, ActiveObjectType, ActiveObjectData -ErrorAction SilentlyContinue}
 
             try {              
                  ([scriptblock]::Create($configHash.objectToolConfig[$toolID - 1].toolAction)).Invoke()     
@@ -2016,22 +2081,10 @@ $syncHash.itemToolSearchBoxClear.Add_Click({ $syncHash.itemToolListSearchBox.Tex
 $syncHash.toolsLogSearchBoxClear.Add_Click({ $syncHash.toolsLogSearchBox.Text = $null })
 $syncHash.itemToolGridSearchBoxClear.Add_Click({ $syncHash.itemToolGridSearchBox.Text = $null })
 
-
-
-
-
-
-
 $syncHash.settingNameDialog.Add_DialogClosing( {
         $syncHash.settingNameDataGrid.Items.Refresh()
         $configHash.nameMapListView.Refresh()
     })
-
-
-
-
-
-
 
 $syncHash.itemToolCommandGridClose.Add_Click( { $syncHash.itemToolDialog.IsOpen = $false }) 
 
@@ -2052,6 +2105,7 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
             Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window, $textBlock, $varhash)
 
             Set-CustomVariables -VarHash $varHash
+            if ($configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].objectType -eq 'Standalone') {Remove-Variable ActiveObject, ActiveObjectType, ActiveObjectData -ErrorAction SilentlyContinue}
             $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].ToolName
 
             try {
@@ -2457,6 +2511,7 @@ $syncHash.itemRefresh.Add_Click( {
             toolExtraValid         = $null
             toolActionConfirm      = $true
             toolActionExportable   = $false
+            toolStandAloneCat      = $null
             toolActionToolTip      = $null
             toolActionIcon         = $null
             toolActionSelectCustom = $false
@@ -2526,6 +2581,7 @@ $syncHash.itemRefresh.Add_Click( {
             
             Set-CustomVariables -VarHash $varHash
 
+
             $actionCmd = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].actionCmd
             $queryCmd = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolCommandGridConfig[$rsCmd.cmdGridItemIndex].queryCmd
             $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].toolName
@@ -2591,6 +2647,7 @@ $syncHash.itemRefresh.Add_Click( {
         $syncHash.settingObjectToolDefFlyout.Height = $syncHash.settingChildHeight.ActualHeight      
         $syncHash.settingObjectToolDefFlyout.IsOpen = $true
         $syncHash.settingObjectToolIcon.ItemsSource = $configHash.buttonGlyphs
+        $syncHash.settingObjectStandaloneCat.ItemsSource = $configHash.SACats
         $syncHash.settingCommandGridToolIcon.ItemsSource = $configHash.buttonGlyphs
         $syncHash.settingChildWindow.TitleBarBackground = ($syncHash.settingObjectToolDefFlyout.Background.Color).ToString()
         $syncHash.settingChildWindow.Title = 'Define Tool'
@@ -2932,9 +2989,6 @@ $syncHash.itemRefresh.Add_Click( {
         $configHash.NameMapList.Remove(($configHash.NameMapList | Where-Object -FilterScript { $_.ID -eq ($syncHash.settingNameDataGrid.SelectedItem.ID) }))
       #  ($configHash.NameMapList | Where-Object -FilterScript { $_.Id -eq ($syncHash.settingNameDataGrid.SelectedItem.ID) })
 
-
-        
-       
         $configHash.NameMapList |
             Where-Object -FilterScript { $_.Id -gt $id } |
                 ForEach-Object -Process { $_.Id = $_.Id - 1 }

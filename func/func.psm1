@@ -384,6 +384,56 @@ Param (
 
     }
 }
+
+function Get-RDRSSession {
+  
+
+    [CmdletBinding()]
+    [OutputType('Cassia.Impl.TerminalServicesSession')]
+
+    param(
+        [Parameter()]
+        [Alias('DSNHostName', 'Name', 'Computer')]
+        [string]$ComputerName = 'localhost',
+
+        [Parameter()]
+        [ValidateSet('Active', 'Connected', 'ConnectQuery', 'Disconnected', 'Down', 'Idle', 'Initializing', 'Listening', 'Reset', 'Shadowing')]
+        [Alias('ConnectionState')]
+        [string]$State = '*',
+
+        [Parameter()]
+        [string]$ClientName = '*',
+
+        [Parameter()]
+        [string]$UserName = '*'
+    )
+
+    begin {
+        $id = "RDRS$(Get-Random)"
+
+        $rsArgs = @{
+            Name            =  $id
+            ArgumentList    = $ComputerName, $State, $ClientName, $UserName
+            ModulesToImport = $configHash.modList
+        }
+
+    }
+
+    process {
+        Start-RSJob @rsArgs -ScriptBlock {
+            param ($ComputerName, $State, $ClientName, $UserName) 
+            Get-RDSession -ComputerName $computerName -UserName $userName
+        } | Out-Null
+    }
+
+    end {
+        Wait-RSJob -Name $id -Timeout 10 | Out-Null
+        if ((Get-RSJob -Name $id).State -ne 'Completed') { 'Failed' }
+        else { Get-RSJob -Name $id | Receive-RSJob }
+    }
+
+}
+
 function Get-RDSession {
   
 
@@ -451,45 +501,7 @@ function Get-RDSession {
     end {}
 }
 
-<#
-.Synopsis
-   Choose an organizational unit from a GUI
-.DESCRIPTION
-   Launches a windows form where you can choose an organizational unit from
-   a treeview. You can change the domain or add an organizational unit from 
-   the context menu.
-.EXAMPLE
-   Choose-ADOrganizationalUnit -HideNewOUFeature
-   This command will show the form containing the OU structure of the
-   current users domain. The New OU feature is hidden from the context menu.
-.EXAMPLE
-   Choose-ADOrganizationalUnit -Domain childdomain.contoso.com -AdvancedFeatures
-   This command will show the form containing the OU structure of the childdomain 
-   of contoso.com. Also the distinguished name can be used (DC=CHILDDOMAIN,DC=CONTOSO,DC=COM).
-   Advanced features are shown at startup.
-.EXAMPLE
-   Choose-ADOrganizationalUnit -Domain contoso.com -Credential CONTOSO\AdminUser
-   This command will show the form containing the OU structure of the
-   CONTOSO.COM domain using alternate credentials. This can also be used from a
-   computer that is not domain-joined.
-.EXAMPLE
-   Choose-ADOrganizationalUnit -RootOU OU=Finance,OU=Departments,DC=CONTOSO,DC=COM
-   This command will show the form containing the OU structure of the
-   CONTOSO.COM domain using the Finance OU as root.
-.OUTPUTS
-   PowerShell object with Name and Distinguished Name of chosen organizational unit.
-.NOTES
-   Author : Michaja van der Zouwen
-   version: 2.3
-   Date   : 14-06-2018
-   New in this version: 
-   *  Change domain option in context menu disabled when only one domain is detected.
-   *  Fixed an issue with domains starting with a 'D'
-   *  Added a Change Farm button to the Change Domain GUI. 
-   Special thanks to @danSpotter for bringing these issues to light!
-.LINK
-   https://itmicah.wordpress.com/2016/03/29/active-directory-ou-picker-revisited/
-#>
+
 function Choose-ADOrganizationalUnit
 {
     [CmdletBinding()]

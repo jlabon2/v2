@@ -168,6 +168,7 @@
                 <Setter Property="FontFamily" Value="{StaticResource MahApps.Fonts.Family.Header}" />
             </Style>
 
+
             <Style
                 x:Key="logGridHeader"
                 BasedOn="{StaticResource MahApps.Styles.DataGridColumnHeader}"
@@ -487,6 +488,21 @@
                         <Setter Property="IsEnabled" Value="True" />
                     </DataTrigger>
                 </Style.Triggers>
+            </Style>
+
+            <Style x:Key="toolsSADock" TargetType="DockPanel">
+                <Setter Property="DockPanel.Dock" Value="Top" />
+            </Style>
+
+            <Style x:Key="toolsSALabel" TargetType="Label">
+                <Setter Property="Margin" Value="25,0,0,0" />
+                <Setter Property="DockPanel.Dock" Value="Top" />
+            </Style>
+
+            <Style x:Key="toolsSAScroll" TargetType="ScrollViewer">
+                <Setter Property="DockPanel.Dock" Value="Top" />
+                <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
             </Style>
 
             <Style
@@ -5630,12 +5646,12 @@
                                         md:HintAssist.IsFloating="True"
                                         Style="{StaticResource flyoutItemBox}"
                                         Text="{Binding Path=ActionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <Separator Margin="-15,-25,0,0" Style="{StaticResource FlyoutSeparator}" />
+                                    <Separator Margin="-15,-35,0,0" Style="{StaticResource FlyoutSeparator}" />
                                     <ScrollViewer
                                         Name="settingContextFlyoutScroller"
                                         Grid.ColumnSpan="4"
                                         Height="305"
-                                        Margin="0,-10,3,-180"
+                                        Margin="0,5,3,-180"
                                         VerticalScrollBarVisibility="Auto">
 
                                         <StackPanel>
@@ -7200,6 +7216,7 @@
                                             Text="{Binding Path=ToolName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
                                         <TextBox
+                                            Name="settingObjectToolType"
                                             md:HintAssist.HelperText="Type"
                                             md:HintAssist.IsFloating="True"
                                             Style="{StaticResource flyoutItemBox}"
@@ -7320,6 +7337,7 @@
                                                     <StackPanel Name="settingObjectToolActionPanel" DataContext="{Binding Mode=TwoWay, ElementName=settingObjectToolsPropGrid, Path=SelectedItem, UpdateSourceTrigger=PropertyChanged}">
 
                                                         <TextBox
+                                                            Width="578.5"
                                                             Height="50"
                                                             Margin="0,15,0,15"
                                                             Padding="-10,0,0,-10"
@@ -7330,10 +7348,11 @@
                                                             AcceptsTab="True"
                                                             Style="{StaticResource MaterialDesignOutlinedTextFieldTextBox}"
                                                             Text="{Binding toolDescription}"
-                                                            TextWrapping="NoWrap"
+                                                            TextWrapping="Wrap"
                                                             VerticalScrollBarVisibility="Auto" />
                                                         <TextBox
                                                             Name="settingObjectToolSelectionScriptBox"
+                                                            Width="578.5"
                                                             Height="100"
                                                             Padding="-10,0,0,-10"
                                                             VerticalAlignment="Top"
@@ -7377,6 +7396,7 @@
                                                         <Separator Margin="30,5,30,5" Style="{StaticResource MaterialDesignLightSeparator}" />
                                                         <TextBox
                                                             Name="settingObjectToolExtraScriptBox"
+                                                            Width="578.5"
                                                             Height="100"
                                                             Padding="-10,0,0,-10"
                                                             VerticalAlignment="Top"
@@ -7430,6 +7450,7 @@
                                                     </StackPanel>
                                                     <TextBox
                                                         Name="settingObjectToolScriptBox"
+                                                        Width="578.5"
                                                         Height="100"
                                                         Padding="-10,0,0,-10"
                                                         VerticalAlignment="Top"
@@ -7539,9 +7560,40 @@
                                                                     </Style>
                                                                 </CheckBox.Style>
                                                             </CheckBox>
+                                                            <Canvas Width="120" Margin="15,8,0,0">
+                                                                <Canvas.Style>
+                                                                    <Style TargetType="Canvas">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding ElementName=settingObjectToolType, Path=Text}" Value="Standalone">
+                                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Canvas.Style>
+
+                                                                <Label
+                                                                    Margin="-5,-11,0,0"
+                                                                    Content="Standalone Category"
+                                                                    FontFamily="Segoe UI"
+                                                                    FontSize="9"
+                                                                    Foreground="DarkGray" />
+                                                                <ComboBox
+                                                                    Name="settingObjectStandaloneCat"
+                                                                    Width="120"
+                                                                    Height="30"
+                                                                    Padding="2"
+                                                                    HorizontalAlignment="Right"
+                                                                    HorizontalContentAlignment="Left"
+                                                                    VerticalContentAlignment="Center"
+                                                                    IsEditable="True"
+                                                                    Style="{StaticResource MaterialDesignComboBox}"
+                                                                    Text="{Binding toolStandAloneCat, Mode=TwoWay}" />
+                                                            </Canvas>
+
                                                             <TextBox
                                                                 Name="settingObjectToolToolTip"
-                                                                Width="280"
+                                                                Width="180"
                                                                 Height="28"
                                                                 Margin="35,10,17,10"
                                                                 Padding="-10,-3,0,-10"
@@ -8263,8 +8315,8 @@
                                                 </DockPanel>
                                             </Expander.Header>
 
-                                            <DockPanel>
-                                                <DockPanel Name="userDetailMainPanel">
+                                            <Grid HorizontalAlignment="Stretch">
+                                                <Grid Name="userDetailMainPanel" HorizontalAlignment="Stretch">
                                                     <ScrollViewer Margin="6,0,0,0">
                                                         <ScrollViewer.Resources>
                                                             <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
@@ -8273,9 +8325,9 @@
                                                         </ScrollViewer.Resources>
                                                         <UniformGrid Name="userDetailGrid" Columns="3" />
                                                     </ScrollViewer>
-                                                </DockPanel>
+                                                </Grid>
 
-                                                <DockPanel Name="compDetailMainPanel">
+                                                <Grid Name="compDetailMainPanel" HorizontalAlignment="Stretch">
                                                     <ScrollViewer Margin="6,0,0,0">
                                                         <ScrollViewer.Resources>
                                                             <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
@@ -8284,8 +8336,8 @@
                                                         </ScrollViewer.Resources>
                                                         <UniformGrid Name="compDetailGrid" Columns="3" />
                                                     </ScrollViewer>
-                                                </DockPanel>
-                                            </DockPanel>
+                                                </Grid>
+                                            </Grid>
                                         </Expander>
                                         <GridSplitter
                                             Grid.Row="1"
@@ -8373,14 +8425,41 @@
                                                     VerticalAlignment="Center"
                                                     Content="No login logs found!"
                                                     FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                    FontSize="16"
-                                                    Visibility="Hidden" />
+                                                    FontSize="16">
+                                                    <Label.Style>
+                                                        <Style TargetType="Label">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding ElementName=compExpander, Path=IsExpanded}" Value="True" />
+                                                                        <Condition Binding="{Binding ElementName=userCompGrid, Path=HasItems}" Value="False" />
+                                                                        <Condition Binding="{Binding ElementName=compUserGrid, Path=HasItems}" Value="False" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </MultiDataTrigger.Setters>
 
-                                                <Grid Name="userCompDockPanel" Visibility="Visible">
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Label.Style>
+                                                </Label>
+                                                <Grid Name="userCompDockPanel">
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="*" />
                                                         <RowDefinition Name="userCompControlRow" Height="115" />
                                                     </Grid.RowDefinitions>
+                                                    <Grid.Style>
+                                                        <Style TargetType="Grid">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ElementName=userCompGrid, Path=HasItems}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Grid.Style>
 
                                                     <DataGrid
                                                         Name="userCompGrid"
@@ -8788,11 +8867,22 @@
                                                     </Border>
                                                 </Grid>
 
-                                                <Grid Name="compUserDockPanel" Visibility="Collapsed">
+                                                <Grid Name="compUserDockPanel">
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="*" />
                                                         <RowDefinition Name="compUserControlRow" Height="115" />
                                                     </Grid.RowDefinitions>
+                                                    <Grid.Style>
+                                                        <Style TargetType="Grid">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ElementName=compUserGrid, Path=HasItems}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Grid.Style>
+
                                                     <DataGrid
                                                         Name="compUserGrid"
                                                         Grid.Row="0"
@@ -9922,7 +10012,7 @@
                                         </Border>
                                     </md:DialogHost.DialogContent>
                                 </md:DialogHost>
-                                <DockPanel>
+                                <DockPanel Name="toolParent">
 
                                     <DockPanel DockPanel.Dock="Top">
                                         <Label
@@ -10050,7 +10140,7 @@
                                     <DockPanel DockPanel.Dock="Top">
                                         <Label
                                             Margin="25,0,0,0"
-                                            Content="Standalone Tools"
+                                            Content="Tools"
                                             DockPanel.Dock="Top" />
                                         <ScrollViewer
                                             DockPanel.Dock="Top"

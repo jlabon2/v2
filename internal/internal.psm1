@@ -345,6 +345,7 @@ function Get-Glyphs {
     $glyphs | ForEach-Object -Process { $null = $ConfigHash.buttonGlyphs.Add($_) }
 }
 
+
 function Set-WPFControls {
     param (
         [Parameter(Mandatory)]$XAMLPath,
@@ -447,6 +448,8 @@ function Set-Config {
             $configHash.rawADValues = $null
             $configHash.currentTabItem = $null
             $configHash.logCollection = $null
+            $configHash.gridExportList = $null
+            $configHash.logCollectionView = $null
 
             #$configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString()
 
@@ -462,20 +465,21 @@ function Set-Config {
 function Set-ConfigMap {
 
      [ordered]@{
-        'Network Mapping' = 'netMapList'
+        'Network Mapping'         = 'netMapList'
         'Computer Categorization' = 'nameMapListView'
-        'User Logs Path' = 'userLogPath'
-        'User Log Mapping' = 'userLogMapping'
-        'Comp Logs Path' = 'compLogPath'
-        'Comp Log Mapping ' = 'compLogMapping'
-        'Item Tools'  = 'objectToolConfig'
-        'Importable Modules' = 'modConfig'
-        'User AD Properties' = 'userPropList'
-        'Computer AD Properties' = 'compPropList'
-        'Query Definitions' = 'queryDefConfig'
-        'Queriable OUs'     = 'searchBaseConfig'
-        'Contextual Actions' = 'contextConfig' 
-        'Tool Logging Path'  = 'actionLogPath'
+        'Remote Tools'            = 'rtConfig'
+        'User Logs Path'          = 'userLogPath'
+        'User Log Mapping'        = 'userLogMapping'
+        'Comp Logs Path'          = 'compLogPath'
+        'Comp Log Mapping '       = 'compLogMapping'
+        'Item Tools'              = 'objectToolConfig'
+        'Importable Modules'      = 'modConfig'
+        'User AD Properties'      = 'userPropList'
+        'Computer AD Properties'  = 'compPropList'
+        'Query Definitions'       = 'queryDefConfig'
+        'Queriable OUs'           = 'searchBaseConfig'
+        'Contextual Actions'      = 'contextConfig' 
+        'Tool Logging Path'       = 'actionLogPath'
     }
 }
 
@@ -510,7 +514,7 @@ function Start-Import {
         Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
 
         $SyncHash.Window.Close()
-        Start-Process -WindowStyle Minimized -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $(Join-Path $baseConfigPath -ChildPath 'x.ps1')"
+        Start-Process -WindowStyle Minimized -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $(Join-Path $baseConfigPath -ChildPath 'v2.ps1')"
         exit
 }
 
@@ -956,7 +960,6 @@ function Add-CustomToolControls {
 
                     $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonGlyph'))
                     $SyncHash.objectTools.('tool' + $tool.ToolID + 'LabelVB1').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'Label1'))
-
                     $SyncHash.objectTools.('tool' + $tool.ToolID + 'buttonContent').AddChild($SyncHash.objectTools.('tool' + $tool.ToolID + 'LabelVB1'))
       
 
@@ -970,7 +973,41 @@ function Add-CustomToolControls {
                         }
                     }
 
-                    $SyncHash.standaloneControlPanel.AddChild($SyncHash.objectTools.('tool' + $tool.ToolID).ToolButton)
+                    if ($tool.toolStandAloneCat -and $tool.toolStandAloneCat -notin $syncHash.SADocks.Keys) {
+                        if (!$syncHash.SADocks) {
+                            $SyncHash.SADocks = @{}
+                        }
+                        
+                        $syncHash.SADocks.($tool.toolStandAloneCat) = @{
+                            Dock      = New-Object -TypeName System.Windows.Controls.DockPanel -Property @{
+                                Style   = $SyncHash.Window.FindResource('toolsSADock')
+                            }
+                            Label     = New-Object -TypeName System.Windows.Controls.Label -Property @{
+                                Style   = $SyncHash.Window.FindResource('toolsSALabel')
+                                Content = $tool.toolStandAloneCat
+                            }
+                            Scroller  = New-Object -TypeName System.Windows.Controls.ScrollViewer -Property @{
+                                Style   = $SyncHash.Window.FindResource('toolsSAScroll')
+                            }
+                            WrapPanel = New-Object -TypeName System.Windows.Controls.WrapPanel -Property @{
+                                Margin  = '25,0,25,0'
+                            }
+                        }
+
+                        $syncHash.toolParent.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).Dock)
+                        $syncHash.SADocks.($tool.toolStandAloneCat).Dock.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).Label)
+                        $syncHash.SADocks.($tool.toolStandAloneCat).Dock.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).Scroller)
+                        $syncHash.SADocks.($tool.toolStandAloneCat).Scroller.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).WrapPanel)
+                        $syncHash.SADocks.($tool.toolStandAloneCat).WrapPanel.AddChild($SyncHash.objectTools.('tool' + $tool.ToolID).ToolButton)
+
+                    }
+
+                    elseif ($tool.toolStandAloneCat) {
+                        $syncHash.SADocks.($tool.toolStandAloneCat).WrapPanel.AddChild($SyncHash.objectTools.('tool' + $tool.ToolID).ToolButton)
+                    }
+                    else {
+                        $SyncHash.standaloneControlPanel.AddChild($SyncHash.objectTools.('tool' + $tool.ToolID).ToolButton)
+                    }
                 }           
             }
 
@@ -987,6 +1024,9 @@ function Add-CustomToolControls {
                                 if ($ConfigHash.objectToolConfig[$toolID - 1].toolActionConfirm) {
                                     $SyncHash.itemToolDialogConfirmActionName.Text = $ConfigHash.objectToolConfig[$toolID - 1].ToolName
                                     $SyncHash.itemToolDialogConfirmObjectName.Text = $ConfigHash.currentTabItem
+                                    if ($configHash.objectToolConfig[$toolID - 1].ObjectType -eq 'Standalone') {
+                                        $SyncHash.itemToolDialogConfirmObjectName.Text = 'Standalone'
+                                    }
                                     $SyncHash.itemToolDialogConfirm.Visibility = 'Visible'
                                     $SyncHash.itemToolDialogConfirmButton.Tag = $toolID
                                     $SyncHash.itemToolDialog.IsOpen = $true                      
@@ -1003,8 +1043,9 @@ function Add-CustomToolControls {
                                     Start-RSJob @rsArgs -ScriptBlock {
                                         Param($toolID, $ConfigHash, $queryHash, $window, $varHash, $confirmWindow, $textBlock, $queue)
 
-                                        $toolName = ($ConfigHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
+                                        $toolName = ($ConfigHash.objectToolConfig[$toolID - 1].toolName).ToUpper()                                     
                                         Set-CustomVariables -VarHash $varHash
+                                        if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {Remove-Variable ActiveObject, ActiveObjectType, ActiveObjectData -ErrorAction SilentlyContinue}
 
                                         try {             
                                             ([scriptblock]::Create($ConfigHash.objectToolConfig[$toolID - 1].toolAction)).Invoke()         
@@ -2187,7 +2228,7 @@ function Get-RTFlyoutContent {
     
     Set-CurrentPane -SyncHash $syncHash -Panel "rtConfigFlyout"
 
-    $SyncHash.settingRemoteListTypes.ItemsSource = $ConfigHash.nameMapList | Select-Object Name
+    $SyncHash.settingRemoteListTypes.ItemsSource = ([array]($ConfigHash.nameMapList | Select-Object Name))
 
     switch ($SyncHash.settingRALabel.Text) {
             
@@ -2644,6 +2685,7 @@ function Get-LDAPSearchNames {
 function Set-ItemExpanders {
     param($SyncHash, $ConfigHash,
         [ValidateSet('Enable', 'Disable')]$IsActive,
+        [ValidateSet('All', 'CompOnly','UserOnly')]$Selection,
         [switch]$ClearContent)
     
     if ($IsActive -eq 'Disable') { 
@@ -2664,12 +2706,16 @@ function Set-ItemExpanders {
             })
     }
     else {
-        $SyncHash.Window.Dispatcher.Invoke([Action] {                 
+        $SyncHash.Window.Dispatcher.Invoke([Action] {   
+            if ($selection -match "$null|All|CompOnly") {         
                 $SyncHash.compExpander.IsExpanded = $true
-                $SyncHash.compExpanderProgressBar.Visibility = 'Collapsed'                    
+                $SyncHash.compExpanderProgressBar.Visibility = 'Collapsed' 
+            }   
+             if ($selection -match "$null|All|UserOnly") {               
                 $SyncHash.userExpander.IsExpanded = $true 
                 $SyncHash.expanderProgressBar.Visibility = 'Collapsed'
-            })
+            }
+        })
     }
 }
 
@@ -2789,9 +2835,7 @@ function Find-ObjectLogs {
     if ($type -eq 'User') {
         Start-RSJob @rsArgs -ScriptBlock {
             param($queryHash, $ConfigHash, $match, $SyncHash) 
-                            
-            $SyncHash.userCompGrid.Dispatcher.Invoke([Action] { $SyncHash.userCompGrid.ItemsSource = $null })
-            Start-Sleep -Milliseconds 1250
+            Start-Sleep -Milliseconds 500
             $startID = $queryHash.$($match.SamAccountName).QueryID
         
             if ($ConfigHash.UserLogPath -and (Test-Path (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt"))) {
@@ -2825,11 +2869,24 @@ function Find-ObjectLogs {
                                             
                         $hostConnectivity = Test-OnlineFast -ComputerName $log.ComputerName
                                                                               
-                        if ($hostConnectivity.Online) { 
-                            if (Test-Path "\\$($log.ComputerName)\c$") {
-                                $sessionInfo = Get-RDSession -ComputerName $log.ComputerName -UserName $match.SamAccountName -ErrorAction SilentlyContinue 
-                            }
-                            else { $sessionInfo = 'Failed' }
+                        if ($hostConnectivity.Online) {
+                              $id = "RDRS$(Get-Random)"
+
+                                $rsArgs = @{
+                                    Name            =  $id
+                                    ArgumentList    = $log.ComputerName, $match.SamAccountName
+                                    ModulesToImport = $configHash.modList
+                                } 
+                                
+                                Start-RSJob @rsArgs -ScriptBlock {
+                                    param ($ComputerName, $UserName) 
+                                    Get-RDSession -ComputerName $ComputerName -UserName $UserName
+                                } | Out-Null
+    
+                                Wait-RSJob -Name $id -Timeout 10 | Out-Null
+                                if ((Get-RSJob -Name $id).State -ne 'Completed') { $sessionInfo = 'Failed' }
+                                else { $sessionInfo = (Get-RSJob -Name $id | Receive-RSJob) }
+    
                         }
 
                         if ($hostConnectivity.IPV4Address) { $hostLocation = Resolve-Location -computerName $log.ComputerName -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
@@ -2912,6 +2969,10 @@ function Find-ObjectLogs {
                                         }
                                     }
                                 }))
+                        
+                        
+                        if ($match.SamAccountName -notin $queryHash.Keys -or
+                            (!($queryHash[$match.SamAccountName].QueryID) -or ($queryHash[$match.SamAccountName].QueryID -ne $startID))) { break }
                                                         
                         if ($ConfigHash.userLogMapping.FieldSel -contains 'Custom') {
                             foreach ($customHeader in ($ConfigHash.userLogMapping | Where-Object { $_.FieldSel -eq 'Custom' })) {
@@ -2925,18 +2986,23 @@ function Find-ObjectLogs {
                         }
                             
 
-                        if (($SyncHash.userCompGrid.Items | Measure-Object).Count -eq 1) {
+                        if (($SyncHash.userCompGrid.Items | Measure-Object).Count -ge 1 -and !$gridIsPopulated) {
+                            $gridIsPopulated = $true
                             $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.UserCompGrid.SelectedItem = $SyncHash.UserCompGrid.Items[0] })
-
+                            Set-ItemExpanders -SyncHash $SyncHash -ConfigHash $ConfigHash -IsActive Enable -Selection CompOnly
                             $queryHash[$match.SamAccountName].logsSearched = $true
                         }
                     } 
-                    
-                    $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.SamAccountName).LoginLogListView.Refresh() })
 
                     if (!($queryHash[$match.SamAccountName].QueryID) -or ($queryHash[$match.SamAccountName].QueryID -ne $startID)) {
                         exit
                     }
+
+                    if ($match.SamAccountName -in $queryHash.Keys) {
+                        $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.SamAccountName).LoginLogListView.Refresh() })
+                    }
+
+                   
                                                                                                  
                 }
                 else { $queryHash[$match.SamAccountName].logsSearched = $true }
@@ -2948,8 +3014,7 @@ function Find-ObjectLogs {
     else {
         Start-RSJob @rsArgs -ScriptBlock {
             param($queryHash, $ConfigHash, $match, $SyncHash) 
-            $SyncHash.userCompGrid.Dispatcher.Invoke([Action] { $SyncHash.compUserGrid.ItemsSource = $null })
-            Start-Sleep -Milliseconds 1250                               
+            Start-Sleep -Milliseconds 500                               
             $startID = $queryHash.$($match.Name).QueryID
 
             if ($ConfigHash.compLogPath -and (Test-Path (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt"))) {
@@ -2989,7 +3054,22 @@ function Find-ObjectLogs {
 
                     $compPing = Test-OnlineFast $match.Name
                     if ($compPing.Online) { 
-                        if (Test-Path "\\$($match.Name)\c$") { $sessionInfo = Get-RDSession -ComputerName $match.Name -ErrorAction SilentlyContinue }                          
+                        $id = "RDRS$(Get-Random)"
+
+                        $rsArgs = @{
+                            Name            =  $id
+                            ArgumentList    = $match.Name
+                            ModulesToImport = $configHash.modList
+                        } 
+                                
+                        Start-RSJob @rsArgs -ScriptBlock {
+                            param ($ComputerName) 
+                            Get-RDSession -ComputerName $ComputerName
+                        } | Out-Null
+    
+                        Wait-RSJob -Name $id -Timeout 10 | Out-Null
+                        if ((Get-RSJob -Name $id).State -ne 'Completed') { $sessionInfo = 'Failed' }
+                        else { $sessionInfo = (Get-RSJob -Name $id | Receive-RSJob) }                  
                     }
 
                     if ($compPing.IPV4Address) { $hostLocation = Resolve-Location -computerName $match.Name -IPList $ConfigHash.netMapList -ErrorAction SilentlyContinue }
@@ -3075,23 +3155,25 @@ function Find-ObjectLogs {
                                 foreach ($item in ($queryHash.$($match.Name).LoginLog)) { $item | Add-Member -Force -MemberType NoteProperty -Name $customHeader.Header -Value $log.($customHeader.Header) }
                             }
                         }
-
-                        if (!($queryHash[$match.Name].QueryID) -or ($queryHash[$match.Name].QueryID -ne $startID)) {
-                            exit
-                        }
-                                
+                       
+                        if ($match.Name -notin $queryHash.Keys -or
+                        (!($queryHash[$match.Name].QueryID) -or ($queryHash[$match.Name].QueryID -ne $startID))) { break }
 
                         if (!$refreshTimer -or ($refreshTimer.Elapsed.TotalSeconds -ge 5)) {
                             $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.Name).LoginLogListView.Refresh() })
                             $refreshTimer =  [system.diagnostics.stopwatch]::StartNew()
                         }
                         
-
-                        if (($SyncHash.compUserGrid.Items | Measure-Object).Count -eq 1) {
+                        if (($SyncHash.compUserGrid.Items | Measure-Object).Count -ge 1 -and !$gridIsPopulated) {
+                            $gridIsPopulated = $true
                             $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.compUserGrid.SelectedItem = $SyncHash.compUserGrid.Items[0] })
-
+                            Set-ItemExpanders -SyncHash $SyncHash -ConfigHash $ConfigHash -IsActive Enable -Selection CompOnly
                             $queryHash[$match.Name].logsSearched = $true
                         }
+                    }
+                    
+                    if (!($queryHash[$match.Name].QueryID) -or ($queryHash[$match.Name].QueryID -ne $startID)) {
+                        exit
                     }
 
                     $SyncHash.Window.Dispatcher.Invoke([Action] { $queryHash.$($match.Name).LoginLogListView.Refresh() })
@@ -3177,7 +3259,7 @@ function Set-ClientGridButtons {
         $butCode = 'rc'
     }
 
-    foreach ($button in ($SyncHash | Where-Object { $_ -like '*rbutbut*' })) {
+    foreach ($button in ($SyncHash.Keys | Where-Object { $_ -like "*$($butcode)butbut*" })) {
         if (($SyncHash.($itemName + 'Grid').SelectedItem.ClientType -in $ConfigHash.rtConfig.($SyncHash[$button].Tag).Types) -and
             (!($ConfigHash.rtConfig.($SyncHash[$button].Tag).RequireOnline -and $SyncHash.($itemName + 'Grid').SelectedItem.ClientOnline -eq $false)) -and 
             (!($ConfigHash.rtConfig.($SyncHash[$button].Tag).RequireUser -eq $true))) { $SyncHash[$button].IsEnabled = $true }
