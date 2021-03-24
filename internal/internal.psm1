@@ -10,6 +10,9 @@ function New-HashTables {
     # Stores config values imported JSON, during config, or both
     $global:configHash = [hashtable]::Synchronized(@{ })
 
+     # Stores metadata related to config (version, ID, source)
+    $global:configVer = [hashtable]::Synchronized(@{ })
+
     # Stores WPF controls
     $global:syncHash = [hashtable]::Synchronized(@{ })
 
@@ -18,6 +21,12 @@ function New-HashTables {
 
     # Stores data related to queried objects
     $global:queryHash = [hashtable]::Synchronized(@{ })
+}
+function Set-Version {
+    param ($Version, $SyncHash) 
+    if ($Version) {
+        $syncHash.toolVer.Text = $Version
+    }
 }
 
 function Set-CurrentPane {
@@ -411,7 +420,7 @@ function Set-Config {
         [Parameter(Mandatory = $true)]
         [ValidateSet('Export', 'Import')]
         [string[]]
-        $type,
+        $Type,
 
         [Parameter(Mandatory = $true)]
         [Hashtable]
@@ -451,7 +460,7 @@ function Set-Config {
             $configHash.gridExportList = $null
             $configHash.logCollectionView = $null
 
-            #$configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString()
+            $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString()
 
             $ConfigHash |
                 ConvertTo-Json -Depth 8 |
@@ -461,6 +470,27 @@ function Set-Config {
         }
     }
 }
+
+function Export-VersionConfig {
+    Param ( 
+        [CmdletBinding()]
+        [Parameter(Mandatory = $true)]
+        [String]
+        $ConfigPath,
+
+        [Parameter(Mandatory = $true)]
+        [Hashtable]
+        $ConfigHash
+    )
+
+        $ConfigHash.configVer |
+        ConvertTo-Json -Depth 8 |
+            Out-File -FilePath $($ConfigPath + '.bak') -Force
+
+    if ((Get-ChildItem -LiteralPath $($ConfigPath + '.bak')).Length -gt 0) { Copy-Item -LiteralPath $($ConfigPath + '.bak') -Destination $ConfigPath }
+        
+}
+
 
 function Set-ConfigMap {
 
@@ -485,32 +515,48 @@ function Set-ConfigMap {
 
 
 function Import-Config {
-    param ($SyncHash, $configMap)
+    param ($SyncHash, $configMap, $configSelection)
 
-    $configSelection = New-Object -TypeName System.Windows.Forms.OpenFileDialog -Property @{
-        InitialDirectory = [Environment]::GetFolderPath('MyComputer')
-        Filter           = 'config|config.json'
-        Title            = 'Select config.json'
-    }
-    
-    $null = $configSelection.ShowDialog()
-    
+    if (!$configSelection) {     
+        $configSelection = New-Object -TypeName System.Windows.Forms.OpenFileDialog -Property @{
+            InitialDirectory = [Environment]::GetFolderPath('MyComputer')
+            Filter           = 'config|config.json'
+            Title            = 'Select config.json'
+        }
 
-    if (![string]::IsNullOrEmpty($configSelection.fileName)) {
-        $global:importItems = Get-Content $configSelection.FileName | ConvertFrom-Json    
+        $null = $configSelection.ShowDialog()
+        $configPath = $configSelection.fileName
+        $global:importItems = Get-Content $configPath | ConvertFrom-Json    
         $syncHash.importListBox.ItemsSource = $configMap.Keys
-        $syncHash.importDialog.IsOpen = $true
+        $syncHash.importListBox.SelectAll()
     }
+    
+
+    else {
+        $configPath = $configSelection
+        $global:importItems = Get-Content $configPath | ConvertFrom-Json    
+        $syncHash.importListBox.ItemsSource = $configMap.Keys
+        $syncHash.importListBox.SelectAll()
+
+    }
+        
+        $syncHash.importDialog.IsOpen = $true
+    
 }
 
 #
 function Start-Import {
-    param ($ConfigMap, $ImportItems, $ConfigHash, $SavedConfig, $SelectedItems, $baseConfigPath)
+    param ($ConfigMap, $ImportItems, $ConfigHash, $SavedConfig, $SelectedItems, $baseConfigPath, [bool]$Monitor)
 
     foreach ($selectedItem in $selectedItems) {  $configHash.($ConfigMap.$selectedItem) = $ImportItems.($ConfigMap.$selectedItem) 
     }
-     #   @('userPropList', 'compPropList', 'contextConfig', 'objectToolConfig', 'nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig', 'modConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
-     #   @('userLogMapping', 'compLogMapping', 'settingHeaderConfig') | Set-InitialValues -ConfigHash $configHash
+        if (!$Monitor) {
+            $ConfigHash.configVer = $null
+        }
+        else {
+            $configHash.configVer = $ImportItems.configVer
+        }
+     
         Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
 
         $SyncHash.Window.Close()
@@ -628,10 +674,9 @@ function Set-InitialValues {
                 }
             }
         }
-
         else { $tempList | ForEach-Object -Process { $ConfigHash.$type.Add($_) } }
 
-
+        
      
 
     }
@@ -645,6 +690,25 @@ function Set-InitialValues {
         if (!$configHash.searchDays) { $ConfigHash.searchDays = 60 }
 
     }
+}
+
+function Set-DefaultVersionInfo {
+    [CmdletBinding()]
+    Param ( 
+        [Parameter(Mandatory)][Hashtable]$ConfigHash
+    )
+
+    $output = [PSCustomObject]@{
+    Ver               = if ($configHash.configVer.Ver) { $configHash.configVer.Ver }
+                        else { 1 }
+    ID                = if ($configHash.configVer.ID) { $configHash.configVer.ID }
+                        else { ([guid]::NewGuid()).Guid }
+    configPublishPath = if (![string]::IsNullOrWhiteSpace($configHash.configVer.configPublishPath) -and (Test-Path $configHash.configVer.configPublishPath -ErrorAction SilentlyContinue)) { $configHash.configVer.configPublishPath }
+                        else { $null }
+
+    }
+
+    $output
 }
 
 # matches config'd user/comp logins with default headers, creates new headers
@@ -986,9 +1050,9 @@ function Add-CustomToolControls {
                                 Style   = $SyncHash.Window.FindResource('toolsSALabel')
                                 Content = $tool.toolStandAloneCat
                             }
-                            Scroller  = New-Object -TypeName System.Windows.Controls.ScrollViewer -Property @{
-                                Style   = $SyncHash.Window.FindResource('toolsSAScroll')
-                            }
+                         #   Scroller  = New-Object -TypeName System.Windows.Controls.ScrollViewer -Property @{
+                         #       Style   = $SyncHash.Window.FindResource('toolsSAScroll')
+                         #   }
                             WrapPanel = New-Object -TypeName System.Windows.Controls.WrapPanel -Property @{
                                 Margin  = '25,0,25,0'
                             }
@@ -996,8 +1060,9 @@ function Add-CustomToolControls {
 
                         $syncHash.toolParent.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).Dock)
                         $syncHash.SADocks.($tool.toolStandAloneCat).Dock.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).Label)
-                        $syncHash.SADocks.($tool.toolStandAloneCat).Dock.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).Scroller)
-                        $syncHash.SADocks.($tool.toolStandAloneCat).Scroller.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).WrapPanel)
+                       # $syncHash.SADocks.($tool.toolStandAloneCat).Dock.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).Scroller)
+                       #$syncHash.SADocks.($tool.toolStandAloneCat).Scroller.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).WrapPanel)
+                         $syncHash.SADocks.($tool.toolStandAloneCat).Dock.AddChild($syncHash.SADocks.($tool.toolStandAloneCat).WrapPanel)
                         $syncHash.SADocks.($tool.toolStandAloneCat).WrapPanel.AddChild($SyncHash.objectTools.('tool' + $tool.ToolID).ToolButton)
 
                     }
@@ -1657,18 +1722,34 @@ function New-VarUpdater {
     }  
 }
 
+function Find-UpdatedConfig {
+    param ($configHash, $syncHash)
+    Start-Sleep -Seconds 3
+    if (![string]::IsNullOrEmpty($configHash.configVer.configPublishPath)) {
+        $configVerPath = Join-Path -Path $configHash.configVer.configPublishPath -ChildPath 'configVer.json'
+        if (Test-Path  $configVerPath) {
+            $configVerInfo = Get-Content $configVerPath | ConvertFrom-Json
+            if ($configVerInfo.Ver -gt $configHash.configVer.ver -and $configVerInfo.ID -eq $configHash.ConfigVer.ID) {
+                $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.headerConfigUpdate.Visibility = "Visible" })
+            }
+        }
+    }   
+}
+
 function Start-VarUpdater {
     [CmdletBinding()]
-    param ($ConfigHash, $varHash, $queryHash)
+    param ($ConfigHash, $varHash, $queryHash, $syncHash)
     
     $rsArgs = @{
         Name            = 'VarUpdater'
-        ArgumentList    = @($ConfigHash, $varHash, $queryHash )
+        ArgumentList    = @($ConfigHash, $varHash, $queryHash, $syncHash )
         ModulesToImport = $configHash.modList
     }
+    
+    $configHash.IsClosed = $false
 
     Start-RSJob @rsArgs -ScriptBlock {
-        param($ConfigHash, $varHash, $queryHash)
+        param($ConfigHash, $varHash, $queryHash, $syncHash)
 
         $startTime = Get-Date
         $first = $true
@@ -1683,7 +1764,8 @@ function Start-VarUpdater {
             }
 
             if ($ConfigHash.varData.ContainsValue($true)) {
-                foreach ($varInfo in ($ConfigHash.varData.Keys)) {
+                $keyList = [array]($ConfigHash.varData.Keys)
+                foreach ($varInfo in $keyList) {
                     if ($ConfigHash.varData.$varInfo -eq $true) {
                         switch ($varInfo) {
                             'UpdateMinute' {
@@ -1698,6 +1780,7 @@ function Start-VarUpdater {
                                     Where-Object { $_.UpdateFrequency -eq 'Hourly' } |
                                         ForEach-Object { $varHash.($_.VarName) = ([scriptblock]::Create($_.VarCmd)).Invoke() }
                                 $ConfigHash.varData.$varInfo = $false
+                                Find-UpdatedConfig -ConfigHash $configHash -SyncHash $syncHash
                                 break
                             }                                       
                             'UpdateDay' {
@@ -1720,8 +1803,7 @@ function Start-VarUpdater {
                             {$_ -match "UpdateComp|UpdateUser"} { 
                                 $varHash.ActiveObject     = $configHash.currentTabItem 
                                 $varHash.ActiveObjectType = $queryHash[$configHash.currentTabItem].ObjectClass -replace 'u', 'U' -replace 'c', 'C'
-                                $varHash.ActiveObjectData = $queryHash[$configHash.currentTabItem] 
-
+                                $varHash.ActiveObjectData = $queryHash[$configHash.currentTabItem]                             
                                 $ConfigHash.varData.$varInfo = $false 
                             }
                         }

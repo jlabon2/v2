@@ -982,7 +982,28 @@
             HorizontalAlignment="Right"
             VerticalAlignment="Center"
             ShowLastSeparator="True">
-
+            <Button
+                Name="headerConfigUpdate"
+                Width="200"
+                Height="25"
+                Padding="0"
+                Cursor="Hand"
+                FontWeight="Light"
+                Visibility="Collapsed">
+                <Button.Content>
+                    <StackPanel Margin="35,0,0,0" Orientation="Horizontal">
+                        <TextBlock
+                            FontFamily="Segoe UI"
+                            Foreground="LightGreen"
+                            Style="{StaticResource headerBlocks}"
+                            Text="Config update available" />
+                        <TextBlock
+                            Margin="0,3,0,0"
+                            FontFamily="Segoe MDL2 Assets"
+                            Text="" />
+                    </StackPanel>
+                </Button.Content>
+            </Button>
             <TextBlock Name="headerUser" Style="{StaticResource headerBlocks}" />
             <TextBlock
                 Foreground="{Binding headerColor}"
@@ -1650,7 +1671,119 @@
                     </DockPanel>
                 </DockPanel>
             </simpleChildWindow:ChildWindow>
+            <simpleChildWindow:ChildWindow
+                x:Name="SaveDialog"
+                Title="Save Configuration"
+                AllowMove="True"
+                BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
+                BorderThickness="1"
+                CloseByEscape="True"
+                EnableDropShadow="False"
+                IsOpen="False"
+                ShowCloseButton="False">
+                <simpleChildWindow:ChildWindow.OverlayBrush>
+                    <SolidColorBrush Color="Transparent" />
+                </simpleChildWindow:ChildWindow.OverlayBrush>
+                <Grid
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
+
+                    <DockPanel
+                        Width="350"
+                        Margin="10,0,10,0"
+                        HorizontalAlignment="Center"
+                        Background="{DynamicResource MahApps.Brushes.ThemeBackground}">
+
+                        <TextBlock
+                            Margin="0,10,0,0"
+                            HorizontalAlignment="Center"
+                            DockPanel.Dock="Top"
+                            FontFamily="Segoe UI Light"
+                            Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                            Text="Continuing will save changes made to configuration and restart the tool, with options selected below."
+                            TextWrapping="Wrap" />
+                        <CheckBox
+                            Name="savePublish"
+                            Margin="0,5,0,5"
+                            Content="Publish to additional location"
+                            DockPanel.Dock="Top"
+                            FontSize="10"
+                            Style="{StaticResource MaterialDesignAccentCheckBox}" />
+                        <CheckBox
+                            Name="saveIncrement"
+                            Margin="0,0,0,5"
+                            Content="Increment config version"
+                            DockPanel.Dock="Top"
+                            FontSize="10"
+                            IsChecked="True"
+                            Style="{StaticResource MaterialDesignAccentCheckBox}" />
+                        <CheckBox
+                            Name="saveReset"
+                            Margin="0,0,0,10"
+                            Content="Regenerate new config ID"
+                            DockPanel.Dock="Top"
+                            FontSize="10"
+                            Style="{StaticResource MaterialDesignAccentCheckBox}" />
+                        <DockPanel Margin="0,0,0,10" DockPanel.Dock="Top">
+                            <TextBox
+                                Name="savePublishPath"
+                                Width="280"
+                                Height="28"
+                                Margin="0,0,0,0"
+                                Padding="-10,-3,0,-10"
+                                VerticalContentAlignment="Top"
+                                md:HintAssist.Foreground="White"
+                                md:HintAssist.Hint="Publish Path"
+                                AcceptsTab="True"
+                                BorderBrush="White"
+                                BorderThickness="1"
+                                CaretBrush="WhiteSmoke"
+                                DockPanel.Dock="Left"
+                                FontSize="11"
+                                IsEnabled="{Binding ElementName=savePublish, Path=IsChecked}"
+                                Style="{DynamicResource MaterialDesignOutlinedTextFieldTextBox}"
+                                TextWrapping="NoWrap"
+                                VerticalScrollBarVisibility="Auto" />
+                            <Button
+                                x:Name="savePublishPathClick"
+                                Grid.Row="3"
+                                Grid.Column="4"
+                                Width="34"
+                                Margin="10,2,0,0"
+                                Content=""
+                                DockPanel.Dock="Left"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                IsEnabled="{Binding ElementName=savePublish, Path=IsChecked}"
+                                Visibility="Visible" />
+                        </DockPanel>
+                        <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
+                            <Button
+                                Name="saveConfirmClick"
+                                Width="60"
+                                Height="40"
+                                Margin="0,0,15,10"
+                                Content="Save"
+                                DockPanel.Dock="Left"
+                                FontFamily="Segoe UI Light"
+                                Style="{StaticResource itemButton}" />
+                            <Button
+                                Name="saveCancelClick"
+                                Width="60"
+                                Height="40"
+                                Margin="15,0,0,10"
+                                Content="Cancel"
+                                DockPanel.Dock="Right"
+                                FontFamily="Segoe UI Light"
+                                Style="{StaticResource itemButton}" />
+
+
+                        </DockPanel>
+                    </DockPanel>
+                </Grid>
+            </simpleChildWindow:ChildWindow>
             <simpleChildWindow:ChildWindow
                 x:Name="importDialog"
                 Title="Import Selection"
@@ -1683,10 +1816,12 @@
                             Style="{StaticResource MaterialDesignCaptionTextBlock}"
                             Text="Select items to import. Confirming will restart and load new configuration."
                             TextWrapping="Wrap" />
+
                         <DockPanel
                             Margin="15,0,15,35"
                             HorizontalAlignment="Center"
                             DockPanel.Dock="Top">
+
                             <Button
                                 Name="importSelectAllButton"
                                 Width="25"
@@ -1702,7 +1837,7 @@
                             Name="importListBox"
                             Width="200"
                             Height="300"
-                            Margin="15,-25,15,15"
+                            Margin="15,-25,5,7.5"
                             BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
                             BorderThickness="1"
                             DockPanel.Dock="Top"
@@ -1726,6 +1861,15 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        <CheckBox
+                            Name="importMonitor"
+                            Margin="0,0,0,7.5"
+                            HorizontalAlignment="Center"
+                            Content="Monitor selected config for future changes"
+                            DockPanel.Dock="Top"
+                            FontSize="10"
+                            IsChecked="True"
+                            Style="{StaticResource MaterialDesignAccentCheckBox}" />
                         <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
                             <Button
                                 Name="importConfirmButton"
@@ -10012,145 +10156,160 @@
                                         </Border>
                                     </md:DialogHost.DialogContent>
                                 </md:DialogHost>
-                                <DockPanel Name="toolParent">
+                                <ScrollViewer>
+                                    <DockPanel Name="toolParent">
 
-                                    <DockPanel DockPanel.Dock="Top">
-                                        <Label
-                                            Margin="25,0,0,0"
-                                            Content="Logging Tools"
-                                            DockPanel.Dock="Top" />
-                                        <ScrollViewer
-                                            DockPanel.Dock="Top"
-                                            HorizontalScrollBarVisibility="Disabled"
-                                            VerticalScrollBarVisibility="Auto">
+                                        <DockPanel DockPanel.Dock="Top">
+                                            <Label
+                                                Margin="25,0,0,0"
+                                                Content="Logging Tools"
+                                                DockPanel.Dock="Top" />
+                                            <ScrollViewer
+                                                DockPanel.Dock="Top"
+                                                HorizontalScrollBarVisibility="Disabled"
+                                                VerticalScrollBarVisibility="Auto">
 
-                                            <WrapPanel Margin="25,0,25,0">
+                                                <WrapPanel Margin="25,0,25,0">
 
-                                                <Button
-                                                    Name="toolsSingleLogView"
-                                                    FontSize="12"
-                                                    Style="{StaticResource standAloneButton}">
-                                                    <StackPanel
-                                                        Margin="0,0,0,0"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center">
-                                                        <Image
-                                                            Width="30"
-                                                            Height="30"
-                                                            Source="{iconPacks:ModernImage Kind=Book,
-                                                                                           Brush=GhostWhite}" />
-                                                        <StackPanel Margin="0,0,0,-10">
-                                                            <Label
-                                                                HorizontalAlignment="Center"
-                                                                Content="My logs"
-                                                                FontFamily="Segoe UI" />
-                                                            <Label
-                                                                Margin="0,-10,0,0"
-                                                                HorizontalAlignment="Center"
-                                                                Content="(7 day)"
-                                                                FontFamily="Segoe UI Light"
-                                                                FontSize="12" />
+                                                    <Button
+                                                        Name="toolsSingleLogView"
+                                                        FontSize="12"
+                                                        Style="{StaticResource standAloneButton}">
+                                                        <StackPanel
+                                                            Margin="0,0,0,0"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center">
+                                                            <Image
+                                                                Width="30"
+                                                                Height="30"
+                                                                Source="{iconPacks:ModernImage Kind=Book,
+                                                                                               Brush=GhostWhite}" />
+                                                            <StackPanel Margin="0,0,0,-10">
+                                                                <Label
+                                                                    HorizontalAlignment="Center"
+                                                                    Content="My logs"
+                                                                    FontFamily="Segoe UI" />
+                                                                <Label
+                                                                    Margin="0,-10,0,0"
+                                                                    HorizontalAlignment="Center"
+                                                                    Content="(7 day)"
+                                                                    FontFamily="Segoe UI Light"
+                                                                    FontSize="12" />
+                                                            </StackPanel>
                                                         </StackPanel>
-                                                    </StackPanel>
-                                                </Button>
-                                                <Button
-                                                    Name="toolsSingleLogExport"
-                                                    FontSize="12"
-                                                    Style="{StaticResource standAloneButton}">
-                                                    <StackPanel
-                                                        Margin="0,0,0,0"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center">
-                                                        <Image
-                                                            Width="30"
-                                                            Height="30"
-                                                            Source="{iconPacks:ModernImage Kind=BookList,
-                                                                                           Brush=GhostWhite}" />
-                                                        <StackPanel Margin="0,0,0,-10">
-                                                            <Label
-                                                                HorizontalAlignment="Center"
-                                                                Content="My logs"
-                                                                FontFamily="Segoe UI" />
-                                                            <Label
-                                                                Margin="0,-10,0,0"
-                                                                HorizontalAlignment="Center"
-                                                                Content="(all/exportable)"
-                                                                FontFamily="Segoe UI Light"
-                                                                FontSize="12" />
+                                                    </Button>
+                                                    <Button
+                                                        Name="toolsSingleLogExport"
+                                                        FontSize="12"
+                                                        Style="{StaticResource standAloneButton}">
+                                                        <StackPanel
+                                                            Margin="0,0,0,0"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center">
+                                                            <Image
+                                                                Width="30"
+                                                                Height="30"
+                                                                Source="{iconPacks:ModernImage Kind=BookList,
+                                                                                               Brush=GhostWhite}" />
+                                                            <StackPanel Margin="0,0,0,-10">
+                                                                <Label
+                                                                    HorizontalAlignment="Center"
+                                                                    Content="My logs"
+                                                                    FontFamily="Segoe UI" />
+                                                                <Label
+                                                                    Margin="0,-10,0,0"
+                                                                    HorizontalAlignment="Center"
+                                                                    Content="(all/exportable)"
+                                                                    FontFamily="Segoe UI Light"
+                                                                    FontSize="12" />
+                                                            </StackPanel>
                                                         </StackPanel>
-                                                    </StackPanel>
-                                                </Button>
-                                                <Button
-                                                    Name="toolsAllLogView"
-                                                    FontSize="12"
-                                                    Style="{StaticResource standAloneButton}">
-                                                    <StackPanel
-                                                        Margin="0,0,0,0"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center">
-                                                        <Image
-                                                            Width="30"
-                                                            Height="30"
-                                                            Source="{iconPacks:ModernImage Kind=Book,
-                                                                                           Brush=GhostWhite}" />
-                                                        <StackPanel Margin="0,0,0,-10">
-                                                            <Label
-                                                                HorizontalAlignment="Center"
-                                                                Content="All admin logs"
-                                                                FontFamily="Segoe UI" />
-                                                            <Label
-                                                                Margin="0,-10,0,0"
-                                                                HorizontalAlignment="Center"
-                                                                Content="(7 day)"
-                                                                FontFamily="Segoe UI Light"
-                                                                FontSize="12" />
+                                                    </Button>
+                                                    <Button
+                                                        Name="toolsAllLogView"
+                                                        FontSize="12"
+                                                        Style="{StaticResource standAloneButton}">
+                                                        <StackPanel
+                                                            Margin="0,0,0,0"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center">
+                                                            <Image
+                                                                Width="30"
+                                                                Height="30"
+                                                                Source="{iconPacks:ModernImage Kind=Book,
+                                                                                               Brush=GhostWhite}" />
+                                                            <StackPanel Margin="0,0,0,-10">
+                                                                <Label
+                                                                    HorizontalAlignment="Center"
+                                                                    Content="All admin logs"
+                                                                    FontFamily="Segoe UI" />
+                                                                <Label
+                                                                    Margin="0,-10,0,0"
+                                                                    HorizontalAlignment="Center"
+                                                                    Content="(7 day)"
+                                                                    FontFamily="Segoe UI Light"
+                                                                    FontSize="12" />
+                                                            </StackPanel>
                                                         </StackPanel>
-                                                    </StackPanel>
-                                                </Button>
-                                                <Button
-                                                    Name="toolsAllLogExport"
-                                                    FontSize="12"
-                                                    Style="{StaticResource standAloneButton}">
-                                                    <StackPanel
-                                                        Margin="0,0,0,0"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center">
-                                                        <Image
-                                                            Width="30"
-                                                            Height="30"
-                                                            Source="{iconPacks:ModernImage Kind=BookList,
-                                                                                           Brush=GhostWhite}" />
-                                                        <StackPanel Margin="0,0,0,-10">
-                                                            <Label
-                                                                HorizontalAlignment="Center"
-                                                                Content="All admin logs"
-                                                                FontFamily="Segoe UI" />
-                                                            <Label
-                                                                Margin="0,-10,0,0"
-                                                                HorizontalAlignment="Center"
-                                                                Content="(all/exportable)"
-                                                                FontFamily="Segoe UI Light"
-                                                                FontSize="12" />
+                                                    </Button>
+                                                    <Button
+                                                        Name="toolsAllLogExport"
+                                                        FontSize="12"
+                                                        Style="{StaticResource standAloneButton}">
+                                                        <StackPanel
+                                                            Margin="0,0,0,0"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center">
+                                                            <Image
+                                                                Width="30"
+                                                                Height="30"
+                                                                Source="{iconPacks:ModernImage Kind=BookList,
+                                                                                               Brush=GhostWhite}" />
+                                                            <StackPanel Margin="0,0,0,-10">
+                                                                <Label
+                                                                    HorizontalAlignment="Center"
+                                                                    Content="All admin logs"
+                                                                    FontFamily="Segoe UI" />
+                                                                <Label
+                                                                    Margin="0,-10,0,0"
+                                                                    HorizontalAlignment="Center"
+                                                                    Content="(all/exportable)"
+                                                                    FontFamily="Segoe UI Light"
+                                                                    FontSize="12" />
+                                                            </StackPanel>
                                                         </StackPanel>
-                                                    </StackPanel>
-                                                </Button>
-                                            </WrapPanel>
-                                        </ScrollViewer>
+                                                    </Button>
+                                                </WrapPanel>
+                                            </ScrollViewer>
+                                        </DockPanel>
+                                        <DockPanel DockPanel.Dock="Top">
+                                            <DockPanel.Style>
+                                                <Style TargetType="DockPanel">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=standaloneControlPanel, Path=Children.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+
+                                            </DockPanel.Style>
+
+                                            <Label
+                                                Margin="25,0,0,0"
+                                                Content="Tools"
+                                                DockPanel.Dock="Top" />
+                                            <ScrollViewer
+                                                DockPanel.Dock="Top"
+                                                HorizontalScrollBarVisibility="Disabled"
+                                                VerticalScrollBarVisibility="Auto">
+
+                                                <WrapPanel Name="standaloneControlPanel" Margin="25,0,25,0" />
+                                            </ScrollViewer>
+                                        </DockPanel>
+
                                     </DockPanel>
-                                    <DockPanel DockPanel.Dock="Top">
-                                        <Label
-                                            Margin="25,0,0,0"
-                                            Content="Tools"
-                                            DockPanel.Dock="Top" />
-                                        <ScrollViewer
-                                            DockPanel.Dock="Top"
-                                            HorizontalScrollBarVisibility="Disabled"
-                                            VerticalScrollBarVisibility="Auto">
-
-                                            <WrapPanel Name="standaloneControlPanel" Margin="25,0,25,0" />
-                                        </ScrollViewer>
-                                    </DockPanel>
-                                </DockPanel>
+                                </ScrollViewer>
                             </Grid>
                         </Controls:MetroTabItem>
                         <Controls:MetroTabItem
@@ -10780,31 +10939,50 @@
                 VerticalAlignment="Stretch"
                 Panel.ZIndex="0"
                 Background="#FF444444">
-                <Label
+                <TextBlock
+                    Name="toolVer"
+                    Margin="-2,0,0,1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Background="Transparent"
+                    DockPanel.Dock="Bottom"
+                    FontSize="9"
+                    Foreground="Gray" />
+                <Button
                     x:Name="searchBoxHelp"
-                    Margin="0,0,0,10"
-                    Padding="16,10,16,10"
+                    Margin="0,0,.5,5"
+                    Padding="16,3,16,3"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
                     Panel.ZIndex="-1"
                     Content=""
+                    Cursor="Arrow"
+                    DockPanel.Dock="Bottom"
                     FontFamily="Segoe MDL2 Assets"
                     FontSize="26"
                     ToolTip="Help">
-                    <Label.Style>
-                        <Style TargetType="Label">
+                    <Button.Style>
+                        <Style BasedOn="{StaticResource MaterialDesignFlatLightBgButton}" TargetType="Button">
                             <Setter Property="Foreground" Value="Gray" />
                             <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Foreground" Value="#576573" />
                                     <Setter Property="Background" Value="#454545" />
                                 </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Foreground" Value="Gray" />
+                                    <Setter Property="Background" Value="#576573" />
+                                </Trigger>
+
                             </Style.Triggers>
                         </Style>
-                    </Label.Style>
-                </Label>
+                    </Button.Style>
+                </Button>
+
             </DockPanel>
+
         </Grid>
     </Grid>
 </Controls:MetroWindow>

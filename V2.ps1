@@ -2,6 +2,7 @@
 #
 #- Color switches on glyph buttons???
 Remove-Variable -Name * -ErrorAction SilentlyContinue
+$ver = 0.82
 if ($host.name -eq 'ConsoleHost') {
     $SW_HIDE, $SW_SHOW = 0, 5
     $TypeDef = '[DllImport("User32.dll")]public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'
@@ -382,7 +383,7 @@ $glyphList = Join-Path $baseConfigPath \internal\base\segoeGlyphs.txt
 
 ######
 
-$savedConfig =  Join-Path $baseConfigPath config.json
+$savedConfig      =  Join-Path $baseConfigPath config.json
 $global:ConfigMap = Set-ConfigMap
 
 # generated hash tables used throughout tool
@@ -394,6 +395,8 @@ Set-Config -ConfigPath $savedConfig -Type Import -ConfigHash $configHash
 # process loaded data or creates initial item templates for various config datagrids
 @('userPropList', 'compPropList', 'contextConfig', 'objectToolConfig', 'nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig', 'modConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
 @('userLogMapping', 'compLogMapping', 'settingHeaderConfig', 'SACats') | Set-InitialValues -ConfigHash $configHash
+
+$configHash.configVer = Set-DefaultVersionInfo -ConfigHash $configHash 
 
 # matches config'd user/comp logins with default headers, creates new headers from custom values
 $defaultList = @('User', 'DateRaw', 'LoginDc', 'ClientName', 'ComputerName', 'Ignore', 'Custom')
@@ -416,6 +419,7 @@ Set-WPFControls -TargetHash $syncHash -XAMLPath $xamlPath
 
 Get-Glyphs -ConfigHash $configHash -GlyphList $glyphList
 $syncHash.settingLogo.Source = Join-Path $baseConfigPath trident.png
+Set-Version -Version "v$ver" -SyncHash $syncHash
 
 #Set-WPFControls -TargetHash $helpHash -XAMLPath $helpXAMLPath
 
@@ -997,7 +1001,11 @@ $syncHash.settingConfigCancelClick.add_Click( { $syncHash.Window.Close() })
 
 $syncHash.settingImportClick.add_Click( { Import-Config -SyncHash $syncHash -ConfigMap $configMap })
 
-$synchash.importConfirmButton.add_Click({ Start-Import -ImportItems $importItems -SelectedItems $syncHash.importListBox.SelectedItems -ConfigMap $configMap -ConfigHash $configHash -savedConfig $savedConfig -BaseConfigPath $baseConfigPath})
+$syncHash.headerConfigUpdate.Add_Click({
+    Import-Config -SyncHash $syncHash -ConfigMap $configMap -ConfigSelection (Join-Path -Path $configHash.configVer.configPublishPath -ChildPath 'config.json')
+})
+
+$synchash.importConfirmButton.add_Click({ Start-Import -ImportItems $importItems -SelectedItems $syncHash.importListBox.SelectedItems -ConfigMap $configMap -ConfigHash $configHash -savedConfig $savedConfig -BaseConfigPath $baseConfigPath -Monitor $syncHash.importMonitor.IsChecked})
 
 $syncHash.importSelectAllButton.add_Click({  
     if ($syncHash.importListBox.Items.Count -eq $syncHash.importListBox.SelectedItems.Count) { $syncHash.importListBox.UnselectAll() } 
@@ -1005,17 +1013,49 @@ $syncHash.importSelectAllButton.add_Click({
 })   
 
 $syncHash.importCancel.add_Click({ $syncHash.importDialog.IsOpen = $false })
-       
 
+$syncHash.settingConfigClick.add_Click({ 
+    if ( $configHash.configVer.configPublishPath -and (Test-Path  $configHash.configVer.configPublishPath)) {
+        $syncHash.savePublishPath.Text =  $configHash.configVer.configPublishPath
+    }
 
-$syncHash.settingConfigClick.add_Click( {
-        Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
+    $syncHash.SaveDialog.IsOpen = $true })
+      
+
+$syncHash.saveConfirmClick.add_Click({
     
-        Start-Sleep -Seconds 1
-        $syncHash.Window.Close()
-        Start-Process -WindowStyle Hidden -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $($PSCommandPath)"
-        exit
-    })
+    
+    if ($syncHash.saveReset.IsChecked) {
+        $configHash.configVer.Ver = 1
+        $configHash.configVer.ID  = ([guid]::NewGuid()).Guid
+    }
+
+    if ($syncHash.saveIncrement.IsChecked -and !($syncHash.saveReset.IsChecked)) { $configHash.configVer.Ver = $configHash.configVer.Ver + 1 }
+
+
+    if ($syncHash.SavePublish.IsChecked -and (Test-Path $syncHash.savePublishPath.Text)) {
+        $configHash.configVer.configPublishPath =  $syncHash.savePublishPath.Text 
+        Export-VersionConfig -ConfigPath (Join-Path -Path $configHash.configVer.configPublishPath -ChildPath 'configVer.json') -ConfigHash $configHash
+        Set-Config -ConfigPath  (Join-Path -Path $configHash.configVer.configPublishPath -ChildPath 'config.json') -Type Export -ConfigHash $configHash
+          
+    }
+      
+    Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
+
+    Start-Sleep -Seconds 1
+    $syncHash.Window.Close()
+    Start-Process -WindowStyle Hidden -FilePath "$PSHOME\powershell.exe" -ArgumentList " -ExecutionPolicy Bypass -NonInteractive -File $($PSCommandPath)"
+    exit
+})
+
+$syncHash.saveCancelClick.add_Click({ $syncHash.SaveDialog.IsOpen = $false })
+
+$syncHash.savePublishPathClick.add_Click({
+    $folderPath = New-FolderSelection
+    if (![string]::IsNullOrEmpty($folderPath) -and (Test-Path $folderPath)) {
+        $syncHash.savePublishPath.Text = $folderPath
+    }
+})
 
 #endregion
 
@@ -1038,11 +1078,10 @@ $syncHash.TabMenu.add_SelectionChanged( {
         $syncHash.historySidePane.IsOpen = $false
     })
 
-$syncHash.searchBoxHelp.add_MouseLeftButtonDown( { $syncHash.searchBoxHelp.Background = '#576573' })
 
-$syncHash.searchBoxHelp.add_MouseLeftButtonUp( {
+
+$syncHash.searchBoxHelp.add_Click( {
         $syncHash.childHelp.isOpen = $true  
-        $syncHash.searchBoxHelp.Background = 'Transparent'
     })
 
 $syncHash.HistoryToggle.Add_MouseLeftButtonUp( {
@@ -1078,7 +1117,7 @@ $syncHash.tabMenu.add_Loaded( {
             }
        
             New-VarUpdater -ConfigHash $configHash
-            Start-VarUpdater -ConfigHash $configHash -VarHash $varHash -QueryHash $queryHash
+            Start-VarUpdater -ConfigHash $configHash -VarHash $varHash -QueryHash $queryHash -SyncHash $syncHash
             Set-WPFHeader -ConfigHash $configHash -SyncHash $syncHash
         }
 
