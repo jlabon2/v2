@@ -1090,6 +1090,12 @@ $syncHash.HistoryToggle.Add_MouseLeftButtonUp( {
         $syncHash.historySideDataGrid.Items.Refresh()
     })
 
+$syncHash.historyButton.Add_Click( {
+        if ($syncHash.historySidePane.IsOpen) { $syncHash.historySidePane.IsOpen = $false }
+        else { $syncHash.historySidePane.IsOpen = $true }
+        $syncHash.historySideDataGrid.Items.Refresh()
+    })
+
 
 $syncHash.tabControl.ItemsSource = New-Object -TypeName System.Collections.ObjectModel.ObservableCollection[Object]
 
@@ -1684,7 +1690,6 @@ $syncHash.tabControl.add_SelectionChanged( {
          
                 if ($null -ne $configHash.currentTabItem) {
                 
-                    # to do - set vis to this to collapsed by default (in xaml)
                     $syncHash.Window.Dispatcher.Invoke([Action] {
                         if ($queryHash.($configHash.currentTabItem).ObjectClass -eq 'Computer') {
                             Set-QueryVarsToUpdate -ConfigHash $ConfigHash -Type Comp                          
@@ -1954,7 +1959,7 @@ $syncHash.compUserFocusClientToggle.Add_Unchecked( { $syncHash.compUserFocusUser
 $syncHash.SearchBox.add_KeyDown( {
         if ($_.Key -eq 'Enter' -or $_.Key -eq 'Escape') {
             if ($null -like $syncHash.SearchBox.Text -and $_.Key -ne 'Escape') { $syncHash.SnackMsg.MessageQueue.Enqueue('Empty!') }
-           
+            elseif ($configHash.IsSearching) { $syncHash.SnackMsg.MessageQueue.Enqueue('Currently querying... Please wait') }
             elseif ($syncHash.SearchBox.Text.Length -ge 3 -or $_.Key -eq 'Escape') { 
                 if (!($configHash.queryProps)) { 
                     $configHash.queryProps = [System.Collections.ArrayList]@()

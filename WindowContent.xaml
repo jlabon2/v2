@@ -1070,7 +1070,7 @@
                     Panel.ZIndex="-10"
                     Background="#FF444444"
                     CloseButtonVisibility="Collapsed"
-                    IsOpen="False"
+                    IsOpen="True"
                     Position="Left">
 
                     <StackPanel Margin="10,-40,10,0">

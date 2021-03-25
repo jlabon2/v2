@@ -10,9 +10,6 @@ function New-HashTables {
     # Stores config values imported JSON, during config, or both
     $global:configHash = [hashtable]::Synchronized(@{ })
 
-     # Stores metadata related to config (version, ID, source)
-    $global:configVer = [hashtable]::Synchronized(@{ })
-
     # Stores WPF controls
     $global:syncHash = [hashtable]::Synchronized(@{ })
 
@@ -459,6 +456,7 @@ function Set-Config {
             $configHash.logCollection = $null
             $configHash.gridExportList = $null
             $configHash.logCollectionView = $null
+            $configHash.IsSearching = $null
 
             $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString()
 
@@ -495,6 +493,7 @@ function Export-VersionConfig {
 function Set-ConfigMap {
 
      [ordered]@{
+        'Versioning Info'         = 'configVer'
         'Network Mapping'         = 'netMapList'
         'Computer Categorization' = 'nameMapListView'
         'Remote Tools'            = 'rtConfig'
@@ -508,8 +507,10 @@ function Set-ConfigMap {
         'Computer AD Properties'  = 'compPropList'
         'Query Definitions'       = 'queryDefConfig'
         'Queriable OUs'           = 'searchBaseConfig'
+        'Variable Definitions'    = 'varListConfig'
         'Contextual Actions'      = 'contextConfig' 
         'Tool Logging Path'       = 'actionLogPath'
+        'Tool Categories'         = 'SACats'
     }
 }
 
@@ -1746,7 +1747,8 @@ function Start-VarUpdater {
         ModulesToImport = $configHash.modList
     }
     
-    $configHash.IsClosed = $false
+    $configHash.IsClosed    = $false
+    $configHash.IsSearching = $false
 
     Start-RSJob @rsArgs -ScriptBlock {
         param($ConfigHash, $varHash, $queryHash, $syncHash)
@@ -2804,6 +2806,8 @@ function Set-ItemExpanders {
 function Start-ObjectSearch {
     param ($SyncHash, $ConfigHash, $queryHash, $Key)  
     
+    $configHash.IsSearching = $true
+
     $rsCmd = [PSObject]@{
         key        = $Key
         searchTag  = $SyncHash.SearchBox.Tag
@@ -2818,16 +2822,22 @@ function Start-ObjectSearch {
         ModulesToImport = $ConfigHash.modList
     }
 
+   
+
 
     Start-RSJob @rsArgs -ScriptBlock {
         param($queryHash, $ConfigHash, $SyncHash, $rsCmd)        
-               
+        
+        
+
         if ($rsCmd.key -eq 'Escape') {
+           
             $match = (Get-ADObject -Filter "(SamAccountName -eq '$($rsCmd.searchTag)' -and ObjectClass -eq 'User') -or 
 			(Name -eq '$($rsCmd.searchTag)' -and ObjectClass -eq 'Computer')" -Properties SamAccountName) 
         }
         
-        else {
+        else {         
+
             if (!($ConfigHash.searchBaseConfig.OU)) { $match = Get-ADObject -Filter (Get-FilterString -PropertyList $ConfigHash.queryProps -SyncHash $SyncHash -Query $rsCmd.searchText -Exact $rsCmd.Exact) -Properties SamAccountName, Name }
             else {
                 $match = [System.Collections.ArrayList]@()
@@ -2840,6 +2850,12 @@ function Start-ObjectSearch {
         }
 
         if (($match | Measure-Object).Count -eq 1) {
+            if (($match.SamAccountName -replace '$') -eq $configHash.currentTabItem) {
+                $configHash.IsSearching = $false
+                $rsCmd.queue.Enqueue('Queried item is current item!')
+                exit
+            }
+
             Set-ItemExpanders -SyncHash $SyncHash -ConfigHash $ConfigHash -IsActive Disable
                         
             if ($match.ObjectClass -eq 'User') {
@@ -2875,8 +2891,6 @@ function Start-ObjectSearch {
             }                    
         }
 
-    
-
         elseif (($match | Measure-Object).Count -gt 1) {
             $rsCmd.queue.Enqueue('Too many matches!')
             $SyncHash.Window.Dispatcher.Invoke([Action] {
@@ -2886,6 +2900,8 @@ function Start-ObjectSearch {
         }
 
         else { $rsCmd.queue.Enqueue('No match!') }
+
+        $configHash.IsSearching = $false
     }
 }
 
@@ -3437,8 +3453,8 @@ function Write-LogMessage {
 
     if ($logMsg.SubjectType -eq 'Computer') { $logMsg.SubjectName = ($logMsg.SubjectName).toUpper() }
 
-    if ($syncHashWindow) { $syncHashWindow.Dispatcher.Invoke([Action] { $ArrayList.Add($logMsg) }) }
-    else { $null = $ArrayList.Add($logMsg) }
+    if ($syncHashWindow) { $syncHashWindow.Dispatcher.Invoke([Action] { $ArrayList.Insert(0, $logMsg) }) }
+    else { $ArrayList.Insert(0, $logMsg) }
 
     if ($Path -and (Test-Path $Path)) { 
         if (!(Test-Path (Join-Path $Path -ChildPath "$($env:USERNAME)"))) { $null = New-Item -ItemType Directory -Path (Join-Path $Path -ChildPath "$($env:USERNAME)") }
