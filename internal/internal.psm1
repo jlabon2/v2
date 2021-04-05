@@ -458,7 +458,7 @@ function Set-Config {
             $configHash.logCollectionView = $null
             $configHash.IsSearching = $null
 
-            $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString()
+          if ($null -notlike $configHash.settingHeaderConfig) { $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString() }
 
             $ConfigHash |
                 ConvertTo-Json -Depth 8 |
@@ -834,13 +834,15 @@ function Add-CustomItemBoxControls {
                     }
 
                     ($type + $i + 'Box1Action1') = New-Object -TypeName System.Windows.Controls.Button -Property @{
-                        Style = $SyncHash.Window.FindResource('itemButton')
+                        Style = $SyncHash.Window.FindResource('actionItemButton')
                         Name  = ($type + $i + 'Box1Action1')
-                    }
 
+                    }
+                   
                     ($type + $i + 'Box1Action2') = New-Object -TypeName System.Windows.Controls.Button -Property @{
-                        Style = $SyncHash.Window.FindResource('itemButton')
+                        Style = $SyncHash.Window.FindResource('actionItemButton')
                         Name  = ($type + $i + 'Box1Action2')
+                        Tag   = $binding
                     }
             
                     ($type + $i + 'Box1')        = New-Object -TypeName System.Windows.Controls.Button -Property @{
@@ -849,6 +851,15 @@ function Add-CustomItemBoxControls {
                     }
 
                 }
+
+        #        $binding = New-Object System.Windows.Data.Binding -Property @{
+        #            'ElementName'         = ($type + $i + 'TextBox')
+        #            'Path'                = 'Text'
+        #            'UpdateSourceTrigger' = 'PropertyChanged'   
+        #        } 
+
+        #        [void][System.Windows.Data.BindingOperations]::SetBinding($SyncHash.(($type + $i + 'resources')).($type + $i + 'Box1Action1'),[System.Windows.Controls.Button]::TagProperty, $binding)
+        #        [void][System.Windows.Data.BindingOperations]::SetBinding($SyncHash.(($type + $i + 'resources')).($type + $i + 'Box1Action2'),[System.Windows.Controls.Button]::TagProperty, $binding)
         
                 # Add col def objects, then add to outside grid
                 $colDef1 = New-Object -TypeName System.Windows.Controls.ColumnDefinition
@@ -1317,7 +1328,8 @@ function Add-CustomToolControls {
                                 $SyncHash.itemCommandGridText.Text = $ConfigHash.objectToolConfig[$toolID - 1].toolDescription
                                 $SyncHash.itemToolCommandGridPanel.Visibility = 'Visible'
                                 $SyncHash.itemToolCommandGridDataGrid.ItemsSource = $null
-                                $SyncHash.toolsCommandGridExecuteAllPanel.Visibility = 'Collapsed'                          
+                                $SyncHash.toolsCommandGridExecuteAllPanel.Visibility = 'Collapsed'        
+                                $SyncHash.toolsCommandGridExecuteAll.Tag = 'False'                  
 
                                 $SyncHash.itemToolDialog.IsOpen = $true
                                 
@@ -1620,7 +1632,13 @@ function Start-PropBoxPopulate {
                         else { $null }
                                     
                         actionCmd1Refresh = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd1Refresh) { $true } 
-                        else { $false }  
+                        else { $false }
+                        
+                        actionCmd1CanOff  = if ($value = ($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd1CanOff) { $value } 
+                        else { $false }       
+
+                        actionCmd1OffStr  = if ($value = ($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd1OffStr) { $value } 
+                        else { $null }                  
                                     
                         actionCmd1Multi   = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd1Multi) { $true } 
                         else { $false }  
@@ -1648,6 +1666,12 @@ function Start-PropBoxPopulate {
                                     
                         actionCmd2Refresh = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd2Refresh) { $true } 
                         else { $false }  
+                         
+                        actionCmd2CanOff  = if ($value = ($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd2CanOff) { $value } 
+                        else { $false }       
+
+                        actionCmd2OffStr  = if ($value = ($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd2OffStr) { $value } 
+                        else { $null }     
                                     
                         actionCmd2Multi   = if (($tempList | Where-Object -FilterScript { $_.Field -eq $i }).actionCmd2Multi) { $true } 
                         else { $false }                       
@@ -1762,6 +1786,10 @@ function Start-VarUpdater {
                 $ConfigHash.varData.UpdateMinute = $true
                 $ConfigHash.varData.UpdateHour = $true
                 $ConfigHash.varData.UpdateDay = $true
+
+                $ConfigHash.varListConfig | Where-Object { $_.UpdateFrequency -eq 'Program Start' } |
+                    ForEach-Object { $varHash.($_.VarName) = ([scriptblock]::Create($_.VarCmd)).Invoke() }
+
                 $first = $false
             }
 
@@ -2520,7 +2548,7 @@ function Add-CustomRTControls {
 
 
     $SyncHash.customRT = @{ }
-    foreach ($rtID in $ConfigHash.rtConfig.Keys.Where{ $_ -like 'RT*' }) { New-CustomRTConfigControls -ConfigHash $ConfigHash -SyncHash $SyncHash -RTID $rtID }
+    foreach ($rtID in ($ConfigHash.rtConfig.Keys | Where-Object { $_ -like "RT*" } | Sort-Object)) { New-CustomRTConfigControls -ConfigHash $ConfigHash -SyncHash $SyncHash -RTID $rtID }
 }
 
 
@@ -2850,7 +2878,7 @@ function Start-ObjectSearch {
         }
 
         if (($match | Measure-Object).Count -eq 1) {
-            if (($match.SamAccountName -replace '$') -eq $configHash.currentTabItem) {
+            if ($match.SamAccountName -eq $configHash.currentTabItem -or $match.Name -eq $configHash.currentTabItem) {
                 $configHash.IsSearching = $false
                 $rsCmd.queue.Enqueue('Queried item is current item!')
                 exit
@@ -3412,6 +3440,11 @@ function Write-SnackMsg {
     else { $queue.Enqueue("[$($toolName)]: $Status - standalone tool $subStatus") }
 }
         
+function Write-CustomSnackMsg {
+    param ($Message, $Queue) 
+
+    $queue.Enqueue([string]$Message)
+}
 
 function Write-LogMessage {
     param (

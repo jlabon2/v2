@@ -640,7 +640,7 @@ $syncHash.settingLogo.add_Loaded( {
 $syncHash.settingDelegatedGroupPick.Add_Click({
     $configRoot = Split-Path $savedConfig 
     $sysCheckHash.sysChecks[0].DelegatedGroupName = (Select-ADObject -Type Groups).Name
-    $syncHash.settingDelegatedGroupSelection.Content = $sysCheckHash.sysChecks[0].DelegatedGroupName
+    $syncHash.settingDelegatedGroupSelection.Text = $sysCheckHash.sysChecks[0].DelegatedGroupName
     $sysCheckHash.sysChecks[0].DelegatedGroupName | Select-Object @{Label = "Name"; Expression = {$_}} | 
         ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-delegatedGroup.json")
 })
@@ -1263,7 +1263,7 @@ $syncHash.tabMenu.add_Loaded( {
 
                                             $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1Action' + $b).Content = $configHash.($type + 'PropList')[$i - 1].('actionCmd' + $b + 'Icon')
                                             $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + 'Box1Action' + $b).ToolTip = $configHash.($type + 'PropList')[$i - 1].('actionCmd' + $b + 'ToolTip')
-                         
+                                            
                                             if (($configHash.($type + 'PropList')[$i - 1]).('actionCmd' + $b + 'Multi') -eq $true) {                       
                                                 $syncHash.($type[0] + 'box' + $i + 'resources').($type[0] + 'box' + $i + ('Box1Action' + $b)).Add_Click( {
                                                         param([Parameter(Mandatory)][Object]$sender)
@@ -1468,7 +1468,8 @@ $syncHash.tabMenu.add_Loaded( {
                             if ($syncHash.compUserFocusUserToggle.IsChecked) { $comp = $syncHash.tabControl.SelectedItem.Name }               
                             else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName }
                         }
-            
+
+                       Set-CustomVariables -VarHash $varHash
                        ([scriptblock]::Create($configHash.rtConfig.MSTSC.cmd)).Invoke()
                     })
 
@@ -1487,6 +1488,7 @@ $syncHash.tabMenu.add_Loaded( {
                             else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName } 
                         }
                         
+                        Set-CustomVariables -VarHash $varHash
                         ([scriptblock]::Create($configHash.rtConfig.MSRA.cmd)).Invoke()
                         
                     })    
@@ -1531,6 +1533,8 @@ $syncHash.tabMenu.add_Loaded( {
                                 $user = $syncHash.CompUserGrid.SelectedItem.UserName
                                 $sessionID = $syncHash.CompUserGrid.SelectedItem.SessionID
                             }
+
+                            Set-CustomVariables -VarHash $varHash
                             ([scriptblock]::Create($configHash.rtConfig.$id.cmd)).Invoke()
                    
                         })
@@ -1719,10 +1723,7 @@ $syncHash.tabControl.add_SelectionChanged( {
                         $statusTable = [hashtable]::Synchronized(@{ })
                         for ($i = 1; $i -le $configHash.boxMax; $i++) {
                           
-                            if ($i -le $configHash.($type + 'boxCount')) {
-                            
-                               
-
+                            if ($i -le $configHash.($type + 'boxCount')) {                                                        
                                 $rsArgs = @{
                                     Name            = 'displayUpdateSub'
                                     Batch           = 'displayUpdateSub'
@@ -1748,12 +1749,24 @@ $syncHash.tabControl.add_SelectionChanged( {
                                         
                                         if ($resultColor) { $updateHash.Foreground = $resultColor }             
                                     }
+
+                                  
    
                                     elseif ($selectedBox.PropName) { $updateHash.Text = ($queryHash[$currentTabItem]).($selectedBox.PropName) }
 
                                     if ($selectedBox.PropName -eq 'Non-Ad Property') { ($queryHash[$currentTabItem]) | Add-Member -Force -MemberType NoteProperty -Name ($selectedBox.FieldName) -Value $value }
-   
+                                      
+                                    if ($selectedBox.actionCmd1CanOff -and $updateHash.Text -like $selectedBox.actionCmd1OffStr) {
+                                        $updateHash.Disable1 = $true
+                                    }
+
+                                    if ($selectedBox.actionCmd2CanOff -and $updateHash.Text -like $selectedBox.actionCmd2OffStr) {
+                                        $updateHash.Disable2 = $true
+                                    }
+
                                      $statusTable.([string]$i) = $updateHash
+
+                                    
                               
                                 }
                             }
@@ -1764,11 +1777,19 @@ $syncHash.tabControl.add_SelectionChanged( {
                         $syncHash.Window.Dispatcher.Invoke([action] {
                          foreach ($key in $statusTable.Keys) {
                             $syncHash.($type[0] + 'box' + $key + 'resources').($type[0] + 'box' + $key + 'Textbox').Text = $statusTable.$key.Text
+                            
+                          
+                         
+                            if ($statusTable.$key.Disable1) { ($syncHash.($type[0] + 'box' + $key + 'resources')).($type[0] + 'box' + $key + 'Box1Action1').Tag  = '$null' }
+                            else { ($syncHash.($type[0] + 'box' + $key + 'resources')).($type[0] + 'box' + $key + 'Box1Action1').Tag  = '' }
+
+                            if ($statusTable.$key.Disable2) { ($syncHash.($type[0] + 'box' + $key + 'resources')).($type[0] + 'box' + $key + 'Box1Action2').Tag  = '$null' }
+                            else { ($syncHash.($type[0] + 'box' + $key + 'resources')).($type[0] + 'box' + $key + 'Box1Action2').Tag  = '' }
+
                             if ($statusTable.$key.Foreground) { $syncHash.($type[0] + 'box' + $key + 'resources').($type[0] + 'box' +$key + 'Textbox').Foreground = $statusTable.$key.Foreground }        
                          }
                         })
-                   
-
+                          
 
                         if ($queryHash[$currentTabItem].ObjectClass -eq 'User') {  
                             $syncHash.Window.Dispatcher.invoke([action] {       
@@ -1958,7 +1979,7 @@ $syncHash.compUserFocusClientToggle.Add_Unchecked( { $syncHash.compUserFocusUser
 
 $syncHash.SearchBox.add_KeyDown( {
         if ($_.Key -eq 'Enter' -or $_.Key -eq 'Escape') {
-            if ($null -like $syncHash.SearchBox.Text -and $_.Key -ne 'Escape') { $syncHash.SnackMsg.MessageQueue.Enqueue('Empty!') }
+            if ($null -like $syncHash.SearchBox.Text -and $_.Key -ne 'Escape') { $syncHash.SnackMsg.MessageQueue.Enqueue('Searchbox is empty - cannot query') }
             elseif ($configHash.IsSearching) { $syncHash.SnackMsg.MessageQueue.Enqueue('Currently querying... Please wait') }
             elseif ($syncHash.SearchBox.Text.Length -ge 3 -or $_.Key -eq 'Escape') { 
                 if (!($configHash.queryProps)) { 
@@ -2487,6 +2508,7 @@ $syncHash.compQueryItem.Add_Click( {
 $syncHash.itemRefresh.Add_Click( {
         $configHash.itemRefreshing = $true
         $searchVal = $configHash.currentTabItem
+        $configHash.currentTabItem = $null
         if ($searchVal) {
             $syncHash.tabControl.ItemsSource.RemoveAt($syncHash.tabControl.SelectedIndex)
             $syncHash.SearchBox.Tag = $searchVal
@@ -2506,32 +2528,36 @@ $syncHash.itemRefresh.Add_Click( {
                 Select-Object -First 1) + 1
 
     $configHash.($type + 'PropList').Add([PSCustomObject]@{
-            Field             = $i
-            FieldName         = $null
-            ItemType          = $type
-            PropName          = $null
-            propList          = $configHash.($type + 'PropPullListNames')
-            translationCmd    = 'if ($result -eq $false)...'
-            actionCmd1        = 'Do-Something -User $user'
-            actionCmd1ToolTip = 'Action name'
-            actionCmd1Icon    = $null
-            actionCmd1Refresh = $false
-            actionCmd1Multi   = $false
-            ValidCmd          = $null
-            ValidAction1      = $null
-            ValidAction2      = $null
-            actionCmd2        = 'Do-Something -User $user'
-            actionCmd2ToolTip = 'Action name'
-            actionCmd2Icon    = $null
-            actionCmd2Refresh = $false
-            actionCmd2Multi   = $false
-            actionCmdsEnabled = $true
-            transCmdsEnabled  = $true
-            actionCmd2Enabled = $false
-            PropType          = $null
-            actionList        = @('ReadOnly', 'ReadOnly-Raw', 'Editable', 'Editable-Raw', 'Actionable', 'Actionable-Raw', 'Editable-Actionable', 'Editable-Actionable-Raw')
-            ActionName        = 'null'
-        })
+            Field                  = $i
+            FieldName              = $null
+            ItemType               = $type
+            PropName               = $null
+            propList               = $configHash.($type + 'PropPullListNames')
+            translationCmd         = 'if ($result -eq $false)...'
+            actionCmd1             = 'Do-Something -User $user'
+            actionCmd1ToolTip      = 'Action name'
+            actionCmd1Icon         = $null
+            actionCmd1Refresh      = $false
+            actionCmd1Multi        = $false
+            ValidCmd               = $null
+            ValidAction1           = $null
+            ValidAction2           = $null
+            actionCmd1CanOff       = $false
+            actionCmd1OffStr       = ''
+            actionCmd2             = 'Do-Something -User $user'
+            actionCmd2ToolTip      = 'Action name'
+            actionCmd2Icon         = $null
+            actionCmd2Refresh      = $false
+            actionCmd2Multi        = $false
+            actionCmdsEnabled      = $true
+            transCmdsEnabled       = $true
+            actionCmd2Enabled      = $false
+            actionCmd2CanOff       = $false
+            actionCmd2OffStr       = ''
+            PropType               = $null
+            actionList             = @('ReadOnly', 'ReadOnly-Raw', 'Editable', 'Editable-Raw', 'Actionable', 'Actionable-Raw', 'Editable-Actionable', 'Editable-Actionable-Raw')
+            ActionName             = 'null'
+        })   
       
     $configHash.('box' + $type + 'Count') = ($configHash.($type + 'PropList') | Measure-Object).Count
 }
