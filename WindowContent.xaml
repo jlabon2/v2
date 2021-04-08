@@ -983,6 +983,52 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
+
+
+
+
+
+            <Style
+                x:Key="configChangeLogTextBox"
+                BasedOn="{StaticResource MaterialDesignFloatingHintTextBox}"
+                TargetType="TextBox">
+                <Setter Property="Width" Value="335" />
+                <Setter Property="MinHeight" Value="150" />
+                <Setter Property="MaxHeight" Value="150" />
+                <Setter Property="Margin" Value="-10,-12.5,5,5" />
+                <Setter Property="Padding" Value="1,0,1,0" />
+                <Setter Property="md:HintAssist.FloatingScale" Value="1.1" />
+                <Setter Property="md:HintAssist.Foreground" Value="White" />
+                <Setter Property="md:TextFieldAssist.DecorationVisibility" Value="Collapsed" />
+                <Setter Property="md:HintAssist.Hint" Value="Config Changelog" />
+                <Setter Property="FontFamily" Value="Consolas" />
+                <Setter Property="FontSize" Value="8" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="AcceptsReturn" Value="True" />
+                <Setter Property="AcceptsTab" Value="True" />
+                <Setter Property="HorizontalScrollBarVisibility" Value="Visible" />
+                <Setter Property="TextWrapping" Value="NoWrap" />
+                <Setter Property="VerticalScrollBarVisibility" Value="Visible" />
+                <Setter Property="DockPanel.Dock" Value="Top" />
+            </Style>
+
+            <Style
+                x:Key="configChangeLogTextBoxReadOnly"
+                BasedOn="{StaticResource configChangeLogTextBox}"
+                TargetType="TextBox">
+                <Setter Property="MinHeight" Value="75" />
+                <Setter Property="Margin" Value="0,-7.5,0,10" />
+                <Setter Property="MaxHeight" Value="150" />
+                <Setter Property="Width" Value="320" />
+                <Setter Property="IsReadOnly" Value="True" />
+                <Setter Property="BorderBrush" Value="{StaticResource MahApps.Brushes.AccentBase}" />
+                <Style.Triggers>
+                    <Trigger Property="Text" Value="">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
         </ResourceDictionary>
     </Window.Resources>
 
@@ -1082,7 +1128,7 @@
                     Panel.ZIndex="-10"
                     Background="#FF444444"
                     CloseButtonVisibility="Collapsed"
-                    IsOpen="True"
+                    IsOpen="False"
                     Position="Left">
 
                     <StackPanel Margin="10,-40,10,0">
@@ -1738,6 +1784,11 @@
                             DockPanel.Dock="Top"
                             FontSize="10"
                             Style="{StaticResource MaterialDesignAccentCheckBox}" />
+                        <TextBox Name="saveChangeLogEdit" Style="{StaticResource configChangeLogTextBox}">
+                            <TextBox.Resources>
+                                <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}" />
+                            </TextBox.Resources>
+                        </TextBox>
                         <DockPanel Margin="0,0,0,10" DockPanel.Dock="Top">
                             <TextBox
                                 Name="savePublishPath"
@@ -1758,6 +1809,7 @@
                                 Style="{DynamicResource MaterialDesignOutlinedTextFieldTextBox}"
                                 TextWrapping="NoWrap"
                                 VerticalScrollBarVisibility="Auto" />
+
                             <Button
                                 x:Name="savePublishPathClick"
                                 Grid.Row="3"
@@ -1836,12 +1888,12 @@
 
                             <Button
                                 Name="importSelectAllButton"
-                                Width="25"
+                                Width="100"
                                 Height="25"
-                                Margin="10,22.5,0,0"
-                                Content=""
+                                Margin="10,10,0,0"
+                                BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
+                                Content="Select All"
                                 DockPanel.Dock="Left"
-                                FontFamily="Segoe MDL2 Assets"
                                 FontSize="12"
                                 IsEnabled="True" />
                         </DockPanel>
@@ -1856,7 +1908,9 @@
                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                             SelectionMode="Multiple"
                             Style="{StaticResource MaterialDesignListBox}">
-
+                            <ListBox.Resources>
+                                <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}" />
+                            </ListBox.Resources>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <CheckBox
@@ -1882,6 +1936,12 @@
                             FontSize="10"
                             IsChecked="True"
                             Style="{StaticResource MaterialDesignAccentCheckBox}" />
+                        <TextBox Name="importChangeLog" Style="{StaticResource configChangeLogTextBoxReadOnly}">
+                            <TextBox.Resources>
+                                <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}" />
+                            </TextBox.Resources>
+
+                        </TextBox>
                         <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
                             <Button
                                 Name="importConfirmButton"
@@ -2826,7 +2886,7 @@
 
             <simpleChildWindow:ChildWindow
                 x:Name="childHelp"
-                Title="Help..."
+                Title="..."
                 AllowMove="True"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
                 BorderThickness="1"
@@ -2861,8 +2921,9 @@
                             FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
                             FontSize="16"
                             TextWrapping="Wrap">
-                            Blah blah blah blah blah blah blah blah blah blah blah  blah blah blah blah blah<LineBreak />
-                            Blah blah blah blah blah blah blah blah blah blah blah  blah blah blah blah blah<LineBreak />
+                            ...Todo...<LineBreak />
+                            <LineBreak />
+                            <LineBreak />
                         </TextBlock>
                     </ScrollViewer>
                 </Grid>
@@ -10997,9 +11058,19 @@
                 VerticalAlignment="Stretch"
                 Panel.ZIndex="0"
                 Background="#FF444444">
+
+                <TextBlock
+                    Name="configVer"
+                    Margin="-2,0,0,1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Background="Transparent"
+                    DockPanel.Dock="Bottom"
+                    FontSize="9"
+                    Foreground="Gray" />
                 <TextBlock
                     Name="toolVer"
-                    Margin="-2,0,0,1"
+                    Margin="-2,0,0,-3"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
                     Background="Transparent"
@@ -11008,7 +11079,7 @@
                     Foreground="Gray" />
                 <Button
                     x:Name="searchBoxHelp"
-                    Margin="0,0,.5,5"
+                    Margin="0,0,.5,-1"
                     Padding="16,3,16,3"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"

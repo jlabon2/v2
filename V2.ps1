@@ -1,8 +1,16 @@
 ﻿# TODO
+# - update default rdp / msra values (command AND default to comp'
+# - Color switches on glyph buttons???
+# - 
 #
-#- Color switches on glyph buttons???
+#
+#
+#
+#
+#
+#########################
 Remove-Variable -Name * -ErrorAction SilentlyContinue
-$ver = 0.82
+$ver = 0.85
 if ($host.name -eq 'ConsoleHost') {
     $SW_HIDE, $SW_SHOW = 0, 5
     $TypeDef = '[DllImport("User32.dll")]public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'
@@ -13,7 +21,6 @@ if ($host.name -eq 'ConsoleHost') {
 }
 
 else { $global:baseConfigPath ='C:\v2' }
-# update default rdp / msra values (command AND default to comp'
 
 
 Add-Type -AssemblyName 'System.Windows.Forms'
@@ -419,7 +426,7 @@ Set-WPFControls -TargetHash $syncHash -XAMLPath $xamlPath
 
 Get-Glyphs -ConfigHash $configHash -GlyphList $glyphList
 $syncHash.settingLogo.Source = Join-Path $baseConfigPath trident.png
-Set-Version -Version "v$ver" -SyncHash $syncHash
+
 
 #Set-WPFControls -TargetHash $helpHash -XAMLPath $helpXAMLPath
 
@@ -427,6 +434,7 @@ Set-Version -Version "v$ver" -SyncHash $syncHash
 Add-CustomItemBoxControls -SyncHash $syncHash -ConfigHash $configHash
 Add-CustomToolControls -SyncHash $syncHash -ConfigHash $configHash
 Add-CustomRTControls -SyncHash $syncHash -ConfigHash $configHash
+Set-Version -Version "v$ver" -CID $configHash.configVer.Ver -SyncHash $syncHash
 $sysCheckHash.missingCheckFail = $false
 
 
@@ -1015,6 +1023,9 @@ $syncHash.importSelectAllButton.add_Click({
 $syncHash.importCancel.add_Click({ $syncHash.importDialog.IsOpen = $false })
 
 $syncHash.settingConfigClick.add_Click({ 
+    
+   $syncHash.saveChangeLogEdit.Text =  $configHash.configVer.changeLog
+    
     if ( $configHash.configVer.configPublishPath -and (Test-Path  $configHash.configVer.configPublishPath)) {
         $syncHash.savePublishPath.Text =  $configHash.configVer.configPublishPath
     }
@@ -1024,6 +1035,7 @@ $syncHash.settingConfigClick.add_Click({
 
 $syncHash.saveConfirmClick.add_Click({
     
+   $configHash.configVer.changeLog = $syncHash.saveChangeLogEdit.Text
     
     if ($syncHash.saveReset.IsChecked) {
         $configHash.configVer.Ver = 1
@@ -1034,7 +1046,7 @@ $syncHash.saveConfirmClick.add_Click({
 
 
     if ($syncHash.SavePublish.IsChecked -and (Test-Path $syncHash.savePublishPath.Text)) {
-        $configHash.configVer.configPublishPath =  $syncHash.savePublishPath.Text 
+        $configHash.configVer.configPublishPath = $syncHash.savePublishPath.Text 
         Export-VersionConfig -ConfigPath (Join-Path -Path $configHash.configVer.configPublishPath -ChildPath 'configVer.json') -ConfigHash $configHash
         Set-Config -ConfigPath  (Join-Path -Path $configHash.configVer.configPublishPath -ChildPath 'config.json') -Type Export -ConfigHash $configHash
           
@@ -1349,7 +1361,20 @@ $syncHash.tabMenu.add_Loaded( {
 
                                                                         else { $updatedValue = $result }
 
-                                                                        $rsCmd.Window.Dispatcher.Invoke([Action] { $rsCmd.boxResources.($type[0] + 'box' + $rsCmd.id + 'TextBox').Text = $updatedValue })                                        
+                                                                        $rsCmd.Window.Dispatcher.Invoke([Action] { 
+                                                                        
+                                                                        if (($rsCmd.propList.actionCmd1CanOff) -and ($updatedValue -like ($rsCmd.propList.actionCmd1offStr))) {
+                                                                            $rsCmd.boxResources.($type[0] + 'box' + $rscmd.id + 'Box1Action1').Tag = '$null'
+                                                                        }
+                                                                        else { $rsCmd.boxResources.($type[0] + 'box' + $rscmd.id + 'Box1Action1').Tag = '' }
+
+                                                                        if (($rsCmd.propList.actionCmd2CanOff) -and ($updatedValue -like ($rsCmd.propList.actionCmd2offStr))) {
+                                                                            $rsCmd.boxResources.($type[0] + 'box' + $rscmd.id + 'Box1Action1').Tag = '$null'
+                                                                        }
+                                                                        else { $rsCmd.boxResources.($type[0] + 'box' + $rscmd.id + 'Box1Action2').Tag = '' }
+                                                                            
+
+                                                                        $rsCmd.boxResources.($type[0] + 'box' + $rsCmd.id + 'TextBox').Text = $updatedValue })                                        
                                                                     }
                                                                 }
                                                             }
@@ -1423,6 +1448,13 @@ $syncHash.tabMenu.add_Loaded( {
                                                                 else { $updatedValue = $result }
 
                                                                 $syncHash.($type[0] + 'box' + $id + 'resources').($type[0] + 'box' + $id + 'TextBox').Text = $updatedValue
+
+                                                                (1..2) | ForEach-Object {
+                                                                    if (($configHash.($type + 'PropList')[$id - 1].('actionCmd' + $_ + 'CanOff')) -and ($updatedValue -like ($configHash.($type + 'PropList')[$id - 1].('actionCmd' + $_ + 'offStr')))) {
+                                                                        ($syncHash.($type[0] + 'box' + $id + 'resources')).($type[0] + 'box' + $id + 'Box1Action' + $_).Tag = '$null'
+                                                                    }
+                                                                    else { ($syncHash.($type[0] + 'box' + $id + 'resources')).($type[0] + 'box' + $id + 'Box1Action' + $_).Tag = '' }
+                                                                }                                                                                
                                                             }                       
                                                         }
                           
@@ -1890,16 +1922,21 @@ $syncHash.itemToolGridExport.Add_Click({
     $rsArgs = @{
             Name            = 'ExportGrid'           
             ModulesToImport = $configHash.modList 
-            ArgumentList    =  $configHash
+            ArgumentList    =  $configHash, $syncHash.itemToolDialog.Title
         }
 
     $syncHash.snackMsg.MessageQueue.Enqueue("Grid contents exporting...")
 
     Start-RSJob @rsArgs -ScriptBlock {
-        Param ($configHash) 
-       $configHash.gridExportList | Out-HtmlView
-    }
+        Param ($configHash, $tool) 
 
+        New-HTML -TitleText $title -ShowHTML {
+            New-HTMLText -Text $title -FontSize 16 -Fontweight Bolder -Alignment center
+            New-HTMLTable -DataTable $configHash.gridExportList -DateTimeSortingFormat 'M/D/YYYY HH:mm' -DefaultSortColumn Date -DefaultSortOrder Descending -SearchBuilder {
+                New-HTMLTableStyle -FontFamily 'Segoe UI' -FontWeight 500
+            }
+       }
+    }
 })
 
 $syncHash.tabControl.add_tabItemClosingEvent( {

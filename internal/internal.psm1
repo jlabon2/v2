@@ -20,10 +20,14 @@ function New-HashTables {
     $global:queryHash = [hashtable]::Synchronized(@{ })
 }
 function Set-Version {
-    param ($Version, $SyncHash) 
+    param ($Version, $SyncHash, $CID) 
     if ($Version) {
         $syncHash.toolVer.Text = $Version
     }
+    if ($CID) {
+        $syncHash.configVer.Text = "CID:" + ([string]$CID).PadLeft(4,'0')
+    }
+
 }
 
 function Set-CurrentPane {
@@ -457,6 +461,7 @@ function Set-Config {
             $configHash.gridExportList = $null
             $configHash.logCollectionView = $null
             $configHash.IsSearching = $null
+            $configHash.newVersionStubInfo = $null
 
           if ($null -notlike $configHash.settingHeaderConfig) { $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString() }
 
@@ -525,24 +530,28 @@ function Import-Config {
             Title            = 'Select config.json'
         }
 
+        $syncHash.importChangeLog.Text = $null
         $null = $configSelection.ShowDialog()
         $configPath = $configSelection.fileName
-        $global:importItems = Get-Content $configPath | ConvertFrom-Json    
-        $syncHash.importListBox.ItemsSource = $configMap.Keys
-        $syncHash.importListBox.SelectAll()
+        
+        if ($configPath -and (Test-Path $configPath)) {
+            $global:importItems = Get-Content $configPath | ConvertFrom-Json    
+            $syncHash.importListBox.ItemsSource = $configMap.Keys
+            $syncHash.importListBox.SelectAll()
+            $syncHash.importDialog.IsOpen = $true
+        }
     }
     
 
     else {
+        $syncHash.importChangeLog.Text = $configHash.newVersionStubInfo.changeLog
+
         $configPath = $configSelection
         $global:importItems = Get-Content $configPath | ConvertFrom-Json    
         $syncHash.importListBox.ItemsSource = $configMap.Keys
         $syncHash.importListBox.SelectAll()
-
-    }
-        
         $syncHash.importDialog.IsOpen = $true
-    
+    }           
 }
 
 #
@@ -706,6 +715,8 @@ function Set-DefaultVersionInfo {
                         else { ([guid]::NewGuid()).Guid }
     configPublishPath = if (![string]::IsNullOrWhiteSpace($configHash.configVer.configPublishPath) -and (Test-Path $configHash.configVer.configPublishPath -ErrorAction SilentlyContinue)) { $configHash.configVer.configPublishPath }
                         else { $null }
+    changeLog         = if (![string]::IsNullOrWhiteSpace($configHash.configVer.changeLog)) { $configHash.configVer.changeLog }
+                        else { "(No changes recordered)" }
 
     }
 
@@ -1473,8 +1484,9 @@ function Start-BasicADCheck {
                     
         if ($SysCheckHash.sysChecks[0].ADModule -eq $true) {                                                 
             $selectedDC = Get-ADDomainController -Discover -Service ADWS -ErrorAction SilentlyContinue 
-
-            if (Test-Connection -Count 1 -Quiet -ComputerName $selectedDC.HostName) {             
+            
+            if (Test-Connection -Count 1 -Quiet -ComputerName $selectedDC.HostName) { 
+                $global:PSDefaultParameterValues.Add("*-AD*:Server",$selectedDC.HostName[0])            
                 $SysCheckHash.sysChecks[0].ADDCConnectivity = 'True'
                             
                 try {
@@ -1754,6 +1766,7 @@ function Find-UpdatedConfig {
         $configVerPath = Join-Path -Path $configHash.configVer.configPublishPath -ChildPath 'configVer.json'
         if (Test-Path  $configVerPath) {
             $configVerInfo = Get-Content $configVerPath | ConvertFrom-Json
+            $configHash.newVersionStubInfo = $configVerInfo
             if ($configVerInfo.Ver -gt $configHash.configVer.ver -and $configVerInfo.ID -eq $configHash.ConfigVer.ID) {
                 $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.headerConfigUpdate.Visibility = "Visible" })
             }
@@ -3527,7 +3540,7 @@ function Get-LogItems {
         (Get-Content $InputObject.FullName |
                 ConvertFrom-Csv -Header ActionName, Message, SubjectName, ContextSubject, SubjectType, Date, Time, DateFull, Admin, Error, OldValue, NewValue) |
                 Select-Object ActionName, Message, SubjectName, SubjectType, ContextSubject, Admin, Error, OldValue, NewValue, DateFull, @{Label = 'Date'; Expression = { Get-Date(Get-Date($_.DateFull)) -Format 'MM/dd/yyyy HH:mm:ss' } } |
-                    ForEach-Object { $tempArray.Add($_) }
+                    Select-Object * -ExcludeProperty DateFull | ForEach-Object { $tempArray.Add($_) }
         
         
     }
@@ -3666,7 +3679,12 @@ function New-LogHTMLExport {
                         Measure-Object).Count
 
             New-HTML -Name 'Logged Actions' -Temporary -Show {
-                New-HTMLContent  -HeaderText $Title { New-HTMLTable -DataTable $logList -DefaultSortColumn 'Date' -DateTimeSortingFormat 'M/d/yyyy hh:mm:ss tt' -DefaultSortOrder Descending -Style display }
+                New-HTMLContent  -HeaderText $Title { 
+                    New-HTMLTable -DataTable $logList -DefaultSortColumn 'Date' -DateTimeSortingFormat 'M/D/YYYY HH:mm:SS tt' -DefaultSortOrder Descending -Style display -SearchBuilder {
+                        New-HTMLTableStyle -FontFamily 'Segoe UI' -FontWeight 500 
+                    }
+                }
+
 
                 New-HTMLContent -HeaderText 'Metrics' {
                     New-HTMLPanel {
