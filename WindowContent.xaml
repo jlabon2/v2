@@ -10,7 +10,6 @@
     xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:simpleChildWindow="clr-namespace:MahApps.Metro.SimpleChildWindow;assembly=MahApps.Metro.SimpleChildWindow"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-    Title="   V²"
     Width="1000"
     Height="700"
     BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
@@ -38,6 +37,8 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Steel.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+
 
             <Style x:Key="StatusLabel" TargetType="Label">
                 <Setter Property="BorderThickness" Value="0" />
@@ -160,13 +161,18 @@
                 <Setter Property="HorizontalContentAlignment" Value="Center" />
             </Style>
 
-            <Style BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}" TargetType="Button">
+            <Style
+                x:Key="defaultButton"
+                BasedOn="{StaticResource MaterialDesignFlatAccentBgButton}"
+                TargetType="Button">
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="BorderThickness" Value=".5" />
                 <Setter Property="Background" Value="#2a2a2a" />
                 <Setter Property="BorderBrush" Value="{DynamicResource MahApps.Brushes.Button.Border}" />
                 <Setter Property="FontFamily" Value="{StaticResource MahApps.Fonts.Family.Header}" />
             </Style>
+
+            <Style BasedOn="{StaticResource defaultButton}" TargetType="Button" />
 
 
             <Style
@@ -983,6 +989,17 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
+            <Style
+                x:Key="headerBlocksExternal"
+                BasedOn="{StaticResource headerBlocks}"
+                TargetType="TextBlock">
+                <Setter Property="Foreground" Value="LightGray" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=StackPanel}, Path=IsMouseOver, UpdateSourceTrigger=PropertyChanged}" Value="True">
+                        <Setter Property="Foreground" Value="White" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
 
 
 
@@ -1028,18 +1045,115 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
+            <Style x:Key="settingSectionHeader" TargetType="TextBlock">
+                <Setter Property="DockPanel.Dock" Value="Top" />
+                <Setter Property="Margin" Value="5,0,0,0" />
+                <Setter Property="FontFamily" Value="{DynamicResource MahApps.Fonts.Family.Header}" />
+                <Setter Property="FontSize" Value="16" />
+            </Style>
 
+            <Style x:Key="settingSectionDesc" TargetType="TextBlock">
+                <Setter Property="Margin" Value="5,0,0,0" />
+                <Setter Property="FontFamily" Value="{DynamicResource MahApps.Fonts.Family.Header}" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Foreground" Value="LightGray" />
+            </Style>
+            <Style
+                x:Key="settingSectionButton"
+                BasedOn="{StaticResource defaultButton}"
+                TargetType="Button">
+                <Setter Property="Margin" Value="15,12,15,12" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="Grid.Column" Value="2" />
+                <Setter Property="Height" Value="36" />
+                <Setter Property="Width" Value="50" />
+                <Setter Property="Content" Value="" />
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
-    <Controls:MetroWindow.RightWindowCommands>
+    <Controls:MetroWindow.LeftWindowCommands>
 
+
+        <Controls:WindowCommands
+            Name="headerLeft"
+            Margin="0,-2.5,0,0"
+            ShowSeparators="False">
+            <TextBlock
+                Margin="15,0,15,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                FontSize="20"
+                Text="V²" />
+
+            <md:PopupBox
+                Name="externalToolListPopup"
+                Width="125"
+                Height="18"
+                Padding="0"
+                HorizontalAlignment="Right"
+                PlacementMode="BottomAndAlignLeftEdges"
+                PopupMode="Click"
+                StaysOpen="False"
+                Style="{StaticResource MaterialDesignPopupBox}"
+                UnfurlOrientation="Horizontal">
+                <md:PopupBox.ToggleContent>
+                    <StackPanel Orientation="Horizontal">
+
+
+                        <TextBlock Style="{StaticResource headerBlocksExternal}" Text="External Tools" />
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="16"
+                            Style="{StaticResource headerBlocksExternal}"
+                            Text="" />
+                    </StackPanel>
+                </md:PopupBox.ToggleContent>
+                <DockPanel Width="200" MaxHeight="400">
+                    <ListBox
+                        Name="externalToolList"
+                        MaxHeight="200"
+                        HorizontalContentAlignment="Left"
+                        md:ListBoxAssist.IsToggle="False"
+                        Background="{StaticResource MahApps.Brushes.ThemeBackground}"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                        SelectionMode="Single"
+                        Style="{StaticResource MaterialDesignToolVerticalToggleListBox}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,0" HorizontalAlignment="Left">
+                                    <Image
+                                        Width="15"
+                                        Height="15"
+                                        Margin="5,0,15,0"
+                                        Source="{Binding Icon}" />
+
+                                    <TextBlock
+                                        FontFamily="Segoe UI Thin"
+                                        FontSize="12"
+                                        Foreground="White"
+                                        Text="{Binding Name}" />
+
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                </DockPanel>
+            </md:PopupBox>
+        </Controls:WindowCommands>
+    </Controls:MetroWindow.LeftWindowCommands>
+
+    <Controls:MetroWindow.RightWindowCommands>
         <Controls:WindowCommands
             Name="headerControl"
             Margin="0,-2.5,0,0"
             HorizontalAlignment="Right"
             VerticalAlignment="Center"
             ShowLastSeparator="True">
+
             <Button
                 Name="headerConfigUpdate"
                 Width="200"
@@ -1062,11 +1176,13 @@
                     </StackPanel>
                 </Button.Content>
             </Button>
+
             <TextBlock Name="headerUser" Style="{StaticResource headerBlocks}" />
             <TextBlock
                 Foreground="{Binding headerColor}"
                 Style="{StaticResource headerBlocks}"
                 Text="{Binding headerAdd}" />
+
         </Controls:WindowCommands>
     </Controls:MetroWindow.RightWindowCommands>
 
@@ -10431,14 +10547,7 @@
                                 </ScrollViewer>
                             </Grid>
                         </Controls:MetroTabItem>
-                        <Controls:MetroTabItem
-                            Name="newTab"
-                            Tag="New"
-                            Visibility="Collapsed">
-                            <Controls:MetroTabItem.Header>
-                                <Label Content="" Style="{StaticResource customTabLabel}" />
-                            </Controls:MetroTabItem.Header>
-                        </Controls:MetroTabItem>
+
                         <Controls:MetroTabItem Name="settingsTab" Tag="Settings">
                             <Controls:MetroTabItem.Header>
                                 <Label Content="" Style="{StaticResource customTabLabel}" />
@@ -10460,27 +10569,15 @@
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel>
 
-                                                    <Label
-                                                        Content="Modules"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Required modules" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Modules" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Required modules" />
                                                 </DockPanel>
                                                 <DockPanel />
                                                 <Button
                                                     x:Name="settingModClick"
-                                                    Grid.Column="2"
-                                                    Height="35"
                                                     Margin="5,12,5,12"
                                                     Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="25" />
+                                                    Style="{StaticResource settingSectionButton}" />
                                                 <Label
                                                     x:Name="settingModLabel"
                                                     Grid.Column="3"
@@ -10502,26 +10599,15 @@
                                                     <ColumnDefinition Width="60" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="ADDS Infrastructure"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="ADDS functionality" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="ADDS Infrastructure" />
+
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="ADDS functionality" />
                                                 </DockPanel>
                                                 <Button
                                                     x:Name="settingADClick"
-                                                    Grid.Column="2"
-                                                    Height="36"
                                                     Margin="5,12,5,12"
                                                     Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="25" />
+                                                    Style="{StaticResource settingSectionButton}" />
                                                 <Label
                                                     x:Name="settingADLabel"
                                                     Grid.Column="3"
@@ -10543,26 +10629,14 @@
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
 
-                                                    <Label
-                                                        Content="Permissions"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Administrative rights" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Permissions" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Administrative rights" />
                                                 </DockPanel>
                                                 <Button
                                                     x:Name="settingPermClick"
-                                                    Grid.Column="2"
-                                                    Height="36"
                                                     Margin="5,12,5,12"
                                                     Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="25" />
+                                                    Style="{StaticResource settingSectionButton}" />
                                                 <Label
                                                     x:Name="settingPermLabel"
                                                     Grid.Column="3"
@@ -10581,37 +10655,20 @@
                                         Columns="2">
 
                                         <DockPanel HorizontalAlignment="Center">
-                                            <Grid
-                                                x:Name="settingGeneralConfig"
-                                                Margin="25,0,25,0"
-                                                HorizontalAlignment="Stretch">
+                                            <Grid Margin="25,0,25,0" HorizontalAlignment="Stretch">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="280" />
                                                     <ColumnDefinition Width="*" MaxWidth="275" />
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="General Settings"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
                                                     <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure general tool settings" />
+                                                        FontStretch="Normal"
+                                                        Style="{StaticResource settingSectionHeader}"
+                                                        Text="General Settings" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure general tool settings" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingGeneralClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingGeneralClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                         <DockPanel HorizontalAlignment="Center">
@@ -10625,27 +10682,11 @@
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="Resources and Variables"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure resources for use internally" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Resources and Variables" />
+
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure resources for use internally" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingVarClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingVarClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
 
@@ -10660,27 +10701,10 @@
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="Remote Access"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure available remote access tools" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Remote Access" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure available remote access tools" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingRemoteClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingRemoteClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                         <DockPanel HorizontalAlignment="Center">
@@ -10694,28 +10718,11 @@
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Computer Categorization" />
 
-                                                    <Label
-                                                        Content="Computer Categorization"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Define computer categories" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Define computer categories" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingNamingClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingNamingClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                         <DockPanel HorizontalAlignment="Center">
@@ -10729,27 +10736,10 @@
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="Login Logging"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure usage and paths to login logs" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Login Logging" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure usage and paths to login logs" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingLoggingClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingLoggingClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                         <DockPanel HorizontalAlignment="Center">
@@ -10763,27 +10753,10 @@
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="Network Settings"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure advanced network options" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Network Settings" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure advanced network options" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingNetworkClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingNetworkClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                         <DockPanel HorizontalAlignment="Center">
@@ -10797,27 +10770,10 @@
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="User Properties"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure displayed user properties" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="User Properties" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure displayed user properties" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingUserPropClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingUserPropClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                         <DockPanel HorizontalAlignment="Center">
@@ -10831,27 +10787,10 @@
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="Computer Properties"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure displayed computer properties" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Computer Properties" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure displayed computer properties" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingCompPropClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingCompPropClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                         <DockPanel HorizontalAlignment="Center">
@@ -10866,27 +10805,10 @@
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
 
-                                                    <Label
-                                                        Content="Contextual Tools"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure contextual tools used with logs" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Contextual tools" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure contextual tools used with logs" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingContextClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingContextClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                         <DockPanel HorizontalAlignment="Center">
@@ -10900,27 +10822,10 @@
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <DockPanel HorizontalAlignment="Left">
-                                                    <Label
-                                                        Content="Tools"
-                                                        DockPanel.Dock="Top"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="16" />
-                                                    <TextBlock
-                                                        Margin="5,0,0,0"
-                                                        FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                        FontSize="14"
-                                                        Foreground="LightGray"
-                                                        Text="Configure computer, user, and standalone tools" />
+                                                    <TextBlock Style="{StaticResource settingSectionHeader}" Text="Tools" />
+                                                    <TextBlock Style="{StaticResource settingSectionDesc}" Text="Configure computer, user, and standalone tools" />
                                                 </DockPanel>
-                                                <Button
-                                                    x:Name="settingObjectToolsClick"
-                                                    Grid.Column="2"
-                                                    Width="50"
-                                                    Height="36"
-                                                    Margin="15,12,15,12"
-                                                    Content=""
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="22" />
+                                                <Button x:Name="settingObjectToolsClick" Style="{StaticResource settingSectionButton}" />
                                             </Grid>
                                         </DockPanel>
                                     </UniformGrid>

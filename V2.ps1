@@ -434,6 +434,9 @@ $syncHash.settingLogo.Source = Join-Path $baseConfigPath trident.png
 Add-CustomItemBoxControls -SyncHash $syncHash -ConfigHash $configHash
 Add-CustomToolControls -SyncHash $syncHash -ConfigHash $configHash
 Add-CustomRTControls -SyncHash $syncHash -ConfigHash $configHash
+
+$syncHash.externalToolList.ItemsSource = Set-ExternalTools -ConfigHash $configHash -BaseConfigPath $baseConfigPath
+
 Set-Version -Version "v$ver" -CID $configHash.configVer.Ver -SyncHash $syncHash
 $sysCheckHash.missingCheckFail = $false
 
@@ -1939,6 +1942,13 @@ $syncHash.itemToolGridExport.Add_Click({
     }
 })
 
+$syncHash.externalToolList.Add_SelectionChanged({
+
+    if ($syncHash.externalToolList.SelectedItem) {
+        & $syncHash.externalToolList.SelectedItem.Exe
+        $syncHash.externalToolList.SelectedItem = $null
+    }
+})
 $syncHash.tabControl.add_tabItemClosingEvent( {
 
       
@@ -2161,8 +2171,6 @@ $syncHash.toolsLogEndDate.Add_CalendarClosed( { Set-FilteredLogs -SyncHash $sync
 
 $syncHash.toolsLogSearchBox.add_KeyDown( { if ($_.Key -eq 'Enter') { Set-FilteredLogs -SyncHash $syncHash -LogView $configHash.logCollectionView } })
 
-
-
 $syncHash.adHocConfirm.Add_Click({
     $configHash.confirmCode = 'continue'
     $syncHash.adHocConfirmWindow.IsOpen = $false
@@ -2173,11 +2181,11 @@ $syncHash.adHocConfirmCancel.Add_Click({
     $syncHash.adHocConfirmWindow.IsOpen = $false
 })
 
-
-
-$syncHash.toolsLogDialogClose.Add_Click( { $syncHash.toolsLogDialog.IsOpen = $false })
+$syncHash.toolsLogDialogClose.Add_Click( { 
+    $syncHash.toolsLogDataGrid.Items.Clear()
+    $syncHash.toolsLogDialog.IsOpen = $false
+})
 #endregion
-
 
 $syncHash.itemToolSearchBoxClear.Add_Click({ $syncHash.itemToolListSearchBox.Text = $null })
 $syncHash.toolsLogSearchBoxClear.Add_Click({ $syncHash.toolsLogSearchBox.Text = $null })
@@ -2256,13 +2264,6 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
         }
     })
 
-
-
-
-
-
-
-
 $syncHash.settingExecute.Add_Click({
         if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') { $type = 'User' }
 
@@ -2279,7 +2280,6 @@ $syncHash.settingExecute.Add_Click({
         Test-UserScriptBlock @scriptTestArgs
 
     })
-
 
 $syncHash.settingAction2HidablePanel.Add_isEnabledChanged( {
         if ($syncHash.settingUserPropGrid.Visibility -eq 'Visible') { $type = 'User' }
@@ -2400,10 +2400,6 @@ $syncHash.settingContextScriptBlockBox.Add_TextChanged({
             Reset-ScriptBlockValidityStatus @resetArgs
     }
 })
-
-    
-
-
 
 $syncHash.settingObjectToolExecute.Add_Click( {
 

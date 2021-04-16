@@ -18,6 +18,8 @@ function New-HashTables {
 
     # Stores data related to queried objects
     $global:queryHash = [hashtable]::Synchronized(@{ })
+
+    $global:exToolHash = [hashtable]::Synchronized(@{})
 }
 function Set-Version {
     param ($Version, $SyncHash, $CID) 
@@ -2135,6 +2137,35 @@ function Set-SelectedItem {
     })
 
     
+}
+
+function  Set-ExternalTools {
+param ($configHash, $baseConfigPath)
+
+    $extList = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
+    $toolDir = Join-Path -Path $baseConfigPath -ChildPath 'Tools'
+
+    foreach ($remoteTool in $configHash.rtConfig.Keys) {
+        $extList.Add([PSCustomObject]@{
+            Name = $configHash.rtConfig.$remoteTool.DisplayName
+            Icon = [Convert]::FromBase64String($ConfigHash.rtConfig.$remoteTool.Icon)
+            Exe  = $configHash.rtConfig.$remoteTool.Path
+        })
+    }
+
+    if (Test-Path -Path $toolDir) {
+        $toolList = Get-ChildItem $toolDir
+
+        foreach ($tool in $toolList) {
+            $extList.Add([PSCustomObject]@{
+                Name = [IO.Path]::GetFileNameWithoutExtension($tool.FullName)
+                Icon = [Convert]::FromBase64String((Get-Icon -Path $tool.FullName -ToBase64))
+                Exe  = $tool.FullName
+            })
+        }
+    }
+
+    $extList
 }
 
 function Get-CustomItem {
