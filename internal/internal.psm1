@@ -629,8 +629,8 @@ function Suspend-FailedItems {
     $SyncHash.tabMenu.Items | ForEach-Object -Process { $SyncHash.Window.Dispatcher.invoke([action] { $_.IsEnabled = $false }) }
     
     $SyncHash.Window.Dispatcher.invoke([action] { 
-            $SyncHash.tabMenu.Items[3].IsEnabled = $true
-            $SyncHash.tabMenu.SelectedIndex = 3
+            $SyncHash.tabMenu.Items[2].IsEnabled = $true
+            $SyncHash.tabMenu.SelectedIndex = 2
         })
 } 
 
@@ -2154,7 +2154,7 @@ param ($configHash, $baseConfigPath)
     }
 
     if (Test-Path -Path $toolDir) {
-        $toolList = Get-ChildItem $toolDir
+        $toolList = Get-ChildItem $toolDir -File
 
         foreach ($tool in $toolList) {
             $extList.Add([PSCustomObject]@{
@@ -3717,12 +3717,12 @@ function New-LogHTMLExport {
                 }
 
 
-                New-HTMLContent -HeaderText 'Metrics' {
+                New-HTMLContent -HeaderText 'General Metrics' {
                     New-HTMLPanel {
                         New-HTMLChart -Gradient -Title 'Actions' -TitleAlignment center {
                             New-ChartToolbar -Download               
                             $logList |
-                                Where-Object { $_.ActionName -ne 'query' } |
+                                Where-Object { $_.ActionName -ne 'query' -and $_.ActionName -notlike "Refresh*" -and $_.ActionName -notlike "Remote Tool (*" } |
                                     Group-Object -Property Actionname |
                                         ForEach-Object { New-ChartPie -Name $_.Name -Value $_.Count }
                         }
@@ -3751,7 +3751,45 @@ function New-LogHTMLExport {
                             }
                         }
                     }                     
-                }       
+                }  
+                
+                 New-HTMLContent -HeaderText 'Remote Tool (RT) Metrics' {
+                    New-HTMLPanel {
+                        New-HTMLChart -Gradient -Title 'RT Usage' -TitleAlignment center {
+                            New-ChartToolbar -Download               
+                            $logList |
+                                Where-Object { $_.ActionName -like "Remote Tool*" } |
+                                    Group-Object -Property ActionName |
+                                        ForEach-Object { New-ChartPie -Name ($_.Name -replace "remote tool " -replace "[)(]") -Value $_.Count }
+                        }
+                    }
+
+                    New-HTMLPanel {
+                        New-HTMLChart -Gradient -Title 'Top RT Computer Target' -TitleAlignment center {
+                            New-ChartLegend -Name 'Computer'
+                            $logList |
+                                Where-Object { $_.ActionName -like "Remote Tool*" -and $_.SubjectName -notlike $null } |
+                                    Group-Object -Property SubjectName |
+                                        Sort-Object -Property Count -Descending |
+                                            Select-Object -First 10 |
+                                                ForEach-Object { New-ChartBar -Name $_.Name -Value $_.Count }
+                        }
+                    }
+
+                     New-HTMLPanel {
+                        New-HTMLChart -Gradient -Title 'Top RT User Target' -TitleAlignment center {
+                            New-ChartLegend -Name 'Computer'
+                            $logList |
+                                Where-Object { $_.ActionName -like "Remote Tool*" -and $_.ContextSubject -ne '[N/A]' } |
+                                    Group-Object -Property ContextSubject |
+                                        Sort-Object -Property Count -Descending |
+                                            Select-Object -First 10 |
+                                                ForEach-Object { New-ChartBar -Name $_.Name -Value $_.Count }
+                        }
+                    }
+
+                             
+                }          
             }
         }
     }

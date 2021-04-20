@@ -10,7 +10,8 @@
 #
 #########################
 Remove-Variable -Name * -ErrorAction SilentlyContinue
-$ver = 0.85
+$ver = 0.88
+
 if ($host.name -eq 'ConsoleHost') {
     $SW_HIDE, $SW_SHOW = 0, 5
     $TypeDef = '[DllImport("User32.dll")]public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'
@@ -1504,8 +1505,17 @@ $syncHash.tabMenu.add_Loaded( {
                             else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName }
                         }
 
-                       Set-CustomVariables -VarHash $varHash
-                       ([scriptblock]::Create($configHash.rtConfig.MSTSC.cmd)).Invoke()
+                        Set-CustomVariables -VarHash $varHash
+
+                        try { 
+                            ([scriptblock]::Create($configHash.rtConfig.MSTSC.cmd)).Invoke() 
+                            Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName 'Remote Tool (RDP)' -SubjectName $comp -SubjectType 'Computer' -ArrayList $configHash.actionLog 
+                        }
+
+                        catch { 
+                            Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName 'Remote Tool (RDP)' -SubjectName $comp -Status Fail                                                     
+                            Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName 'Remote Tool (RDP)' -SubjectName $comp -SubjectType 'Computer' -ArrayList $configHash.actionLog -Error $_
+                        }
                     })
 
                 $syncHash.($buttonType + 2).Source = ([Convert]::FromBase64String($configHash.rtConfig.MSRA.Icon))
@@ -1524,7 +1534,16 @@ $syncHash.tabMenu.add_Loaded( {
                         }
                         
                         Set-CustomVariables -VarHash $varHash
-                        ([scriptblock]::Create($configHash.rtConfig.MSRA.cmd)).Invoke()
+                        
+                        try { 
+                            ([scriptblock]::Create($configHash.rtConfig.MSRA.cmd)).Invoke() 
+                            Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName 'Remote Tool (MSRA)' -SubjectName $comp -SubjectType 'Computer' -ArrayList $configHash.actionLog 
+                        }
+
+                        catch { 
+                            Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName 'Remote Tool (MSRA)' -SubjectName $comp -Status Fail                                                     
+                            Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName 'Remote Tool (MSRA)' -SubjectName $comp -SubjectType 'Computer' -ArrayList $configHash.actionLog -Error $_
+                        }
                         
                     })    
 
@@ -1548,7 +1567,8 @@ $syncHash.tabMenu.add_Loaded( {
 
                     $syncHash.customRT.$rtID.($buttonType + 'img').Parent.Add_Click( { 
                             param([Parameter(Mandatory)][Object]$sender) 
-                            $id = 'rt' + ([int]($sender.Name -replace '.*but') - 2)              
+                            $id = 'rt' + ([int]($sender.Name -replace '.*but') - 2)  
+                            $toolName = $configHash.rtConfig.$id.DisplayName            
 
                             if ($sender.Name -match 'rbut') {
                                 if ($syncHash.userCompFocusHostToggle.IsChecked) { $comp = $syncHash.UserCompGrid.SelectedItem.HostName }
@@ -1570,7 +1590,17 @@ $syncHash.tabMenu.add_Loaded( {
                             }
 
                             Set-CustomVariables -VarHash $varHash
-                            ([scriptblock]::Create($configHash.rtConfig.$id.cmd)).Invoke()
+                            
+                              
+                            try { 
+                                ([scriptblock]::Create($configHash.rtConfig.$id.cmd)).Invoke()
+                                Write-LogMessage -Path $configHash.actionlogPath -Message Succeed -ActionName "Remote Tool ($($toolName))" -SubjectName $comp -ContextSubjectName $user -SubjectType 'Computer' -ArrayList $configHash.actionLog 
+                            }
+
+                            catch { 
+                                Write-SnackMsg -Queue $syncHash.SnackMsg.MessageQueue -ToolName "Remote Tool ($($toolName))" -SubjectName $comp -Status Fail                                                     
+                                Write-LogMessage -Path $configHash.actionlogPath -Message Fail -ActionName "Remote Tool ($($toolName))" -SubjectName $comp -ContextSubjectName $user -SubjectType 'Computer' -ArrayList $configHash.actionLog  -Error $_
+                            }
                    
                         })
 
@@ -1689,7 +1719,6 @@ $syncHash.tabMenu.add_Loaded( {
         else { 
             $syncHash.queryTab.IsEnabled = $false
             $syncHash.toolTab.IsEnabled = $false
-            $syncHash.newTab.IsEnabled = $false
         }
     })
                 

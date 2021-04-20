@@ -116,33 +116,6 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
-            <DrawingBrush
-                x:Key="ThatchBackground"
-                Stretch="None"
-                TileMode="Tile"
-                Viewport="0,0,15,15"
-                ViewportUnits="Absolute">
-                <DrawingBrush.Drawing>
-                    <DrawingGroup>
-                        <GeometryDrawing Brush="#FF363333">
-                            <GeometryDrawing.Geometry>
-                                <GeometryGroup>
-                                    <RectangleGeometry Rect="0,0,60,60" />
-                                    <RectangleGeometry Rect="60,60,60,60" />
-                                </GeometryGroup>
-                            </GeometryDrawing.Geometry>
-                        </GeometryDrawing>
-                        <GeometryDrawing Brush="#FF363338">
-                            <GeometryDrawing.Geometry>
-                                <GeometryGroup>
-                                    <RectangleGeometry Rect="0,0,60,60" />
-                                    <RectangleGeometry Rect="60,60,60,60" />
-                                </GeometryGroup>
-                            </GeometryDrawing.Geometry>
-                        </GeometryDrawing>
-                    </DrawingGroup>
-                </DrawingBrush.Drawing>
-            </DrawingBrush>
             <Style
                 x:Key="flyoutItemBox"
                 BasedOn="{StaticResource MaterialDesignTextBox}"
@@ -375,16 +348,16 @@
                         <Setter Property="Text" Value="AD Group Selection:" />
                     </Trigger>
                     <Trigger Property="Tag" Value="OU">
-                        <Setter Property="Text" Value="ou Selection:" />
+                        <Setter Property="Text" Value="OU Selection:" />
                     </Trigger>
                     <Trigger Property="Tag" Value="String">
-                        <Setter Property="Text" Value="Text Selection:" />
+                        <Setter Property="Text" Value="Text Entry:" />
                     </Trigger>
                     <Trigger Property="Tag" Value="Choice">
-                        <Setter Property="Text" Value="Choice Selection:" />
+                        <Setter Property="Text" Value="List Selection:" />
                     </Trigger>
                     <Trigger Property="Tag" Value="Integer">
-                        <Setter Property="Text" Value="Number Selection:" />
+                        <Setter Property="Text" Value="Number Entry:" />
                     </Trigger>
                     <Trigger Property="Tag" Value="File">
                         <Setter Property="Text" Value="File Path Selection:" />
@@ -993,7 +966,7 @@
                 x:Key="headerBlocksExternal"
                 BasedOn="{StaticResource headerBlocks}"
                 TargetType="TextBlock">
-                <Setter Property="Foreground" Value="LightGray" />
+                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Gray5}" />
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=StackPanel}, Path=IsMouseOver, UpdateSourceTrigger=PropertyChanged}" Value="True">
                         <Setter Property="Foreground" Value="White" />
@@ -1081,7 +1054,7 @@
             Margin="0,-2.5,0,0"
             ShowSeparators="False">
             <TextBlock
-                Margin="15,0,15,0"
+                Margin="22.5,0,15,0"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 FontSize="20"
@@ -1100,8 +1073,6 @@
                 UnfurlOrientation="Horizontal">
                 <md:PopupBox.ToggleContent>
                     <StackPanel Orientation="Horizontal">
-
-
                         <TextBlock Style="{StaticResource headerBlocksExternal}" Text="External Tools" />
                         <TextBlock
                             FontFamily="Segoe MDL2 Assets"
@@ -2277,8 +2248,8 @@
 
                             <TextBlock
                                 Name="itemToolListSelectText"
-                                Margin="10,10,10,35"
-                                HorizontalAlignment="Center"
+                                Margin="30,10,30,35"
+                                HorizontalAlignment="Stretch"
                                 DockPanel.Dock="Top"
                                 FontFamily="Segoe UI Light"
                                 Style="{StaticResource MaterialDesignCaptionTextBlock}"
@@ -2501,9 +2472,8 @@
 
                             <TextBlock
                                 Name="itemToolGridSelectText"
-                                MaxWidth="250"
-                                Margin="10,10,10,35"
-                                HorizontalAlignment="Center"
+                                Margin="30,10,30,35"
+                                HorizontalAlignment="Stretch"
                                 DockPanel.Dock="Top"
                                 FontFamily="Segoe UI Light"
                                 Style="{StaticResource MaterialDesignCaptionTextBlock}"
