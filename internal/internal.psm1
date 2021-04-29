@@ -37,6 +37,26 @@ function Set-CurrentPane {
     $SyncHash.infoPaneContent.Tag = $Panel
 }
 
+function Set-WindowVisibility {
+param($BasePath)
+    if ($host.name -eq 'ConsoleHost') {
+        $SW_HIDE, $SW_SHOW = 0, 5
+        $TypeDef = '[DllImport("User32.dll")]public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'
+        Add-Type -MemberDefinition $TypeDef -Namespace Win32 -Name Functions
+        $hWnd = (Get-Process -Id $PID).MainWindowHandle
+        $Null = [Win32.Functions]::ShowWindow($hWnd,$SW_HIDE)
+        
+    }
+}
+
+function Set-GlobalVars {
+    param ($BasePath)
+    $global:xamlPath     = Join-Path $BasePath WindowContent.xaml
+    $global:glyphList    = Join-Path $BasePath \internal\base\segoeGlyphs.txt
+    $global:savedConfig  =  Join-Path $BasePath config.json
+    $global:ConfigMap    = Set-ConfigMap
+}
+
 function Get-RelatedClass {
     param( [string]$ClassName )
   
@@ -1312,7 +1332,7 @@ function Add-CustomToolControls {
                                                     
                                                     else {$syncHash.itemToolGridExport.Visibility = 'Collapsed'}
 
-                                                     $syncHash.itemToolGridItemsEmptyText.Visibility = 'Collapsed'
+                                                     $syncHash.itemToolGridItemsEmptyText.Visibility = 'Hidden'
 
                                                 }
 
@@ -2032,7 +2052,7 @@ function Suspend-ToolControls {
                                                     
             else {$syncHash.itemToolGridExport.Visibility = 'Collapsed'}
 
-            $syncHash.itemToolGridItemsEmptyText.Visibility = 'Collapsed'
+            $syncHash.itemToolGridItemsEmptyText.Visibility = 'Hidden'
 
         }
 
@@ -2056,7 +2076,7 @@ function Suspend-ToolControls {
                 $SyncHash.itemToolListSelectAllButton.Visibility = 'Collapsed'
             }
 
-            $syncHash.itemToolListItemsEmptyText.Visibility = 'Collapsed'
+            $syncHash.itemToolListItemsEmptyText.Visibility = 'Hidden'
 
         }
 
@@ -2746,7 +2766,7 @@ function Set-LogMapGrid {
 
     # Get last 10 entries of newest logged item; select latest of these entries not ending 
     # in a comma (which would indicate that var was empty on login)
-    $testLog = Get-Content ((Get-ChildItem -Path $ConfigHash.($type + 'LogPath') |
+    $testLog = Get-Content ((Get-ChildItem -Path (Join-Path $ConfigHash.($type + 'LogPath') -ChildPath *) -Include *.txt, *.log, *.csv |
                 Sort-Object LastWriteTime -Descending |
                     Select-Object -First 1).FullName) |
                 Select-Object -Last 11 |
@@ -2755,7 +2775,7 @@ function Set-LogMapGrid {
 
     # If empty, all latest entries have a seperate field without a value, so we'll just grab the last non-empty line
     if (!$testLog) { 
-        $testLog = Get-Content ((Get-ChildItem -Path $ConfigHash.($type + 'LogPath') | 
+        $testLog = Get-Content ((Get-ChildItem -Path (Join-Path $ConfigHash.($type + 'LogPath') -ChildPath *) -Include *.txt, *.log, *.csv |
                     Sort-Object LastWriteTime -Descending |
                         Select-Object -First 1).FullName) |
                     Where-Object { $_.Trim() -ne '' } |
@@ -2812,8 +2832,10 @@ function Set-LoggingDirectory {
         $SyncHash,
         $ConfigHash,
         [parameter(Mandatory)][ValidateSet('Comp', 'User')]$type)
-
+    
     $selectedDirectory = New-FolderSelection -Title 'Select client logging directory'
+
+    if (!$selectedDirectory -and ($ConfigHash.($type + 'LogPath') -and (Test-Path $ConfigHash.($type + 'LogPath')))) {$selectedDirectory = $ConfigHash.($type + 'LogPath')}
 
     if (![string]::IsNullOrEmpty($selectedDirectory) -and (Test-Path $selectedDirectory)) {
         $ConfigHash.($type + 'LogPath') = $selectedDirectory              
@@ -3008,9 +3030,9 @@ function Find-ObjectLogs {
             Start-Sleep -Milliseconds 500
             $startID = $queryHash.$($match.SamAccountName).QueryID
         
-            if ($ConfigHash.UserLogPath -and (Test-Path (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt"))) {
-                $queryHash.$($match.SamAccountName).LoginLogPath = (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt")
-                $queryHash.$($match.SamAccountName).LoginLogRaw = Get-Content (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName).txt") |
+            if ($ConfigHash.UserLogPath -and (Test-Path (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName)`.*"))) {
+                $queryHash.$($match.SamAccountName).LoginLogPath = (((Get-ChildItem (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName)`.*") -Include *.txt, *.csv, *.log))[0]).FullName
+                $queryHash.$($match.SamAccountName).LoginLogRaw = Get-Content $queryHash.$($match.SamAccountName).LoginLogPath |
                     Select-Object -Last ($ConfigHash.searchDays * 2.5) | 
                         ConvertFrom-Csv -Header $ConfigHash.userLogMapping.Header |
                             Select-Object *, @{Label = 'DateTime'; Expression = { $_.DateRaw -as [datetime] } } -ExcludeProperty DateRaw |
@@ -3187,9 +3209,9 @@ function Find-ObjectLogs {
             Start-Sleep -Milliseconds 500                               
             $startID = $queryHash.$($match.Name).QueryID
 
-            if ($ConfigHash.compLogPath -and (Test-Path (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt"))) {
-                $queryHash.$($match.Name).LoginLogPath = (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt")
-                $queryHash.$($match.Name).LoginLogRaw = Get-Content (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name).txt") | 
+            if ($ConfigHash.compLogPath -and (Test-Path (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name)`.*"))) {
+                $queryHash.$($match.Name).LoginLogPath = (((Get-ChildItem (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.name)`.*")-Include *.txt, *.csv, *.log))[0]).FullName
+                $queryHash.$($match.Name).LoginLogRaw = Get-Content $queryHash.$($match.Name).LoginLogPath | 
                     Select-Object -Last ($ConfigHash.searchDays * 2.5) |
                         ConvertFrom-Csv -Header $ConfigHash.compLogMapping.Header |
                             Select-Object *, @{Label = 'DateTime'; Expression = { $_.DateRaw -as [datetime] } } -ExcludeProperty DateRaw |

@@ -28,9 +28,14 @@
 
             <ResourceDictionary.MergedDictionaries>
 
+                <md:BundledTheme
+                    BaseTheme="Dark"
+                    PrimaryColor="BlueGrey"
+                    SecondaryColor="LightBlue" />
+
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Primary/MaterialDesignColor.BlueGrey.xaml" />
+
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.PopupBox.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
@@ -1094,7 +1099,7 @@
                         Style="{StaticResource MaterialDesignToolVerticalToggleListBox}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel Margin="0,0,0,0" HorizontalAlignment="Left">
+                                <DockPanel HorizontalAlignment="Left">
                                     <Image
                                         Width="15"
                                         Height="15"
@@ -1153,7 +1158,7 @@
                 Foreground="{Binding headerColor}"
                 Style="{StaticResource headerBlocks}"
                 Text="{Binding headerAdd}" />
-
+         
         </Controls:WindowCommands>
     </Controls:MetroWindow.RightWindowCommands>
 
@@ -2293,7 +2298,7 @@
                                 <ProgressBar
                                     Name="itemTooListBoxProgress"
                                     Width="175"
-                                    Margin="0,20,0,0"
+                                    Margin="0,10,0,-30"
                                     HorizontalAlignment="Center"
                                     IsIndeterminate="True"
                                     Style="{StaticResource MaterialDesignLinearProgressBar}"
@@ -2305,7 +2310,6 @@
                                     VerticalContentAlignment="Center"
                                     md:HintAssist.Foreground="White"
                                     md:HintAssist.Hint="Search"
-                                    md:TextFieldAssist.HasClearButton="True"
                                     DockPanel.Dock="Left"
                                     FontSize="12">
                                     <TextBox.Style>
@@ -2347,7 +2351,7 @@
                                                 <DataTrigger Binding="{Binding ElementName=itemToolListSearchBox, Path=Text.Length}" Value="0">
                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding ElementName=itemToolListSelectListBox, Path=Items.Count}" Value="0">
+                                                <DataTrigger Binding="{Binding ElementName=itemToolListSearchBox, Path=Visibility}" Value="Collapsed">
                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -2368,8 +2372,8 @@
                             </DockPanel>
                             <ListBox
                                 Name="itemToolListSelectListBox"
+                                Width="500"
                                 Height="300"
-                                MaxWidth="1500"
                                 Margin="15,-25,15,15"
                                 BorderBrush="{StaticResource MahApps.Brushes.AccentBase}"
                                 BorderThickness="1"
@@ -2398,7 +2402,7 @@
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
                                                     <Condition Binding="{Binding ElementName=itemToolListSearchBox, Path=Visibility}" Value="Collapsed" />
-                                                    <Condition Binding="{Binding ElementName=itemToolListSelectListBox, Path=Items.Count}" Value="0" />
+
                                                 </MultiDataTrigger.Conditions>
                                                 <MultiDataTrigger.Setters>
                                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -2412,15 +2416,16 @@
                             <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
                                 <Label
                                     Name="itemToolListItemsEmptyText"
-                                    Margin="0,-25,0,5"
+                                    Margin="0,-15,0,5"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
+                                    Panel.ZIndex="10"
                                     Content="Query returned no items"
                                     DockPanel.Dock="Top"
                                     FontFamily="Segoe UI Light"
                                     FontSize="16"
                                     Foreground="DarkGray"
-                                    Visibility="Collapsed" />
+                                    Visibility="Hidden" />
                                 <Button
                                     Name="itemToolListSelectConfirmButton"
                                     Width="60"
@@ -2519,7 +2524,7 @@
                                 <ProgressBar
                                     Name="itemToolGridProgress"
                                     Width="175"
-                                    Margin="0,10,0,0"
+                                    Margin="0,10,0,-30"
                                     HorizontalAlignment="Center"
                                     IsIndeterminate="True"
                                     Style="{StaticResource MaterialDesignLinearProgressBar}"
@@ -2573,7 +2578,7 @@
                                                 <DataTrigger Binding="{Binding ElementName=itemToolGridSearchBox, Path=Text.Length}" Value="0">
                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0">
+                                                <DataTrigger Binding="{Binding ElementName=itemToolGridSearchBox, Path=Visibility}" Value="Collapsed">
                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -2637,7 +2642,7 @@
                                 MaxWidth="1500"
                                 Margin="25,-5,25,15"
                                 Padding="0"
-                                HorizontalAlignment="Stretch"
+                                HorizontalAlignment="Center"
                                 VerticalAlignment="Top"
                                 HorizontalContentAlignment="Stretch"
                                 Panel.ZIndex="0"
@@ -2664,7 +2669,7 @@
                                 ScrollViewer.CanContentScroll="True"
                                 SelectionMode="Single"
                                 SelectionUnit="FullRow"
-                                VerticalScrollBarVisibility="Auto">
+                                VerticalScrollBarVisibility="Visible">
                                 <DataGrid.Resources>
                                     <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="{x:Type ScrollBar}">
                                         <Setter Property="Margin" Value="0" />
@@ -2682,7 +2687,7 @@
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
                                                     <Condition Binding="{Binding ElementName=itemToolGridSearchBox, Path=Visibility}" Value="Collapsed" />
-                                                    <Condition Binding="{Binding ElementName=itemToolGridItemsGrid, Path=Items.Count}" Value="0" />
+                                                    <Condition Binding="{Binding ElementName=itemToolGridSearchBox, Path=Text.Length}" Value="0" />
                                                 </MultiDataTrigger.Conditions>
                                                 <MultiDataTrigger.Setters>
                                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -2697,15 +2702,16 @@
                             <DockPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
                                 <Label
                                     Name="itemToolGridItemsEmptyText"
-                                    Margin="0,-25,0,5"
+                                    Margin="0,-15,0,5"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
+                                    Panel.ZIndex="10"
                                     Content="Query returned no items"
                                     DockPanel.Dock="Top"
                                     FontFamily="Segoe UI Light"
                                     FontSize="16"
                                     Foreground="DarkGray"
-                                    Visibility="Collapsed" />
+                                    Visibility="Hidden" />
                                 <Button
                                     Name="itemToolGridSelectConfirmButton"
                                     Width="60"
@@ -5569,7 +5575,7 @@
                                     <DataGrid.Columns>
                                         <DataGridTemplateColumn
                                             Width="40"
-                                            Header="    ID"
+                                            Header="ID"
                                             HeaderStyle="{StaticResource datagridColumnNoTab}">
 
                                             <DataGridTemplateColumn.CellTemplate>
@@ -5577,7 +5583,7 @@
                                                 <DataTemplate>
 
                                                     <TextBlock
-                                                        Margin="-10,0,0,0"
+                                                        Margin="-7,0,0,0"
                                                         Style="{StaticResource toolLabel}"
                                                         Text="{Binding ID}" />
                                                 </DataTemplate>
@@ -5590,10 +5596,11 @@
                                             HeaderStyle="{StaticResource datagridColumnNoTab}">
 
                                             <DataGridTemplateColumn.CellTemplate>
-
                                                 <DataTemplate>
-
-                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Field}" />
+                                                    <TextBlock
+                                                        Margin="-2,0,0,0"
+                                                        Style="{StaticResource toolLabel}"
+                                                        Text="{Binding Field}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -5659,13 +5666,10 @@
 
                             <Grid Margin="0,-35,0,0" Panel.ZIndex="14">
                                 <Grid.ColumnDefinitions>
-
                                     <ColumnDefinition Width="*" />
-
                                     <ColumnDefinition Width="45" />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
-
                                     <RowDefinition Height="40" />
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="30" />
@@ -5722,7 +5726,7 @@
                                     <DataGrid.Columns>
                                         <DataGridTemplateColumn
                                             Width="40"
-                                            Header="    ID"
+                                            Header="ID"
                                             HeaderStyle="{StaticResource datagridColumnNoTab}">
 
                                             <DataGridTemplateColumn.CellTemplate>
@@ -5730,7 +5734,7 @@
                                                 <DataTemplate>
 
                                                     <TextBlock
-                                                        Margin="-10,0,0,0"
+                                                        Margin="-7,0,0,0"
                                                         Style="{StaticResource toolLabel}"
                                                         Text="{Binding ID}" />
                                                 </DataTemplate>
@@ -5744,7 +5748,10 @@
 
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <TextBlock Style="{StaticResource toolLabel}" Text="{Binding Field}" />
+                                                    <TextBlock
+                                                        Margin="-2,0,0,0"
+                                                        Style="{StaticResource toolLabel}"
+                                                        Text="{Binding Field}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -8636,23 +8643,23 @@
                                                         Margin="2,-5,0,-2"
                                                         Padding="2"
                                                         Controls:ControlsHelper.ContentCharacterCasing="Upper"
-                                                        Content="USER   "
+                                                        Content="USER DETAILS   "
                                                         DockPanel.Dock="Left"
                                                         FontFamily="Segoe UI"
                                                         FontSize="24"
                                                         Foreground="White" />
-
-                                                    <Label
-                                                        Name="expanderDisplay"
-                                                        Margin="2,1,0,-2"
-                                                        Padding="2"
-                                                        Controls:ControlsHelper.ContentCharacterCasing="Upper"
-                                                        DockPanel.Dock="Left"
-                                                        FontFamily="Segoe UI"
-                                                        FontSize="18"
-                                                        Foreground="LightGray"
-                                                        Typography.CapitalSpacing="True"
-                                                        Typography.Kerning="True" />
+                                                    <Viewbox Margin="2,-2,0,-2" StretchDirection="DownOnly">
+                                                        <Label
+                                                            Name="expanderDisplay"
+                                                            Padding="2"
+                                                            Controls:ControlsHelper.ContentCharacterCasing="Upper"
+                                                            DockPanel.Dock="Left"
+                                                            FontFamily="Segoe UI"
+                                                            FontSize="18"
+                                                            Foreground="LightGray"
+                                                            Typography.CapitalSpacing="True"
+                                                            Typography.Kerning="True" />
+                                                    </Viewbox>
                                                     <ProgressBar
                                                         Name="expanderProgressBar"
                                                         Margin="0,0,5,0"
@@ -8717,7 +8724,7 @@
                                                         Margin="2,-5,0,-2"
                                                         Padding="2"
                                                         Controls:ControlsHelper.ContentCharacterCasing="Upper"
-                                                        Content="COMPUTERS   "
+                                                        Content="COMPUTER HISTORY   "
                                                         DockPanel.Dock="Left"
                                                         FontFamily="Segoe UI"
                                                         FontSize="24"
