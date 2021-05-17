@@ -12,7 +12,7 @@ All settings are internally configurable. These include ADDS computer and user p
 <img align="center" src="web/01.png">
 
 
-<b>Configuration view (general settings tab):</b>
+<b>Configuration view (general settings):</b>
 <br>
 <img align="center" src="web/02.png">
 
