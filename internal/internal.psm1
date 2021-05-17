@@ -1,5 +1,3 @@
-﻿# saves the config import json to synchash or export synchash to json
-
 #region initial setup
 
 # generated hash tables used throughout tool
