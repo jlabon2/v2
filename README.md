@@ -30,7 +30,7 @@ All settings can be centrally published to a configuration file to share interna
 <br>
 <img align="center" src="web/05.png">
 
-All actions searches and script executions initiated from within the tool are logged. From within the tools view, default reports easily allow tracking of these for multiple technicians.
+All actions, queries, and script executions initiated from within the tool are logged. From within the tools view, default reports easily allow metric tracking for all technicians using the tool.
 
 <b>Tool view (exporting a report):</b>
 <img align="center" src="web/06.png">
