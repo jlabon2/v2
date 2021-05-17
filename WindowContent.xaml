@@ -25,26 +25,16 @@
 
     <Window.Resources>
         <ResourceDictionary>
-
             <ResourceDictionary.MergedDictionaries>
-
-                <md:BundledTheme
-                    BaseTheme="Dark"
-                    PrimaryColor="BlueGrey"
-                    SecondaryColor="LightBlue" />
-
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
-
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Primary/MaterialDesignColor.BlueGrey.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.PopupBox.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Steel.xaml" />
             </ResourceDictionary.MergedDictionaries>
-
-
-
             <Style x:Key="StatusLabel" TargetType="Label">
                 <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="FontSize" Value="25" />
@@ -61,7 +51,6 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
-
             <Style x:Key="varNameRun" TargetType="Run">
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentBase}" />
@@ -1043,6 +1032,7 @@
                 <Setter Property="Margin" Value="15,12,15,12" />
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
                 <Setter Property="FontSize" Value="22" />
+				<Setter Property="Foreground" Value="White" />
                 <Setter Property="Grid.Column" Value="2" />
                 <Setter Property="Height" Value="36" />
                 <Setter Property="Width" Value="50" />
@@ -5239,7 +5229,7 @@
                                                     <Label Content="Minimum Window Size" FontSize="12" />
                                                     <Label
                                                         Margin="0,-7.5,0,0"
-                                                        Content="Defines the smallest the window will srink"
+                                                        Content="Defines the smallest the window will shrink"
                                                         FontFamily="Segoe UI Light"
                                                         FontSize="10"
                                                         Foreground="LightGray" />
@@ -10870,6 +10860,7 @@
                                                     Grid.Column="0"
                                                     Width="100"
                                                     Height="50"
+													Foreground="White"
                                                     Margin="0,0,0,0"
                                                     Content="Save"
                                                     ToolTip="Save config and reload" />
@@ -10878,6 +10869,7 @@
                                                     x:Name="settingImportClick"
                                                     Grid.Column="1"
                                                     Width="100"
+													Foreground="White"
                                                     Height="50"
                                                     Margin="0,0,0,0"
                                                     Content="Import"
@@ -10886,6 +10878,7 @@
                                                     x:Name="settingConfigCancelClick"
                                                     Grid.Column="2"
                                                     Width="100"
+													Foreground="White"
                                                     Height="50"
                                                     Margin="0,0,0,0"
                                                     Content="Exit" />

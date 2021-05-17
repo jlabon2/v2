@@ -516,6 +516,370 @@ function Export-VersionConfig {
         
 }
 
+# Inevitably, when this is done, it will be dumped into a JSON for storage
+function Set-InfoPaneHash {
+    $global:settingInfoHash = @{
+        'settingCompPropContent' = [PSCustomObject]@{
+            'Body'  = @' 
+    This table allows you to map Active Directory properties to display in the details pane after querying a computer.  These properties can be made editable or have buttons performing related actions attached to them, or can be simply read only. Additional items can be added with the '+' button.
+
+    Each item can be given a friendly name in the 'FIELD NAME'  box - this will be displayed as the header. The corresponding drop-down box will determine the Active Directory property queried. The 'TYPE' drop down will determine the type of actions that can be performed with the item. These can be defined for each field with its respective define (DEF) button. The types are explained below.
+
+    The 'Non-AD Property' selection is an actionable-only field that allows its content to be populated using a custom source.
+'@
+        'Types' = [ordered]@{
+            'ReadOnly'   = 'The field only shows the content as pulled from Active Directory.'
+            'Editable'   = 'The field value can be updated or cleared and then saved to Active Directory.'
+            'Actionable' = 'The field will allow up to two definable buttons to perform custom actions.'
+            'Raw'        = 'Any raw field will display the value directly as pulled from Active Directory. Otherwise, the presentation of the content can be defined.'
+        }
+    } 
+    'settingUserPropContent' = [PSCustomObject]@{
+        'Body'  = @' 
+This table allows you to map Active Directory properties to display in the details pane after querying a user. These properties can be made editable or have buttons performing related actions attached to them, or can be simply read only. Additional items can be added with the '+' button.
+
+Each item can be given a friendly name in the 'FIELD NAME'  box - this will be displayed as the header. The corresponding drop-down box will determine the Active Directory property queried. The 'TYPE' drop down will determine the type of actions that can be performed with the item. These can be defined for each field with its respective define (DEF) button. The types are explained below.
+
+The 'Non-AD Property' selection is an actionable-only field that allows its content to be populated using a custom source.
+'@
+        'Types' = [ordered]@{
+            'ReadOnly'   = 'The field only shows the content as pulled from Active Directory.'
+            'Editable'   = 'The field value can be updated or cleared and then saved to Active Directory.'
+            'Actionable' = 'The field will allow up to two definable buttons to perform custom actions.'
+            'Raw'        = 'Any raw field will display the value directly as pulled from Active Directory. Otherwise, the presentation of the content can be defined.'
+        }
+    } 
+    'settingPropUserDefine'  = [PSCustomObject]@{
+        'Body' = @'
+These fields define how the selected property will function in regards to the button type selected in the previous table. 
+
+The 'Result Presentation' scriptblock is present in any non-raw type. This will allow the property returned to be presented as an alternative value (e.g. a TRUE or FALSE value can be passed through an if statement and alternate text can be returned and displayed).
+
+The 'Attached Actions’ sections correspond to buttons that will attach to the returned value when queried. Their respective scriptblock will run when the button is pressed. Along each attached action, an icon can be selected for use with the button. The 'Refresh Prop' option will requery Active Directory after the action completes and update the value in the display. The 'New Thread' option will run the action in a new thread and is generally recommended, though this may not necessarily be faster overall for quicker actions. The ‘Disable if result like:’ option, when enabled, will disable the button if the value, as presented, matches the value in the ‘string match’ textbox (using basic -like wildcard options).
+
+All script blocks must be validated using the 'Execute' button, which analyzes the box for fatal syntaxical errors and other warnings.
+
+The variables below can be referenced or manipulated within the script blocks.
+'@
+        'Vars' = [ordered]@{          
+            '$result [Result Presentation]'      = 'The actual value of the returned Active Directory property.'
+            '$resultColor [Result Presentation]' = 'Setting the resultColor will determine the color of the returned value. This uses all valid .NET brush names and HEX values.'
+            '$user [Actionable Items]'           = 'The value of the current, queried user. Only populated on action buttons for user properties.'
+            '$actionObject [Actionable Items] '  = 'General variable containing hte name of queried object (i.e. the user or computer)'
+            '$propName [Actionable Items]'       = 'The name of the property attached to the field. Not applicable to non-AD queries.'
+            '$prop [Actionable Items]'           = 'The value of the queried property attached to the field.'
+            '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+            '$activeObjectData' = 'A collection of the Active Directory properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+            '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
+        }
+    }
+    'settingPropCompDefine'  = [PSCustomObject]@{
+        'Body' = @'
+The options below define how the selected item will function, as chosen by the TYPE in the previous table. 
+
+The 'Result Presentation' scriptblock is used in any non-raw type. This will allow the property returned to be presented as an alternative value (e.g. a TRUE or FALSE value can be passed through an if statement and alternate text can be returned and displayed).
+
+The 'Attached Actions’ sections correspond to buttons that will attach to the returned value in the details pane after an item is queried. Their respective scriptblock, defined here, will run when the button is pressed. Along each attached action, an icon can be selected for use with the button. The 'Refresh Prop' option will requery Active Directory after the action completes and update the value in the display. The 'New Thread' option will run the action in a new thread and is generally recommended, though this may not necessarily be faster overall for quicker actions. The ‘Disable if result like:’ option, when enabled, will disable the button if the value, as presented, matches the value in the ‘string match’ textbox (using basic -like wildcard options).
+
+All script blocks must be validated using the 'Execute' button, which analyzes the box for fatal syntaxical errors and other warnings.
+
+The variables below can be referenced or manipulated within the script blocks.
+'@
+        'Vars' = [ordered]@{          
+            '$result [Result Presentation]'      = 'The actual value of the returned Active Directory property.'
+            '$resultColor [Result Presentation]' = 'Setting the resultColor will determine the color of the returned value. This uses all valid .NET brush names and HEX values.'          
+            '$comp [Actionable Items]'           = 'The value of the current, queried computer. Only populated on action buttons for computer properties.'
+            '$actionObject [Actionable Items] '  = 'General variable containing hte name of queried object (i.e. the user or computer)'
+            '$propName [Actionable Items]'       = 'The name of the property attached to the field. Not applicable to non-AD queries.'
+            '$prop [Actionable Items]'           = 'The value of the queried property attached to the field.'
+            '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+            '$activeObjectData' = 'A collection of the Active Directory properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+            '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
+        }
+    }
+    'settingItemToolsContent' =  [PSCustomObject]@{
+        'Body'  = @' 
+Tools are advanced actions that can be used on queried users or computers or as standalone tools independent of either. Configuring and adding new tools can be done in the preceding table. For each entry, the TOOL NAME field is the name used on the tool label, and is used when the results of the tool is logged. The TOOL TYPE defines the template and presentation of tools. There are several different tool types - these are defined below and are described in detail within the information pane when defining the respective tool. The OBJECT TYPE refers to where the tool will be used - either on users, computers, both, or as a standalone tool in the tool tab. The DEF button opens the definition pane for the respective tool.
+'@
+    'Types' = [ordered]@{
+	    ‘Execute’ = ‘Execute tools are the most basic tool types. When accessed, they simply execute the defined scriptblock.’
+	    ‘Select’ = ‘Selection tools query data from a defined source and allow the returned data, populated as a list, to be selected and then used to manipulate the current, queried user or computer (or the listed items themselves) through a defined action. These are designed for single property lists.’
+	    ‘Grid’ = 'Grid tools are similar to select tools - they allow querying data but allow items with multiple properties. These need not be tied to any action - the grid contents can be exported into HTML reports.'
+	    'CommandGrid' = 'The command grid tool allows defining a series of queries. Each defined query has an associated action - if the query returns anything but the boolean ''true'' the action will be eligible to run. This is useful for running a set of actions for similar processes (e.g. diagnostics, user outboarding, etc).'
+    }
+}
+    'settingContextPropContent' =  [PSCustomObject]@{
+        'Body'  = @' 
+Contextual tools are actions accessible through the historical view. It uses the currently queried object and the selection made within the historical view to perform tasks defined within this configuration section. 
+'@
+      
+}
+    'settingVarContent' =  [PSCustomObject]@{
+        'Body'  = @'  
+Resources and variables are items that capture defined values that update at defined intervals. These allow custom data to be accessed through out scriptblocks found throughout the tool.
+
+Modules refer to PowerShell modules to be added to allow access to scriptblocks executing in new threads. If not added, their functions cannot be accessed in the thread.
+'@
+}
+    'settingModDataGrid' =  [PSCustomObject]@{
+        'Body'  = @' 
+Items below will allow defining PowerShell modules to be accessed within scriptblocks that use new threads.
+
+The NAME is a 'friendly name' for the module - it is only for descriptive purposes used within this list. The PATH is the local or network path to the module's .psm1 file. This can be selected by using the button in the respective row.
+'@
+}
+    'settingOUDataGrid' =  [PSCustomObject]@{
+        'Body'  = @' 
+A list of the Active Directory OUs and containers for querying - these will be the locations searched during queries for users and computers.
+
+Select the '+' button to add an additional OU definition. Select the button it its respective row to choose the OU. Select the search scope from the drop down - the search scope types are listed below.
+'@
+        'Types' = [ordered]@{
+            'Subtree' = 'The default. This scope will search an OU and all OUs within it recursively.'
+            'OneLevel' ='This will search an OU for objects only one level deep. Nested OUs are ignored.'}
+}
+    'settingQueryDefDataGrid' =  [PSCustomObject]@{
+        'Body'  = @'
+When querying for users or computers, each of the items added as query definitions will act as the properties searched to match against the provided search term. The NAME field is the 'friendly name' that will appear in the search settings (which can be toggled prior to querying). The Active Directory Property field is the actual Active Directory property queried.
+'@
+}
+    'settingRTContent' =  [PSCustomObject]@{
+        'Body'  = @' 
+Remote Connection Clients reference tools used in establishing remote connections into computers, user sessions, or other systems. The tools defined in this section will appear as buttons in a computer or user's historical view. Based on the settings defined for each item, the respective remote tool's button with initiate a connection using that tool.
+ 
+Microsoft’s RDP and Remote Assistant clients are added by default. Additional third party clients can be added by using the ‘+’ button or removed using the 'trash' button. Clients can be configured by selecting the tool’s respective gear button.
+'@
+}
+    'settingNetContent' =  [PSCustomObject]@{
+        'Body'  = @' 
+Network mapping allows the ability to define your environment’s IP space by location to better assess where a particular computer is located. When querying users, login logs (if defined) are analyzed. During this process, the IP address of each computer from each log entry is evaluated to determine if the address is part of any of the networks defined in this section. If it matches a network, the historical view will display the location defined for that network.
+
+There are several mechanisms available to import existing network information described in the Types section below. Networks can also be manually added and defined. The NETWORK field corresponds to the IP address of the network, while the MASK is its subnet mask. Invalid IP addresses or an invalid subnet will flag after input and the entry will not be not saved. The LOCATION field is the value returned when an evaluated IP address is found to be within that network’s IP space.
+'@
+   'Types' = [ordered]@{          
+        'Import from current computer''s NIC' = 'This will import the network information from the NICs found on the current computer.'
+        'Import from defined ADDS subnets'    = 'This will import the IP and mask defined in the domain'’s ADDS replication subnets. It will use the location property set on that subnet in Active Directory to populate the LOCATION field. If this is undefined, it will use its Active Directory Site’'s location property. If this is also undefined, it will use the value in the description property for the subnet.'
+        'Import from defined DHCP scopes'     = 'This will import the IP and mask defined in the domain''s DHCP servers'’ scopes. It will use the scope’’s name as the LOCATION.’
+    
+        
+
+    }
+}
+    'settingNameContent' =  [PSCustomObject]@{
+        'Body'  = @' 
+Computer categorization allows defining distinct sets of computer types. Contextual actions and remote tools rely on these categories to restrict or allow access.
+
+When querying users, login logs (if defined) are analyzed. During this process, the conditions defined in this section are evaluated against the given computer from each log entry to determine its category. The rules are evaluated in descending order based on the RULE number. Once a rule's CONDITION is returned as TRUE, the evaluation is stopped and the object is categorized by the value in the NAME field for the corresponding condition. If ‘clientname’ is defined in the logs, this is also evaluated. When querying computers, the computer itself is analyzed, but each entry, if ‘clientname’ is defined, will be evaluated similarly. 
+
+When creating a condition, selecting the respective rule’s condition field will expand the scriptblock to allow entry. The block should be written to return a boolean value and should the variable list below.
+
+Since entries are evaluated in reverse order, the last rule - after all others have been evaluated - will categorize the evaluated computer in the generic ‘computer’ category. Custom rules can be repositioned to change the order they are evaluated in.
+'@
+        'Vars' = [ordered]@{
+            '$comp'           = 'The computer name of the evalauted system.'
+            '$clientLocation' = 'If the computer has an A record resolvable through DNS, this value will populate with the LOCATION field of the matched network defined in the ''NETWORK MAPPINGS'' configuration section'          
+        }
+}
+    'settingGeneralContent' =  [PSCustomObject]@{
+        'Body'  = @' 
+These are general options related to querying, logging, and general tool settings.
+'@
+ 'Types' = [ordered]@{	
+        ‘SearchBase OUs'   = 'Defines the Active Directory OUs/containers to search when queries are made.'
+        'Query Properties' = 'Defines query properties evaluated in Active Directory to match a given search term.'
+        'Misc. Settings'   = 'Miscellaneous settings related to the tool.'
+        } 
+}
+   'settingMiscGrid' =  [PSCustomObject]@{
+        'Body'  = @' 
+Miscellaneous settings.
+
+The minimum window size sets the smallest size the tool will shrink down to when resized. This is helpful if a lot of content is configured and requires a larger window to show without relying on scroll bars.
+
+The logging path defines where this tool's actions are logged. Ideally, this should be the same network location for all administrators using this tool to allow for reporting to show all actions.
+
+Login log view depth refers to how far back (in days) login logs will be searched, analyzed, and displayed on the historical view. Larger depth will result in longer overall querying time, but this number may need to be adjusted to best fit your enviornment's usage.
+
+Active Directory mappings are an index of the entire list of the Active Directory properties and their object types that are generating on first load. These are used in the property mappings for both users and computers. If the Active Directory schema is updated, these should be refreshed using the button in this section.
+
+Header content allows you to select whether the domain and username of the current user shows on the header of the application. Additionally, you can add a custom label and select the color of its font.
+'@
+}
+ 'rtConfigFlyout' =  [PSCustomObject]@{
+        'Body'  = @' 
+The settings below define the resources for the remote tool and the systems and conditions required to recognize the tool as applicable for a given system or user.
+
+The text in DISPLAY NAME field will appear as the tool tip for the remote tool button within the historical view after querying a user or computer.
+
+The APPLICABLE SYSTEMS lists the computers categorized in the ‘Naming Convention’ setting section. The selected systems in this list will be eligible to use this tool. For inapplicable systems, the tool’s button will be inactive on the historical view.
+
+The gear button will allow you to choose the path to the executable for the remote tool. The path will populate the PATH field. The icon of the file will also be captured and used on the tool’s button in the historical view. 
+
+TARGET MUST BE ONLINE and TARGET USER MUST BE ONLINE refer to the connection and session states of the computer and user, respectively. If both or either is selected and their condition is not met,  the remote tool’s button will be inactive.
+
+The COMMAND field holds the command executed after selecting the tool’s button. This command will reference the executable and requires usage of its command line switches. Use the variables listed below to define the connection command.
+'@
+    'Vars' = [ordered]@{
+            '$comp'      = 'The computer name of the targeted system.'
+            '$exe'       = 'The path to the remote tool''s executable.' 
+            '$user'      = 'The username of the targeted user, if needed.'
+            '$sessionID' = 'The session ID of the targeted user, if needed.'
+                     
+        }
+}
+'settingLoggingContent' =  [PSCustomObject]@{
+        'Body'  = @' 
+Select directories that store the login logs for both clients and users. Ideally, this will be generated upon user login using login scripts. The output of these should be either .csv, .txt, or .log files and must be delimited by commas. They should at least contain the username of the user, the date, and the computer name. After choosing the respective directory, the structure of the logs can be defined to map each attribute.
+
+After selecting the directory with the gear button, the edit button will enable - from here, you can map each value to its respective type. The given values are pulled from the newest log entry in the previously defined logging path. 
+
+The values from the newest log entry act as a reference and are shown in the FIELD section. Using the five predefined properties, use the given values in the FIELD sections to align each to its correct type in the PROPERTY section to later be used in analyzing the logs. These properties include the username (User), the date (DateRaw), login server (LoginDC), computer (ComputerName), and name of the connecting client (ClientName).  For unneeded properties, the IGNORE selection will skip the property. For custom properties outside the predefined five, the CUSTOM selection will allow you to assign a custom friendly name to display this value in the historical view when this item type is queried.
+'@
+       
+}
+'settingContextDefFlyout' =  [PSCustomObject]@{
+        'Body'  = @' 
+These fields define how and when the selected contextual action is peformed.
+
+The selection(s) made within the TARGET TYPES list will determine what type of computers will allow access to this action's button. Inelligble computer types will disable the button. The values in this list are referenced from the computer types defined in the NAMING CONVENTION configuration section. 
+
+Within the BUTTON SETTINGS section, the scriptblock will determine the actions performed when the button is selected. The variables listed below can be used within this scriptblock to reference the current selected items.
+
+As with other scriptblocks, this tool's scriptblock must be validated before it can be used. Selecting the EXECUTE button will evaluate the block for any warnings, issues, or parsing errors - the results will be displayed in the SCRIPTBLOCK VALIDITY text box. After validating, the tooltip of the status icon found within this box will list any warnings or errors. 
+
+The TARGET USER MUST BE LOGGED IN option will only allow this action's button to be accessible if the targeted user has a current session on the target machine. The TARGET MUST BE ONLINE option will only allow this action's button to be accessible if the targeted computer is online. The NEW THREAD option will run the button’s action in a new thread - this is suggested for longer or more complicated tasks (however, it may not be required if the action is simple or quick to complete). The ICON will appear as the button’s icon within the historical view.
+'@
+        'Vars' = [ordered]@{
+            '$comp'      = 'The computer name of the targeted system. If the queried object is a computer, this variable refers to that item. If it is not, it refers to the selected computer in the queried user''s historical view'
+            '$user'      = 'The username of the targeted user.  If the queried object is a user, this variable refers to that item. If it is not, it refers to the selected user in the queried computer''s historical view'
+            '$sessionID' = 'The session ID of the targeted user, if the selected item in the historical view has an active session.'
+            '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+            '$activeObjectData' = 'A collection of the Active Directory properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+            '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
+                     
+        }
+
+        'Tips' = [ordered]@{
+            'Confirmation Window' = @'
+Adding the following line at any point within the scriptblock will launch a confirmation window before continuing the block:
+    New-DialogWait -ConfirmWindow $confirmWindow -Window $window -configHash $configHash
+         -TextBlock $syncHash.adHocConfirmText -Text 'Custom text here'
+'@         
+        }
+}
+'settingObjectToolCommandGrid' =  [PSCustomObject]@{
+        'Body'  = @' 
+To be completed.. settingObjectToolCommandGrid
+'@
+        'Types' = @{}
+}
+'settingObjectToolSelect' =  [PSCustomObject]@{
+        'Body'  = @' 
+Selection tools query data from a defined source and allow the returned data, populated into a list, to be selected and then used to manipulate the current, queried user or computer (or the listed items themselves) through a defined action. These are designed for single property arrays.
+
+There are several sections to configure for a select tool definition. Firstly, a short description of what the tool does can be added in the DESCRIPTION block. This will appear in the dialog after the tool is opened and allows the opportunity to give a short explanation to the administrator of what the tool queries and what actions it will execute. 
+
+Next, the selection query must be defined. This can be done through a variety of ways. A reference object can be defined (see the TYPES list below for a full listing and explanation of each) by selecting the PROMPT REFERENCE OBJECT option, and selecting the desired object type in the combo box. This will allow an administrator, when using the tool, to be prompted to select a reference object of that type. This reference object can then be used in the SELECTION scriptblock to query and return a set of data. Or, conversely, no reference object can be set for selection and the scriptblock defined without relying on one as a data source. The output will be used in populating the select list. The output of the scriptblock should have only one property, and that property must be expanded (i.e. by using Select-Object’s –ExpandProperty option to remove the data’s property name header).
+
+A secondary query can be optionally defined in the TARGET ITEM ADDITIONAL DATA scriptblock. The target item refers to the currently active user or computer. Using this block, variables can be set and later used in the execution scriptblock.
+
+Then, an action itself must be defined in the SCRIPTBLOCK block. When executed, this will script for each item selected in the list. 
+
+Lastly, miscellaneous settings can be configured. The name of the tool – to be used in the tool’s respective action button as the tool tip – can be added. This can be more descriptive than the name previously set in the tool table that is used as the button’s label. The icon can also be set – which is also displayed on the button. Finally, the MULTISELECT option allows selecting more than one item in the list.
+'@
+        'Vars' = [ordered]@{
+        '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+        '$activeObjectData' = 'A collection of the Active Directory properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+        '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
+        '$inputObject' = 'The value returned from the reference object selection. Only applicable in the SELECTION sciptblock.'
+        '$selectedItem' = 'While executing, each selected item will be iterated through and given this variable. Only appliable to the SCRIPTBLOCK block for execution.'
+        }
+
+        'Types' = [ordered]@{	
+        ‘AD User’ = ‘Prompts for the selection of an Active Directory user.’
+        ‘AD Computer' = ‘Prompts for the selection of an Active Directory computer.’
+        ‘AD Group' = ‘Prompts for the selection of an Active Directory group.’
+        ‘AD Object (any)’ = ‘Prompts for the selection of any of the above Active Directory objects.’
+        ‘OU’ = ‘Prompts for the selection of an organization unit or container.’
+        ‘String’ = ‘Prompts for the input of a string.’
+        ‘Integer’= ‘Prompts for the input of a number.’
+        ‘Choice' = ‘Prompts for the selection from a defined list. This list can be defined in the nearby textbox after selecting CHOICE as the reference object. Entries must be separated by a comma.’
+        ‘File’ = ‘Prompts for the selection of a file.’
+        ‘Directory’ = ‘Prompts for the selection of a directory.’
+        } 
+
+
+
+}
+'settingObjectToolExecute' =  [PSCustomObject]@{
+        'Body'  = @' 
+To be completed.. settingObjectToolExecute
+'@
+        'Types' = @{}
+}
+'settingObjectToolGrid' =  [PSCustomObject]@{
+        'Body'  = @' 
+Grid tools query data from a defined source and allow the returned data, populated into a grid supporting multiple properties, to be selected and then used to manipulate the current, queried user or computer (or the listed items themselves) through a defined action. These are designed for multiple property collections.
+
+There are several sections to configure for a grid tool definition. Firstly, a short description of what the tool does can be added in the DESCRIPTION block. This will appear in the dialog after the tool is opened and allows the opportunity to give a short explanation to the administrator of what the tool queries and what actions it will execute. 
+
+Next, the selection query must be defined. This can be done through a variety of ways. A reference object can be defined (see the TYPES list below for a full listing and explanation of each) by selecting the PROMPT REFERENCE OBJECT option, and selecting the desired object type in the combo box. This will allow an administrator, when using the tool, to be prompted to select a reference object of that type. This reference object can then be used in the SELECTION scriptblock to query and return a set of data. Or, conversely, no reference object can be set for selection and the scriptblock defined without relying on one as a data source. The output will be used in populating the select list. The output of the scriptblock should have only one property, and that property must be expanded (i.e. by using Select-Object’s –ExpandProperty option to remove the data’s property name header).
+
+A secondary query can be optionally defined in the TARGET ITEM ADDITIONAL DATA scriptblock. The target item refers to the currently active user or computer. Using this block, variables can be set and later used in the execution scriptblock.
+
+Then, an action itself must be defined in the SCRIPTBLOCK block. When executed, this will script for each item selected in the list. 
+
+Lastly, miscellaneous settings can be configured. The name of the tool – to be used in the tool’s respective action button as the tool tip – can be added. This can be more descriptive than the name previously set in the tool table that is used as the button’s label. The icon can also be set – which is also displayed on the button. Finally, the MULTISELECT option allows selecting more than one item in the list.
+'@
+        'Vars' = [ordered]@{
+        '$activeObject' = 'The current, selected username of the item on the query tab (i.e. the queried item the tool is run on). Not applicable to standalone tools.'
+        '$activeObjectData' = 'A collection of the Active Directory properties attached to the Active Object - they can be referenced with dot notation (i.e. $activeObjectData.''PropertyName''). Not applicable to standalone tools.'
+        '$activeObjectType' = 'The current $activeObject  item type (user/computer). Not applicable to standalone tools.'
+        '$inputObject' = 'The value returned from the reference object selection. Only applicable in the SELECTION sciptblock.'
+        '$selectedItem' = 'While executing, each selected item will be iterated through and given this variable. Only appliable to the SCRIPTBLOCK block for execution.'
+        }
+
+        'Types' = [ordered]@{	
+        ‘AD User’ = ‘Prompts for the selection of an Active Directory user.’
+        ‘AD Computer' = ‘Prompts for the selection of an Active Directory computer.’
+        ‘AD Group' = ‘Prompts for the selection of an Active Directory group.’
+        ‘AD Object (any)’ = ‘Prompts for the selection of any of the above Active Directory objects.’
+        ‘OU’ = ‘Prompts for the selection of an organization unit or container.’
+        ‘String’ = ‘Prompts for the input of a string.’
+        ‘Integer’= ‘Prompts for the input of a number.’
+        ‘Choice' = ‘Prompts for the selection from a defined list. This list can be defined in the nearby textbox after selecting CHOICE as the reference object. Entries must be separated by a comma.’
+        ‘File’ = ‘Prompts for the selection of a file.’
+        ‘Directory’ = ‘Prompts for the selection of a directory.’
+        } 
+
+
+
+}
+'settingVarDataGrid' =  [PSCustomObject]@{
+        'Body'  = @' 
+Items defined below will populate variables according to the set frequency and allow access from within scriptblocks defined elsewhere.
+
+The NAME field will be the name of the variable. These can and will overwrite the default variables referenceable from within scriptblocks if the same names are used. The UPDATE FREQUENCY dictates how often these variables update. They are described in the list below. The DESCRIPTION field should explain the variable - it appears alongside the name in all information panels that list variables. The DEF field is the scriptblock that executes whenever the variable updates.
+'@
+        'Types'  = [ordered]@{
+            'All Queries'      = 'The value will update whenever any query is made.'
+            'User Queries'     = 'The value will update whenever any user query is made.'
+            'Computer Queries' = 'The value will update whenever any user query is made.'
+            'Daily'            = 'The value will update when the program starts, and then every 24 hours afterwards.'
+            'Hourly'           = 'The value will update when the program starts, and then every hour afterwards.'
+            'Every 15 minutes' = 'The value will update when the program starts, and then every 15 minutes afterwards.'
+            'Program Start'    = 'The value will update only upon program start.'
+        }
+}
+'settingAdminContent' = [PSCustomObject]@{
+        'Body'  = @' 
+Generally, the tool will check that it is running in an administrative context and that the launching account is in the Domain Administrator role. While the account MUST be a local administrator for the tool to function, a non-domain administrator security group can be defined to accomodate groups given delegated rights. 
+
+If the launching user opens the tool and is not a domain administrator, this section will allow the option to select another security group to check for membership. If the launching account is a member, the tool will load normally. However, the selected group should have delegated rights to the OUs defined in the query section. Additionally, the actions themselves should be constructed within the scope of the delegated group’s limited rights.
+'@
+}
+}
+}
 
 function Set-ConfigMap {
 
