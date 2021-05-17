@@ -1,5 +1,5 @@
 # v2 Configurable Support Toolkit
-A fully customizable toolkit designed to easily add constructed PowerShell fix actions for tier-I/ter-II execution. 
+A fully customizable, multithreaded support toolkit designed to easily add constructed PowerShell fix actions for tier-I/tier-II execution. Written in WPF/PowerShell.
 
 For the end user (a tier-I, tier-II, or other support technician), the tool provides a quick interface to easily search a user or computer from within ADDS, pull reverent information, and execute various actions. All of this - the shown information and its presentation, the executable actions, and even the search term themselves are all definable from within the tool itself using PowerShell script blocks.
 
