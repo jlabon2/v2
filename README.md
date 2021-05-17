@@ -14,9 +14,7 @@ All settings are internally configurable. These include ADDS computer and user p
 
 <b>Configuration view (general settings tab):</b>
 <br>
-<p align="center">
-![Alt text](web/02.png "General Settings")
-</p>
+<img align="center" src="web/02.png">
 
 <b>Configuration view (user AD properties):</b>
 <br>
