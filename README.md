@@ -9,36 +9,35 @@ For the end user (a tier-I, tier-II, or other support technician), the tool prov
 All settings are internally configurable. These include ADDS computer and user properties, login log definitions, standalone PowerShell scripts, remote access clients, and more.
 
 <b>Configuration view:</b>
-<center>
+<p align="center">
 ![Alt text](web/01.png "ToolView")
-</center>
+</p>
 
 <b>Configuration view (general settings tab):</b>
 <br>
-<center>
+<p align="center">
 ![Alt text](web/02.png "General Settings")
-</center>
+</p>
 
 <b>Configuration view (user AD properties):</b>
 <br>
-<center>
+<p align="center">
 ![Alt text](web/03.png "AD Property list")
-</center>
+</p>
 
 <b>Configuration view (user AD property attached script block):</b>
 <br>
-<center>
+<p align="center">
 ![Alt text](web/04.png "AD scritblock")
-</center>
+</p>
 
 All settings can be centrally published to a configuration file to share internally. Clients pulling from this config will then monitor it for later updates. This can be easily accomplished be 'saving' the configuration from the configuration view - other clients that import from this will continue to monitor the published location for updates.
 
 <b>Configuration view (exporting a configuration file):</b>
 <br>
-<center>
+<p align="center">
 ![Alt text](web/05.png "Config export")
-</center>
-
+</p>
 All actions searches and script executions initiated from within the tool are logged. From within the tools view, default reports easily allow tracking of these for multiple technicians.
 
 <b>Tool view (exporting a report):</b>
