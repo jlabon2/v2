@@ -9,9 +9,8 @@ For the end user (a tier-I, tier-II, or other support technician), the tool prov
 All settings are internally configurable. These include ADDS computer and user properties, login log definitions, standalone PowerShell scripts, remote access clients, and more.
 
 <b>Configuration view:</b>
-<p align="center">
-![Alt text](web/01.png "ToolView")
-</p>
+<img align="cenyer" width="100" height="100" src="web/01.png">
+
 
 <b>Configuration view (general settings tab):</b>
 <br>
