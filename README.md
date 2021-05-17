@@ -1,7 +1,7 @@
 # v2 Configurable Support Toolkit
 A fully customizable, multithreaded support toolkit designed to easily add constructed PowerShell fix actions for tier-I/tier-II execution. Written in WPF/PowerShell.
 
-Requires:
+Requires:<br>
 [PoshRSJob](https://www.powershellgallery.com/packages/PoshRSJob/1.7.4.4)<br>
 [PSWriteHTML](https://www.powershellgallery.com/packages/PSWriteHTML/0.0.148)<br>
 [RSAT](https://www.microsoft.com/en-us/download/details.aspx?id=45520)<br>
