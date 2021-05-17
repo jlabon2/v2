@@ -23,7 +23,7 @@ All settings are internally configurable. These include ADDS computer and user p
 <br>
 ![Alt text](web/04.png "AD scritblock")
 
-All settings can be centrally published an configuration file to share internally. Clients pulling from this config will then monitor it for later updates. This can be easily accomplished be 'saving' the configuration from the configuration view - other clients that import from this will continue to monitor the published location for updates.
+All settings can be centrally published to a configuration file to share internally. Clients pulling from this config will then monitor it for later updates. This can be easily accomplished be 'saving' the configuration from the configuration view - other clients that import from this will continue to monitor the published location for updates.
 
 <b>Configuration view (exporting a configuration file):</b>
 <br>
