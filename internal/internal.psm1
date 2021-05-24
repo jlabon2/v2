@@ -1,3 +1,5 @@
+﻿# saves the config import json to synchash or export synchash to json
+
 #region initial setup
 
 # generated hash tables used throughout tool
@@ -410,13 +412,24 @@ function Show-WPFWindow {
     $SyncHash.Window.Dispatcher.invoke([action] {                       
             $SyncHash.windowContent.Visibility = 'Visible'
 
-            if ($configHash.MinWidth -and $configHash.MinWidth -is [int]) { $SyncHash.Window.MinWidth = $configHash.MinWidth }
-            else {  $SyncHash.Window.MinWidth = '1000' }
+            if ($configHash.ReportMode) {
+                $SyncHash.Window.MinWidth = '1000'
+                $SyncHash.Window.MinHeight = '700'
+                $SyncHash.Window.ResizeMode = 'CanMinimize'
+            }
+            
+            else {
 
-            if ($configHash.MinHeight -and $configHash.MinHeight -is [int]) { $SyncHash.Window.MinHeight = $configHash.MinHeight }
-            else { $SyncHash.Window.MinHeight = '700' }
+                if ($configHash.MinWidth -and $configHash.MinWidth -is [int]) { $SyncHash.Window.MinWidth = $configHash.MinWidth }
+                else {  $SyncHash.Window.MinWidth = '1000' }
 
-            $SyncHash.Window.ResizeMode = 'CanResizeWithGrip'
+                if ($configHash.MinHeight -and $configHash.MinHeight -is [int]) { $SyncHash.Window.MinHeight = $configHash.MinHeight }
+                else { $SyncHash.Window.MinHeight = '700' }
+
+                
+                $SyncHash.Window.ResizeMode = 'CanResizeWithGrip'
+            }
+
             $SyncHash.Window.ShowTitleBar = $true
             $SyncHash.Window.ShowCloseButton = $true                   
             $SyncHash.splashLoad.Visibility = 'Collapsed' 
@@ -481,9 +494,10 @@ function Set-Config {
             $configHash.gridExportList = $null
             $configHash.logCollectionView = $null
             $configHash.IsSearching = $null
+            $configHash.ReportMode = $null
             $configHash.newVersionStubInfo = $null
 
-          if ($null -notlike $configHash.settingHeaderConfig) { $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString() }
+          if ($null -notlike $configHash.settingHeaderConfig[0].headerColor) { $configHash.settingHeaderConfig[0].headerColor = $configHash.settingHeaderConfig[0].headerColor.ToString() }
 
             $ConfigHash |
                 ConvertTo-Json -Depth 8 |
@@ -492,6 +506,29 @@ function Set-Config {
             if ((Get-ChildItem -LiteralPath $($ConfigPath + '.bak')).Length -gt 0) { Copy-Item -LiteralPath $($ConfigPath + '.bak') -Destination $ConfigPath }
         }
     }
+}
+
+function Set-ReportView {
+param ($SyncHash, $ConfigHash) 
+
+    $ConfigHash.ReportMode = $true
+    
+    $SyncHash.tabMenu.Items | ForEach-Object -Process { $SyncHash.Window.Dispatcher.invoke([action] { $_.IsEnabled = $false }) }   
+    $syncHash.SADocks.Keys | ForEach-Object { if ($_ -notmatch 'Report') { $SyncHash.Window.Dispatcher.invoke([action]{$syncHash.SaDocks.$_.Dock.Visibility = 'Collapsed' })}}
+      
+       
+        $SyncHash.Window.Dispatcher.invoke([action] { 
+            $syncHash.toolTab.Tag = 'Reports'     
+               $syncHash.toolsSingleLogView.Visibility = 'Collapsed'
+               $syncHash.externalToolListPopup.Visibility = 'Collapsed'
+               $syncHash.toolsSingleLogExport.Visibility = 'Collapsed'
+               $syncHash.toolsAllLogView.Visibility = 'Collapsed'
+               $SyncHash.tabMenu.Items[1].IsEnabled = $true
+               $SyncHash.tabMenu.SelectedIndex = 1
+    
+
+       })
+    
 }
 
 function Export-VersionConfig {
@@ -1011,9 +1048,9 @@ function Suspend-FailedItems {
     $SyncHash.tabMenu.Items | ForEach-Object -Process { $SyncHash.Window.Dispatcher.invoke([action] { $_.IsEnabled = $false }) }
     
     $SyncHash.Window.Dispatcher.invoke([action] { 
-            $SyncHash.tabMenu.Items[2].IsEnabled = $true
-            $SyncHash.tabMenu.SelectedIndex = 2
-        })
+        $SyncHash.tabMenu.Items[2].IsEnabled = $true
+        $SyncHash.tabMenu.SelectedIndex = 2         
+    })
 } 
 
 # gets initial values saved in json and loads into PCO
@@ -1902,13 +1939,15 @@ function Start-AdminCheck {
     }
 
     else {
-        if (![string]::IsNullOrEmpty($SysCheckHash.sysChecks[0].DelegatedGroupName)) {
-            if ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole($SysCheckHash.sysChecks[0].DelegatedGroupName)) {
-                $SysCheckHash.sysChecks[0].IsDomainAdminOrDelegated = 'True' 
-                $SysCheckHash.sysChecks[0].IsDelegated = 'True' 
-            }
+        if (![string]::IsNullOrEmpty($SysCheckHash.sysChecks[0].DelegatedGroupName) -and ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole($SysCheckHash.sysChecks[0].DelegatedGroupName))) {
+            $SysCheckHash.sysChecks[0].IsDomainAdminOrDelegated = 'True' 
+            $SysCheckHash.sysChecks[0].IsDelegated = 'True' 
         }
+        
 
+        elseif (![string]::IsNullOrEmpty($SysCheckHash.sysChecks[0].ReportGroupName) -and ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole($SysCheckHash.sysChecks[0].ReportGroupName))) {
+            $SysCheckHash.sysChecks[0].IsReport = 'True' 
+        }
     }
 }
 

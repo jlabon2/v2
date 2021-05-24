@@ -1,6 +1,6 @@
 ﻿# V2 Configurable HD ToolKit #
 ##############################
-$ver = 0.88
+$ver = 0.89
 $ConfirmPreference = 'None'
 
 Add-Type -AssemblyName 'System.Windows.Forms'
@@ -22,7 +22,7 @@ Set-InfoPaneHash
 # Import from JSON and add to hash table
 Set-Config -ConfigPath $savedConfig -Type Import -ConfigHash $configHash
 
-# Process loaded data or creates initial item templates for various config datagrids
+# Process loaded data or creates initial item templates for various config items and datagrids
 @('userPropList', 'compPropList', 'contextConfig', 'objectToolConfig', 'nameMapList', 'netMapList', 'varListConfig', 'searchBaseConfig', 'queryDefConfig', 'modConfig') | Set-InitialValues -ConfigHash $configHash -PullDefaults
 @('userLogMapping', 'compLogMapping', 'settingHeaderConfig', 'SACats') | Set-InitialValues -ConfigHash $configHash
 
@@ -211,10 +211,13 @@ $syncHash.settingLogo.add_Loaded( {
                 'IsDomainAdmin'              = 'False'
                 'IsDomainAdminOrDelegated'   = 'False'
                 'IsDelegated'                = 'False'
+                'IsReport'                   = 'False'
                 'Admin'                      = 'False'
                 'Modules'                    = 'False'
                 'ADDS'                       = 'False'
                 'DelegatedGroupName'         =  if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-delegatedGroup.json")) { (Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-delegatedGroup.json") | ConvertFrom-Json).Name }
+                                                else {$null}
+                'ReportGroupName'            =  if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-reportGroup.json")) { (Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-reportGroup.json") | ConvertFrom-Json).Name }
                                                 else {$null}
             })
 
@@ -237,7 +240,7 @@ $syncHash.settingLogo.add_Loaded( {
                 Start-BasicADCheck -SysCheckHash $sysCheckHash -configHash $configHash
                 
                 Start-AdminCheck -SysCheckHash $sysCheckHash
-                   
+                   Write-Host "B"
                 # Check individual checks; mark parent categories as true is children are true       
                 switch ($sysCheckHash.sysChecks) {
                     { $_.ADModule -eq $true -and $_.RSModule -eq $true } { $sysCheckHash.sysChecks[0].Modules = 'True' }
@@ -246,17 +249,22 @@ $syncHash.settingLogo.add_Loaded( {
                 }
 
                 @('settingADMemberLabel', 'settingADDCLabel', 'settingModADLabel', 'settingModRSLabel', 'settingDomainAdminLabel', 
-                    'settingLocalAdminLabel', 'settingPermLabel', 'settingADLabel', 'settingModLabel', 'settingDelegatedPanel', 'settingDelegatedGroupSelection') | 
+                    'settingLocalAdminLabel', 'settingPermLabel', 'settingADLabel', 'settingModLabel', 'settingDelegatedPanel', 'settingDelegatedGroupSelection', 'settingReportGroupSelection') | 
                     Set-RSDataContext -SyncHash $syncHash -DataContext $sysCheckHash.sysChecks
                
                 $sysCheckHash.checkComplete = $true
 
                 Start-Sleep -Seconds 1
 
-                if ($sysCheckHash.sysChecks[0].ADDS -eq $false -or 
+                if (($sysCheckHash.sysChecks[0].ADDS -eq $false -or 
                     $sysCheckHash.sysChecks[0].Modules -eq $false -or 
-                    $sysCheckHash.sysChecks[0].Admin -eq $false) { Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck}
+                    $sysCheckHash.sysChecks[0].Admin -eq $false) -and
+                    $sysCheckHash.sysChecks[0].IsReport -eq $false) { Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck}
                 
+                elseif ($sysCheckHash.sysChecks[0].IsReport -eq $true) {
+                    Set-ReportView -SyncHash $syncHash -ConfigHash $configHash
+                }
+
                 else { 
                     Start-PropBoxPopulate -configHash $configHash -Window $syncHash.Window -AdLabel $adLabel -SavedConfig $savedConfig
                     Set-ADGenericQueryNames -ConfigHash $configHash               
@@ -285,6 +293,14 @@ $syncHash.settingDelegatedGroupPick.Add_Click({
     $syncHash.settingDelegatedGroupSelection.Text = $sysCheckHash.sysChecks[0].DelegatedGroupName
     $sysCheckHash.sysChecks[0].DelegatedGroupName | Select-Object @{Label = "Name"; Expression = {$_}} | 
         ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-delegatedGroup.json")
+})
+
+$syncHash.settingReportGroupPick.Add_Click({
+    $configRoot = Split-Path $savedConfig 
+    $sysCheckHash.sysChecks[0].ReportGroupName = (Select-ADObject -Type Groups).Name
+    $syncHash.settingReportGroupSelection.Text = $sysCheckHash.sysChecks[0].ReportGroupName
+    $sysCheckHash.sysChecks[0].ReportGroupName | Select-Object @{Label = "Name"; Expression = {$_}} | 
+        ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-reportGroup.json")
 })
 #endregion 
 
@@ -759,9 +775,13 @@ $syncHash.tabMenu.add_Loaded( {
 
                 do {} until ($sysCheckHash.checkComplete)
            
-                if ($sysCheckHash.sysChecks.Admin -eq $false -or $sysCheckHash.sysChecks.ADDS -eq $false -or $sysCheckHash.sysChecks.Modules -eq $false ) { Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck }
+                if ($sysCheckHash.sysChecks.ADDS -eq $false -or $sysCheckHash.sysChecks.Modules -eq $false -and $sysCheckHash.sysChecks[0].IsReport -eq $false -and $sysCheckHash.sysChecks.Admin -eq $false) { Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck }             
 
                 elseif (!(Test-Path $savedConfig)) { Suspend-FailedItems -SyncHash $syncHash -CheckedItems Config }
+
+                elseif ($sysCheckHash.sysChecks[0].IsReport -eq $true -and $sysCheckHash.sysChecks.Admin -eq $false) {
+                    Set-ReportView -SyncHash $syncHash -ConfigHash $configHash
+                }
         
                 else { $syncHash.Window.Dispatcher.invoke([action] { $syncHash.tabMenu.SelectedIndex = 0 }) }
             }
