@@ -353,7 +353,7 @@ Param (
         }
 
 
-        $DialogPicker.AllowedLocations = [CubicOrange.Windows.Forms.ActiveDirectory.Locations]::JoinedDomain       
+        $DialogPicker.AllowedLocations = [CubicOrange.Windows.Forms.ActiveDirectory.Locations]::All       
         $DialogPicker.DefaultLocations = [CubicOrange.Windows.Forms.ActiveDirectory.Locations]::UserEntered       
         $DialogPicker.ShowAdvancedView = $true    
         $DialogPicker.SkipDomainControllerCheck = $true
