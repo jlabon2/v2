@@ -268,8 +268,8 @@ $syncHash.settingLogo.add_Loaded( {
                 }
 
                 else { 
-                    Start-PropBoxPopulate -configHash $configHash -Window $syncHash.Window -AdLabel $adLabel -SavedConfig $savedConfig
                     Set-DefaultDC -ConfigHash $configHash -Domain $configHash.configuredDomain
+                    Start-PropBoxPopulate -configHash $configHash -Window $syncHash.Window -AdLabel $adLabel -SavedConfig $savedConfig
                     Set-ADGenericQueryNames -ConfigHash $configHash               
                     Set-QueryPropertyList -SyncHash $syncHash -ConfigHash $configHash
 
@@ -985,7 +985,7 @@ $syncHash.tabMenu.add_Loaded( {
                                                         
                                                             Start-Sleep -Milliseconds 500
                                                            
-                                                            Set-CustomVariables -VarHash $varHash
+                                                            Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
 
                                                             $actionName = $rsCmd.propList.('actionCmd' + $b + 'ToolTip')
                                                             $actionObject = $rsCmd.actionObject
@@ -1076,7 +1076,7 @@ $syncHash.tabMenu.add_Loaded( {
                                    
                                                         $b = $sender.Name -replace '.*action'
 
-                                                        Set-CustomVariables -VarHash $varHash
+                                                        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
 
                                                         Remove-Variable -Name $type -ErrorAction SilentlyContinue
                                                         New-Variable -Name $type -Value $actionObject
@@ -1171,7 +1171,7 @@ $syncHash.tabMenu.add_Loaded( {
                             else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName }
                         }
 
-                        Set-CustomVariables -VarHash $varHash
+                        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
 
                         try { 
                             ([scriptblock]::Create($configHash.rtConfig.MSTSC.cmd)).Invoke() 
@@ -1199,7 +1199,7 @@ $syncHash.tabMenu.add_Loaded( {
                             else { $comp = $syncHash.CompUserGrid.SelectedItem.ClientName } 
                         }
                         
-                        Set-CustomVariables -VarHash $varHash
+                        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
                         
                         try { 
                             ([scriptblock]::Create($configHash.rtConfig.MSRA.cmd)).Invoke() 
@@ -1255,7 +1255,7 @@ $syncHash.tabMenu.add_Loaded( {
                                 $sessionID = $syncHash.CompUserGrid.SelectedItem.SessionID
                             }
 
-                            Set-CustomVariables -VarHash $varHash
+                            Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
                             
                               
                             try { 
@@ -1332,7 +1332,7 @@ $syncHash.tabMenu.add_Loaded( {
 
                                     $combinedString = "$($user.ToLower()) on $($comp.toUpper())"
                                     $toolName = $rsCmd.buttonSettings.ActionName
-                                    Set-CustomVariables -VarHash $varHash
+                                    Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
 
                                     try {
                                         ([scriptblock]::Create($rsCmd.buttonSettings.actionCmd)).Invoke()
@@ -1350,7 +1350,7 @@ $syncHash.tabMenu.add_Loaded( {
                             else {
                                 $combinedString = "$($user.ToLower()) on $($comp.ToUpper())"
                                 $toolName = $configHash.contextConfig[$id - 1].ActionName
-                                Set-CustomVariables -VarHash $varHash
+                                Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
 
                                 try {
                                     ([scriptblock]::Create($configHash.contextConfig[$id - 1].actionCmd)).Invoke()
@@ -1468,7 +1468,7 @@ $syncHash.tabControl.add_SelectionChanged( {
                                     Param($syncHash, $queryHash, $configHash, $currentTabItem, $i, $varHash, $boxCount, $statusTable)   
                                     $type = $queryHash[$currentTabItem].ObjectClass -replace 'Computer', 'Comp'
 
-                                    Set-CustomVariables -VarHash $varHash
+                                    Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
                                     New-Variable -Name $type -Value $configHash.currentTabItem
                                     # Remove-Variable -Name resultColor -ErrorAction SilentlyContinue                 
 
@@ -1756,7 +1756,7 @@ $syncHash.itemToolDialogConfirmButton.Add_Click( {
             Param($queue, $toolID, $configHash, $queryHash, $window, $confirmWindow, $textBlock, $varHash)
 
             $toolName = ($configHash.objectToolConfig[$toolID - 1].toolName).ToUpper()
-            Set-CustomVariables -VarHash $varHash
+            Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
             if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {Remove-Variable ActiveObject, ActiveObjectType, ActiveObjectData -ErrorAction SilentlyContinue}
 
             try {              
@@ -1920,7 +1920,7 @@ $syncHash.toolsCommandGridExecuteAll.Add_Click( {
         Start-RSJob @rsArgs -ScriptBlock {
             Param($queue, $configHash, $queryHash, $syncHash, $rsCmd, $confirmWindow, $window, $textBlock, $varhash)
 
-            Set-CustomVariables -VarHash $varHash
+            Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
             if ($configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].objectType -eq 'Standalone') {Remove-Variable ActiveObject, ActiveObjectType, ActiveObjectData -ErrorAction SilentlyContinue}
             $toolName = $configHash.objectToolConfig[$rsCmd.cmdGridParentIndex].ToolName
 
