@@ -1564,11 +1564,13 @@
             <simpleChildWindow:ChildWindow
                 x:Name="adHocConfirmWindow"
                 Title="Confirm"
+                Panel.ZIndex="100"
                 AllowMove="True"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent}"
                 BorderThickness="1"
                 CloseByEscape="False"
                 EnableDropShadow="False"
+                IsModal="True"
                 IsOpen="False"
                 ShowCloseButton="False">
                 <simpleChildWindow:ChildWindow.OverlayBrush>
@@ -2937,7 +2939,7 @@
                             <Label x:Name="settingADDCLabel" Grid.Row="1" Grid.Column="3" Style="{StaticResource StatusLabel}" Tag="{Binding ADDCConnectivity}" />
                         </Grid>
                     </Canvas>
-                    <Canvas x:Name="settingAdminContent" Background="{DynamicResource MahApps.Brushes.ThemeBackground}" Visibility="Hidden">
+                    <Canvas x:Name="settingAdminContent" Background="{DynamicResource MahApps.Brushes.ThemeBackground}" Visibility="Collapsed">
                         <Grid ShowGridLines="False">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="20" />
@@ -2949,12 +2951,10 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="50" />
                                 <RowDefinition Height="50" />
-                                <RowDefinition Height="20" />
-                                <RowDefinition Height="60" />
-                                <RowDefinition Height="60" />
                                 <RowDefinition Height="50" />
-                                <RowDefinition Height="50" />
-                                <RowDefinition Height="50" />
+                                <RowDefinition Height="120" />
+
+
                             </Grid.RowDefinitions>
                             <DockPanel Grid.Row="0" Grid.Column="1">
                                 <Label Content="Local Administrator" DockPanel.Dock="Top" FontFamily="{DynamicResource MahApps.Fonts.Family.Header}" FontSize="16" />
@@ -2966,42 +2966,62 @@
                                 <TextBlock Margin="5,0,0,0" FontFamily="{DynamicResource MahApps.Fonts.Family.Header}" Foreground="LightGray" Text="Current user is in domain admins or delegated group" />
                             </DockPanel>
                             <Label x:Name="settingDomainAdminLabel" Grid.Row="1" Grid.Column="3" Style="{StaticResource StatusLabel}" Tag="{Binding IsDomainAdminOrDelegated}" />
-
-                            <DockPanel Name="settingDelegatedPanel" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="4" Tag="{Binding IsDomainAdmin}">
-
-
-                                <StackPanel DockPanel.Dock="Left">
-                                    <Label Margin="0,5,0,0" Content="Select group with delegated rights (requires reset)" FontFamily="Segoe UI Light" />
-                                    <TextBlock Name="settingDelegatedGroupSelection" Margin="0,-5,0,0" Foreground="{StaticResource MahApps.Brushes.Accent}" Style="{StaticResource toolLabel}" Text="{Binding DelegatedGroupName, UpdateSourceTrigger=PropertyChanged}" />
+                            <DockPanel Name="settingSelDomainPanel" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Tag="{Binding IsDomainAdmin}">
+                                <Separator Width="350" Margin="-25,0,0,0" DockPanel.Dock="Top" Style="{StaticResource MaterialDesignLightSeparator}" />
+                                <StackPanel>
+                                    <Label Content="Active ADDS Domain:" FontFamily="Segoe UI Light" />
+                                    <TextBlock Name="settingSelDomainSelection" Margin="5,-5,0,0" Foreground="{StaticResource MahApps.Brushes.Accent}" Style="{StaticResource toolLabel}" />
                                 </StackPanel>
                                 <Button
-                                    Name="settingDelegatedGroupPick"
-                                    Width="15"
-                                    Height="15"
-                                    Margin="37.5,-5,0,0"
-                                    Content=""
+                                    Name="settingSelDomainClear"
+                                    Width="20"
+                                    Height="20"
+                                    Margin="0,0,30,6"
+                                    HorizontalAlignment="Right"
+                                    Content=""
                                     DockPanel.Dock="Right"
                                     FontFamily="Segoe MDL2 Assets"
                                     FontSize="10"
-                                    ToolTip="Pick group with delegated rights" />
+                                    ToolTip="Change configured domain to current domain" />
                             </DockPanel>
-                            <DockPanel Name="settingReportsPanel" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="4" Tag="{Binding IsDomainAdmin}">
+                            <StackPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="4">
+                                <DockPanel Name="settingDelegatedPanel" Tag="{Binding IsDomainAdmin}">
+                                    <StackPanel>
+                                        <Label Content="Select group with delegated rights (requires reset)" FontFamily="Segoe UI Light" />
+                                        <TextBlock Name="settingDelegatedGroupSelection" Margin="5,-5,0,0" Foreground="{StaticResource MahApps.Brushes.Accent}" Style="{StaticResource toolLabel}" Text="{Binding DelegatedGroupName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <Button
+                                        Name="settingDelegatedGroupPick"
+                                        Width="20"
+                                        Height="20"
+                                        Margin="0,0,30,6"
+                                        HorizontalAlignment="Right"
+                                        Content=""
+                                        DockPanel.Dock="Right"
+                                        FontFamily="Segoe MDL2 Assets"
+                                        FontSize="10"
+                                        ToolTip="Pick group with delegated rights" />
+                                </DockPanel>
+                                <DockPanel Name="settingReportsPanel" Tag="{Binding IsDomainAdmin}">
 
-                                <StackPanel Margin="0,-25,0,0" DockPanel.Dock="Left">
-                                    <Label Margin="0,5,0,0" Content="Select group to allow report view  (requires reset) " FontFamily="Segoe UI Light" />
-                                    <TextBlock Name="settingReportGroupSelection" Margin="0,-5,0,0" Foreground="{StaticResource MahApps.Brushes.Accent}" Style="{StaticResource toolLabel}" Text="{Binding ReportGroupName, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-                                <Button
-                                    Name="settingReportGroupPick"
-                                    Width="15"
-                                    Height="15"
-                                    Margin="37.5,-60,0,0"
-                                    Content=""
-                                    DockPanel.Dock="Right"
-                                    FontFamily="Segoe MDL2 Assets"
-                                    FontSize="10"
-                                    ToolTip="Pick group to allow report viewing" />
-                            </DockPanel>
+                                    <StackPanel>
+                                        <Label Content="Select group to allow report view  (requires reset) " FontFamily="Segoe UI Light" />
+                                        <TextBlock Name="settingReportGroupSelection" Margin="5,-5,0,0" Foreground="{StaticResource MahApps.Brushes.Accent}" Style="{StaticResource toolLabel}" Text="{Binding ReportGroupName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <Button
+                                        Name="settingReportGroupPick"
+                                        Width="20"
+                                        Height="20"
+                                        Margin="0,0,30,6"
+                                        HorizontalAlignment="Right"
+                                        Content=""
+                                        DockPanel.Dock="Right"
+                                        FontFamily="Segoe MDL2 Assets"
+                                        FontSize="10"
+                                        ToolTip="Pick group to allow report viewing" />
+                                </DockPanel>
+                            </StackPanel>
+
                         </Grid>
                     </Canvas>
                     <Canvas x:Name="settingNetContent" Background="{DynamicResource MahApps.Brushes.ThemeBackground}" Visibility="Hidden">
@@ -4726,6 +4746,7 @@
                             </Grid>
                         </Controls:Flyout>
                         <StackPanel Width="510" Margin="10,0,10,0">
+
                             <DockPanel>
                                 <DockPanel HorizontalAlignment="Stretch" DockPanel.Dock="Left">
                                     <Label Content="SearchBase OUs" DockPanel.Dock="Top" FontFamily="{DynamicResource MahApps.Fonts.Family.Header}" FontSize="16" />
@@ -4744,6 +4765,7 @@
                                     FontSize="16"
                                     Visibility="Visible" />
                             </DockPanel>
+
                             <DockPanel>
                                 <DockPanel HorizontalAlignment="Stretch" DockPanel.Dock="Left">
                                     <Label Content="Query Properties" DockPanel.Dock="Top" FontFamily="{DynamicResource MahApps.Fonts.Family.Header}" FontSize="16" />
@@ -7719,16 +7741,11 @@
                                             </Expander.Header>
                                             <Grid>
 
-                                                <Label
-                                                    Name="userCompNotFound"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
-                                                    Content="No login logs found!"
-                                                    FontFamily="{DynamicResource MahApps.Fonts.Family.Header}"
-                                                    FontSize="16">
+                                                <Label Name="userCompNotFound" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{DynamicResource MahApps.Fonts.Family.Header}" FontSize="16">
                                                     <Label.Style>
                                                         <Style TargetType="Label">
                                                             <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Setter Property="Content" Value="No login logs found" />
                                                             <Style.Triggers>
                                                                 <MultiDataTrigger>
                                                                     <MultiDataTrigger.Conditions>
@@ -7739,12 +7756,43 @@
                                                                     <MultiDataTrigger.Setters>
                                                                         <Setter Property="Visibility" Value="Visible" />
                                                                     </MultiDataTrigger.Setters>
-
                                                                 </MultiDataTrigger>
+                                                                <DataTrigger Binding="{Binding ElementName=userCompOutdated, Path=Visibility}" Value="Visible">
+
+                                                                    <Setter Property="Content" Value="Login log exists but beyond search range" />
+                                                                </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Label.Style>
                                                 </Label>
+                                                <Button
+                                                    Name="userCompOutdated"
+                                                    Width="100"
+                                                    Height="40"
+                                                    Margin="0,90,0,0"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    md:ButtonAssist.CornerRadius="25"
+                                                    Background="{DynamicResource MahApps.Brushes.Accent3}"
+                                                    Content="Open log"
+                                                    FontFamily="Segoe UI">
+                                                    <Button.Style>
+                                                        <Style BasedOn="{StaticResource MaterialDesignRaisedDarkButton}" TargetType="Button">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding ElementName=userCompNotFound, Path=Visibility}" Value="Visible" />
+                                                                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=Tag}" Value="HasLogs" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </MultiDataTrigger.Setters>
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
                                                 <Grid Name="userCompDockPanel">
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="*" />

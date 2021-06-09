@@ -32,6 +32,22 @@ function Set-Version {
 
 }
 
+function Set-ConfiguredDomainName {
+    param ($DomainName, $SyncHash) 
+
+    $SyncHash.Window.Dispatcher.invoke([action]{ 
+        if ($DomainName) { $syncHash.settingSelDomainSelection.Text = $DomainName  }
+        else { $syncHash.settingSelDomainSelection.Text = "N/A" }
+
+        if ($DomainName -eq $env:USERDNSDOMAIN) { $SyncHash.settingSelDomainClear.IsEnabled = $false }
+    })
+}
+
+function Set-DefaultDC {
+param ($ConfigHash, $Domain)
+    $configHash.defaultDC = (Get-ADDomainController -DomainName $configHash.configuredDomain -Discover -Service ADWS).Hostname[0]
+}
+
 function Set-CurrentPane {
     param ($SyncHash, $Panel)
     $SyncHash.infoPaneContent.Tag = $Panel
@@ -62,38 +78,38 @@ function Get-RelatedClass {
   
     $Classes = @($ClassName)
   
-    $SubClass = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties subClassOf | Select-Object -ExpandProperty subClassOf
+    $SubClass = Get-ADObject -Server $ConfigHash.defaultDC -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties subClassOf | Select-Object -ExpandProperty subClassOf
     if ( $SubClass -and $SubClass -ne $ClassName ) { $Classes += Get-RelatedClass $SubClass }
   
-    $auxiliaryClasses = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties auxiliaryClass | Select-Object -ExpandProperty auxiliaryClass
+    $auxiliaryClasses = Get-ADObject -Server $ConfigHash.defaultDC -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties auxiliaryClass | Select-Object -ExpandProperty auxiliaryClass
     foreach ( $auxiliaryClass in $auxiliaryClasses ) { $Classes += Get-RelatedClass $auxiliaryClass }
 
-    $systemAuxiliaryClasses = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties systemAuxiliaryClass | Select-Object -ExpandProperty systemAuxiliaryClass
+    $systemAuxiliaryClasses = Get-ADObject -Server $ConfigHash.defaultDC -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $ClassName } -Properties systemAuxiliaryClass | Select-Object -ExpandProperty systemAuxiliaryClass
     foreach ( $systemAuxiliaryClass in $systemAuxiliaryClasses ) { $Classes += Get-RelatedClass $systemAuxiliaryClass }
     Return $Classes  
 }
 
 function Get-AllUserAttributes {
-    $ADUser = Get-ADUser -ResultSetSize 1 -Filter * -Properties objectClass
+    $ADUser = Get-ADUser -Server $ConfigHash.defaultDC -ResultSetSize 1 -Filter * -Properties objectClass
     $AllClasses = ( Get-RelatedClass $ADUser.ObjectClass | Sort-Object -Unique )
 
     $AllAttributes = @()
     Foreach ( $Class in $AllClasses ) {
         $attributeTypes = 'MayContain', 'MustContain', 'systemMayContain', 'systemMustContain'
-        $ClassInfo = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $Class } -Properties $attributeTypes 
+        $ClassInfo = Get-ADObject -Server $ConfigHash.defaultDC -SearchBase "$((Get-ADRootDSE -Server $ConfigHash.defaultDC).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $Class } -Properties $attributeTypes 
         ForEach ($attribute in $attributeTypes) { $AllAttributes += $ClassInfo.$attribute }
     }
     $AllAttributes | Sort-Object -Unique
 }
 
 function Get-AllCompAttributes {
-    $ADUser = Get-ADComputer -ResultSetSize 1 -Filter * -Properties objectClass
+    $ADUser = Get-ADComputer -Server $ConfigHash.defaultDC -ResultSetSize 1 -Filter * -Properties objectClass
     $AllClasses = ( Get-RelatedClass $ADUser.ObjectClass | Sort-Object -Unique )
 
     $AllAttributes = @()
     Foreach ( $Class in $AllClasses ) {
         $attributeTypes = 'MayContain', 'MustContain', 'systemMayContain', 'systemMustContain'
-        $ClassInfo = Get-ADObject -SearchBase "$((Get-ADRootDSE).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $Class } -Properties $attributeTypes 
+        $ClassInfo = Get-ADObject -Server $ConfigHash.defaultDC -SearchBase "$((Get-ADRootDSE -Server $ConfigHash.defaultDC).SchemaNamingContext)" -Filter { lDAPDisplayName -eq $Class } -Properties $attributeTypes 
         ForEach ($attribute in $attributeTypes) { $AllAttributes += $ClassInfo.$attribute }
     }
     $AllAttributes | Sort-Object -Unique
@@ -131,11 +147,11 @@ function Create-AttributeList {
     $masterList = @()
     if ($type -eq 'User')  { 
         $masterList += Get-AllUserAttributes
-        $masterList += (Get-AdUser -Identity $env:USERNAME -Properties *).PsObject.Properties.Name
+        $masterList += (Get-AdUser -Server $ConfigHash.defaultDC -Identity $env:USERNAME -Properties *).PsObject.Properties.Name
     }
     else { 
         $masterList += Get-AllCompAttributes 
-        $masterList += (Get-ADComputer -Identity $env:COMPUTERNAME -Properties *).PsObject.Properties.Name    
+        $masterList += (Get-ADComputer -Server $ConfigHash.defaultDC -Identity -Server $ConfigHash.defaultDC -Properties *).PsObject.Properties.Name    
     }
 
     $attributeList = [System.Collections.ArrayList]@()
@@ -144,10 +160,10 @@ function Create-AttributeList {
         if ($type -eq 'User') { 
            #convert to friendly name from ldap name - if possible
            if  ($configHash.adPropertyMapInverse[$object]) { $object = $configHash.adPropertyMapInverse[$object]}
-                $attributeList.Add(((Get-ADUser -ResultSetSize 1 -filter * -Properties $object -ErrorAction SilentlyContinue | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
+                $attributeList.Add(((Get-ADUser -Server $ConfigHash.defaultDC -ResultSetSize 1 -filter * -Properties $object -ErrorAction SilentlyContinue | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
         else  { 
            if  ($configHash.adPropertyMapInverse[$object]) { $object = $configHash.adPropertyMapInverse[$object]}
-            $attributeList.Add(((Get-ADComputer -ResultSetSize 1 -filter * -Properties $object -ErrorAction SilentlyContinue | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
+            $attributeList.Add(((Get-ADComputer -Server $ConfigHash.defaultDC -ResultSetSize 1 -filter * -Properties $object -ErrorAction SilentlyContinue | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
     }
 
     $attributeList
@@ -160,7 +176,35 @@ function Reset-ScriptBlockValidityStatus {
     $syncHash.$ResultBoxName.Tag = 'Unchecked'
     $itemSet.$StatusName = $null
 }
+function Start-DomainChangeDialog {
+    param($SyncHash, $ConfigHash, $ConfigPath)
+    
+    $syncHash.settingChildWindow.IsOpen = $false 
 
+    $domainChangeText = @"
+This will reset the configuration's currently set domain from $($configHash.configuredDomain) to $($env:USERDNSDOMAIN). 
+
+The tool must be reset before these changes are active.
+
+Please ensure the configured search base OUs are updated for the alternate domain. Additionally, user and computer mappings' referenced AD properties may need to be edited if the new domain schema no longer has those properties.   
+
+"@
+
+    $rsArgs = @{
+        Name            = 'DomainChange'
+        ArgumentList    = @($ConfigHash, $SyncHash.Window, $syncHash.adHocConfirmWindow, $syncHash, $domainChangeText, $configPath)
+        ModulesToImport = $configHash.modList
+    }
+    Start-RSJob @rsArgs -Scriptblock {
+        param ($configHash, $window, $confirmWindow, $syncHash, $domainChangeText, $savedConfig)
+        New-DialogWait -ConfirmWindow $confirmWindow -Window $window -configHash $configHash -TextBlock $syncHash.adHocConfirmText -Text $domainChangeText
+        $configHash.configuredDomain = $env:USERDNSDOMAIN
+        Set-ConfiguredDomainName -SyncHash $syncHash -DomainName $env:USERDNSDOMAIN
+        Set-Config -ConfigPath $savedConfig -Type Export -ConfigHash $configHash
+       # 
+        #$SyncHash.settingSelDomainClear.IsEnabled = $false 
+    }
+}
 function Update-ScriptBlockValidityStatus {
     param ($syncHash, $ResultBoxName, $itemSet, $statusName)
     
@@ -360,6 +404,8 @@ function Set-InfoPaneContent {
 
 function Set-CustomVariables {
     param ($VarHash) 
+
+    $global:PSDefaultParameterValues = @{"*-AD*:Server"=$configHash.defaultDC;"Choose-ADOrganizationalUnit:Domain"=$configHash.configuredDomain}
 
     foreach ($var in $varHash.Keys) { 
         Set-Variable -Name $var -Value $varHash.$var -Scope global
@@ -1031,6 +1077,9 @@ function Suspend-FailedItems {
                     $SyncHash.settingFailPanel.Visibility = 'Visible'
                     $SyncHash.settingConfigSeperator.Visibility = 'Hidden'
                     $SyncHash.settingsConfigItems.Visibility = 'Hidden'
+                   # $SyncHash.settingStatusChildBoard.Visibility = 'Hidden'
+                    $SyncHash.settingConfigPanel.Visibility = 'Hidden'
+                    $SyncHash.settingConfigMissing.Visibility = 'Hidden'
                 })
 
             break
@@ -1106,10 +1155,6 @@ function Set-InitialValues {
             }
         }
         else { $tempList | ForEach-Object -Process { $ConfigHash.$type.Add($_) } }
-
-        
-     
-
     }
 
     End {
@@ -1119,6 +1164,7 @@ function Set-InitialValues {
         $ConfigHash.boxMax = ($ConfigHash.UserboxCount, $ConfigHash.compPropList | Measure-Object -Maximum).Maximum
 
         if (!$configHash.searchDays) { $ConfigHash.searchDays = 60 }
+        if (!$configHash.configuredDomain) { $configHash.configuredDomain = $env:USERDNSDOMAIN }
 
     }
 }
@@ -1907,7 +1953,7 @@ function Start-BasicADCheck {
             $selectedDC = Get-ADDomainController -Discover -Service ADWS -ErrorAction SilentlyContinue 
             
             if (Test-Connection -Count 1 -Quiet -ComputerName $selectedDC.HostName) { 
-                $global:PSDefaultParameterValues.Add("*-AD*:Server",$selectedDC.HostName[0])            
+                 $global:PSDefaultParameterValues = @{"*-AD*:Server"=$configHash.defaultDC;"Choose-ADOrganizationalUnit:Domain"=$configHash.configuredDomain}          
                 $SysCheckHash.sysChecks[0].ADDCConnectivity = 'True'
                             
                 try {
@@ -1930,10 +1976,10 @@ function Start-BasicADCheck {
 }
 
 function Start-AdminCheck {
-    param ($SysCheckHash) 
+    param ($SysCheckHash, $ConfiguredDomain) 
     if ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole([Security.Principal.WindowsBUiltInRole]::Administrator)) { $SysCheckHash.sysChecks[0].IsInAdmin = 'True' }
 
-    if ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole('Domain Admins')) { 
+    if ((New-Object -TypeName Security.Principal.WindowsPrincipal -ArgumentList ([Security.Principal.WindowsIdentity]::GetCurrent())).isInRole($ConfiguredDomain + "\" + "Domain Admins" )) { 
         $SysCheckHash.sysChecks[0].IsDomainAdmin            = 'True' 
         $SysCheckHash.sysChecks[0].IsDomainAdminOrDelegated = 'True' 
     }
@@ -1995,24 +2041,24 @@ function Get-PropertyLists {
 
     foreach ($type in ('user', 'comp')) {
         if ($type -eq 'user') {  
-            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json")) {
-                $ConfigHash.userPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json") | ConvertFrom-Json
+            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($configHash.configuredDomain)-$type.json")) {
+                $ConfigHash.userPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($configHash.configuredDomain)-$type.json") | ConvertFrom-Json
             }
             else { 
                  $window.Dispatcher.Invoke([Action]{$adLabel.Visibility = "Visible"})
                 $ConfigHash.userPropPullList = Create-AttributeList -Type User -ConfigHash $configHash | Sort-Object -Unique Name
-                $ConfigHash.userPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json")
+                $ConfigHash.userPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($configHash.configuredDomain)-$type.json")
             }
         }
 
         else { 
-            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json")) {
-                $ConfigHash.compPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json") | ConvertFrom-Json
+            if (Test-Path (Join-Path -Path $configRoot -ChildPath "$($configHash.configuredDomain)-$type.json")) {
+                $ConfigHash.compPropPullList = Get-Content (Join-Path -Path $configRoot -ChildPath "$($configHash.configuredDomain)-$type.json") | ConvertFrom-Json
             }
             else { 
                 $window.Dispatcher.Invoke([Action]{$adLabel.Visibility = "Visible"})
                 $ConfigHash.compPropPullList = Create-AttributeList -Type Computer -ConfigHash $configHash | Sort-Object -Unique Name
-                $ConfigHash.compPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-$type.json")
+                $ConfigHash.compPropPullList | ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($configHash.configuredDomain)-$type.json")
             }
         }
         
@@ -3323,7 +3369,7 @@ function Start-ObjectSearch {
     Start-RSJob @rsArgs -ScriptBlock {
         param($queryHash, $ConfigHash, $SyncHash, $rsCmd)        
         
-        
+         $global:PSDefaultParameterValues = @{"*-AD*:Server"=$configHash.defaultDC;"Choose-ADOrganizationalUnit:Domain"=$configHash.configuredDomain}
 
         if ($rsCmd.key -eq 'Escape') {
            
@@ -3426,12 +3472,15 @@ function Find-ObjectLogs {
     }
 
     if ($type -eq 'User') {
+        
         Start-RSJob @rsArgs -ScriptBlock {
             param($queryHash, $ConfigHash, $match, $SyncHash) 
             Start-Sleep -Milliseconds 500
             $startID = $queryHash.$($match.SamAccountName).QueryID
         
             if ($ConfigHash.UserLogPath -and (Test-Path (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName)`.*"))) {
+                $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.userCompOutdated.Tag = 'HasLogs'})
+                $queryHash.$($match.SamAccountName).HasLogs = $true
                 $queryHash.$($match.SamAccountName).LoginLogPath = (((Get-ChildItem (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName)`.*") -Include *.txt, *.csv, *.log))[0]).FullName
                 $queryHash.$($match.SamAccountName).LoginLogRaw = Get-Content $queryHash.$($match.SamAccountName).LoginLogPath |
                     Select-Object -Last ($ConfigHash.searchDays * 2.5) | 
@@ -3611,6 +3660,8 @@ function Find-ObjectLogs {
             $startID = $queryHash.$($match.Name).QueryID
 
             if ($ConfigHash.compLogPath -and (Test-Path (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name)`.*"))) {
+                $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.userCompOutdated.Tag = 'HasLogs'})
+                $queryHash.$($match.Name).HasLogs = $true
                 $queryHash.$($match.Name).LoginLogPath = (((Get-ChildItem (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.name)`.*")-Include *.txt, *.csv, *.log))[0]).FullName
                 $queryHash.$($match.Name).LoginLogRaw = Get-Content $queryHash.$($match.Name).LoginLogPath | 
                     Select-Object -Last ($ConfigHash.searchDays * 2.5) |

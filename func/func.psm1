@@ -1123,15 +1123,7 @@ Password"
 				}
 				ElseIf ($Domain -match '\w+\.\w+')
 				{
-					If ($forest.Domains.Name -contains $Domain)
-					{
-						$DomainDN = "DC=$($Domain.ToUpper())" -replace '\.',',DC='
-					}
-					else
-		            {
-		                throw "No domain found with FQDN '$Domain'."
-						$formChooseOU.Close()
-		            }
+                $DomainDN = "DC=$($Domain.ToUpper())" -replace '\.',',DC='
 				}
 				ElseIf ($Domain -match 'DC=\w+,DC+')
 				{

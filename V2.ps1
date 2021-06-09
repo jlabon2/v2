@@ -1,6 +1,6 @@
 ﻿# V2 Configurable HD ToolKit #
 ##############################
-$ver = 0.89
+$ver = 0.91
 $ConfirmPreference = 'None'
 
 Add-Type -AssemblyName 'System.Windows.Forms'
@@ -55,6 +55,7 @@ Add-CustomRTControls -SyncHash $syncHash -ConfigHash $configHash
 
 $syncHash.externalToolList.ItemsSource = Set-ExternalTools -ConfigHash $configHash -BaseConfigPath $baseConfigPath
 
+Set-ConfiguredDomainName -SyncHash $syncHash -DomainName $configHash.configuredDomain
 Set-Version -Version "v$ver" -CID $configHash.configVer.Ver -SyncHash $syncHash
 $sysCheckHash.missingCheckFail = $false
 
@@ -239,8 +240,7 @@ $syncHash.settingLogo.add_Loaded( {
              
                 Start-BasicADCheck -SysCheckHash $sysCheckHash -configHash $configHash
                 
-                Start-AdminCheck -SysCheckHash $sysCheckHash
-                   Write-Host "B"
+                Start-AdminCheck -SysCheckHash $sysCheckHash -ConfiguredDomain $configHash.ConfiguredDomain
                 # Check individual checks; mark parent categories as true is children are true       
                 switch ($sysCheckHash.sysChecks) {
                     { $_.ADModule -eq $true -and $_.RSModule -eq $true } { $sysCheckHash.sysChecks[0].Modules = 'True' }
@@ -251,6 +251,8 @@ $syncHash.settingLogo.add_Loaded( {
                 @('settingADMemberLabel', 'settingADDCLabel', 'settingModADLabel', 'settingModRSLabel', 'settingDomainAdminLabel', 
                     'settingLocalAdminLabel', 'settingPermLabel', 'settingADLabel', 'settingModLabel', 'settingDelegatedPanel', 'settingDelegatedGroupSelection', 'settingReportGroupSelection') | 
                     Set-RSDataContext -SyncHash $syncHash -DataContext $sysCheckHash.sysChecks
+
+                  
                
                 $sysCheckHash.checkComplete = $true
 
@@ -267,6 +269,7 @@ $syncHash.settingLogo.add_Loaded( {
 
                 else { 
                     Start-PropBoxPopulate -configHash $configHash -Window $syncHash.Window -AdLabel $adLabel -SavedConfig $savedConfig
+                    Set-DefaultDC -ConfigHash $configHash -Domain $configHash.configuredDomain
                     Set-ADGenericQueryNames -ConfigHash $configHash               
                     Set-QueryPropertyList -SyncHash $syncHash -ConfigHash $configHash
 
@@ -289,18 +292,26 @@ $syncHash.settingLogo.add_Loaded( {
 
 $syncHash.settingDelegatedGroupPick.Add_Click({
     $configRoot = Split-Path $savedConfig 
-    $sysCheckHash.sysChecks[0].DelegatedGroupName = (Select-ADObject -Type Groups).Name
-    $syncHash.settingDelegatedGroupSelection.Text = $sysCheckHash.sysChecks[0].DelegatedGroupName
-    $sysCheckHash.sysChecks[0].DelegatedGroupName | Select-Object @{Label = "Name"; Expression = {$_}} | 
-        ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-delegatedGroup.json")
+    $groupSel = Select-ADObject -Type Groups
+    
+    if ($groupSel -ne 'Cancel') {
+        $sysCheckHash.sysChecks[0].DelegatedGroupName = $groupSel.Path.Split('/')[2] + '\' + $groupSel.Name
+        $syncHash.settingDelegatedGroupSelection.Text = $sysCheckHash.sysChecks[0].DelegatedGroupName
+        $sysCheckHash.sysChecks[0].DelegatedGroupName | Select-Object @{Label = "Name"; Expression = {$_}} | 
+            ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-delegatedGroup.json")
+    }
 })
 
 $syncHash.settingReportGroupPick.Add_Click({
     $configRoot = Split-Path $savedConfig 
-    $sysCheckHash.sysChecks[0].ReportGroupName = (Select-ADObject -Type Groups).Name
+    $groupSel = Select-ADObject -Type Groups
+
+    if ($groupSel -ne 'Cancel') {
+    $sysCheckHash.sysChecks[0].ReportGroupName = $groupSel.Path.Split('/')[2] + '\' + $groupSel.Name
     $syncHash.settingReportGroupSelection.Text = $sysCheckHash.sysChecks[0].ReportGroupName
     $sysCheckHash.sysChecks[0].ReportGroupName | Select-Object @{Label = "Name"; Expression = {$_}} | 
         ConvertTo-Json | Out-File (Join-Path -Path $configRoot -ChildPath "$($env:USERDOMAIN)-reportGroup.json")
+    }
 })
 #endregion 
 
@@ -647,7 +658,7 @@ $syncHash.settingModClick.add_Click( { Set-ChildWindow -SyncHash $syncHash -Pane
 
 $syncHash.settingADClick.add_Click( { Set-ChildWindow -SyncHash $syncHash -Panel settingADContent -Title 'ADDS' })
 
-$syncHash.settingPermClick.add_Click( { Set-ChildWindow -SyncHash $syncHash -Panel settingAdminContent -Title 'Admin Permissions' }) 
+$syncHash.settingPermClick.add_Click( { Set-ChildWindow -SyncHash $syncHash -Panel settingAdminContent -Title 'Admin Permissions' -Height 230 }) 
 
 #endregion Category button events
 #region Action pane exit events
@@ -722,24 +733,30 @@ $syncHash.savePublishPathClick.add_Click({
 
 ###### MAIN WINDOW
 $syncHash.TabMenu.add_SelectionChanged( {
-       $syncHash.TabMenu.Items | ForEach-Object -Process { $_.Background = '#FF444444' }
-       $syncHash.tabMenu.SelectedItem.Background = '#576573'
-        $syncHash.TabMenu.Items.Header | ForEach-Object -Process { $_.Foreground = 'Gray' }
-        $syncHash.tabMenu.SelectedItem.Header.Foreground = 'AliceBlue'
+    # need to change this back to XAML - placeholder
+    $syncHash.TabMenu.Items | ForEach-Object -Process { $_.Background = '#FF444444' }
+    $syncHash.tabMenu.SelectedItem.Background = '#576573'
+    $syncHash.TabMenu.Items.Header | ForEach-Object -Process { $_.Foreground = 'Gray' }
+    $syncHash.tabMenu.SelectedItem.Header.Foreground = 'AliceBlue'
 
-        $syncHash.historySideDataGrid.ItemsSource = $configHash.actionLog
-        $syncHash.historySideDataGrid.Items.Refresh()
+    $syncHash.historySideDataGrid.ItemsSource = $configHash.actionLog
+    $syncHash.historySideDataGrid.Items.Refresh()
 
-        if ($syncHash.tabMenu.SelectedItem.Tag -eq 'Query') { $syncHash.SearchBox.Focus() }
+    if ($syncHash.tabMenu.SelectedItem.Tag -eq 'Query') { $syncHash.SearchBox.Focus() }
 
-        if ($syncHash.tabMenu.SelectedItem.Tag -eq 'Console') { $syncHash.consoleControl.StartProcess(("$PSHOME\powershell.exe")) }
+    if ($syncHash.tabMenu.SelectedItem.Tag -eq 'Console') { $syncHash.consoleControl.StartProcess(("$PSHOME\powershell.exe")) }
 
-        elseif ($syncHash.consoleControl.IsProcessRunning) { $syncHash.consoleControl.StopProcess() }
+    elseif ($syncHash.consoleControl.IsProcessRunning) { $syncHash.consoleControl.StopProcess() }
 
-        $syncHash.historySidePane.IsOpen = $false
-    })
+    $syncHash.historySidePane.IsOpen = $false
 
+})
 
+$syncHash.splashLoad.Add_IsVisibleChanged({
+    # set ADDS PS default params
+    $global:PSDefaultParameterValues = @{"*-AD*:Server"=$configHash.defaultDC;"Choose-ADOrganizationalUnit:Domain"=$configHash.configuredDomain}
+ 
+})
 
 $syncHash.searchBoxHelp.add_Click( {
         $syncHash.childHelp.isOpen = $true  
@@ -757,6 +774,7 @@ $syncHash.historyButton.Add_Click( {
         $syncHash.historySideDataGrid.Items.Refresh()
     })
 
+$syncHash.settingSelDomainClear.Add_Click({ Start-DomainChangeDialog -SyncHash $syncHash -ConfigHash $configHash -ConfigPath $savedConfig })
 
 $syncHash.tabControl.ItemsSource = New-Object -TypeName System.Collections.ObjectModel.ObservableCollection[Object]
 
@@ -774,7 +792,7 @@ $syncHash.tabMenu.add_Loaded( {
                 Param($syncHash, $savedConfig, $sysCheckHash)
 
                 do {} until ($sysCheckHash.checkComplete)
-           
+                
                 if ($sysCheckHash.sysChecks.ADDS -eq $false -or $sysCheckHash.sysChecks.Modules -eq $false -and $sysCheckHash.sysChecks[0].IsReport -eq $false -and $sysCheckHash.sysChecks.Admin -eq $false) { Suspend-FailedItems -SyncHash $syncHash -CheckedItems SysCheck }             
 
                 elseif (!(Test-Path $savedConfig)) { Suspend-FailedItems -SyncHash $syncHash -CheckedItems Config }
@@ -1380,13 +1398,15 @@ $syncHash.tabControl.add_SelectionChanged( {
             $syncHash.settingToolParent.Visibility = 'Collapsed'
             $syncHash.userToolControlPanel.Visibility = 'Collapsed'
             $syncHash.compToolControlPanel.Visibility = 'Collapsed'
+
             $syncHash.tabControl.IsEnabled = $false
         }
 
         else {
             Get-RSJob -State Completed | Remove-RSJob
             $syncHash.tabControl.IsEnabled = $true
-            
+            $syncHash.userCompOutdated.Tag = $null
+              
             $SyncHash.userCompGrid.ItemsSource = $null           
             $SyncHash.compUserGrid.ItemsSource = $null 
    
@@ -1577,6 +1597,8 @@ $syncHash.tabControl.add_SelectionChanged( {
                             $syncHash.Window.Dispatcher.invoke([action] {
                                     $syncHash.compExpander.IsExpanded = $true
                                     $syncHash.compExpanderProgressBar.Visibility = 'Hidden'
+
+                                    if ($queryHash[$currentTabItem].HasLogs) { $syncHash.userCompOutdated.Tag = 'HasLogs' }
                                 })
                         }
                     }
@@ -1787,6 +1809,8 @@ $syncHash.itemToolDialog.Add_ClosingFinished( {
     })
 
 $syncHash.compExpanderOpenLog.Add_Click({  Invoke-Item $queryHash[$configHash.currentTabItem].LoginLogPath })
+
+$syncHash.userCompOutdated.Add_Click({  Invoke-Item $queryHash[$configHash.currentTabItem].LoginLogPath })
 
 $syncHAsh.settingResetADPropMap.Add_Click({ 
     Remove-SavedPropertyLists -SavedConfig $savedConfig 
