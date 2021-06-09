@@ -147,23 +147,27 @@ function Create-AttributeList {
     $masterList = @()
     if ($type -eq 'User')  { 
         $masterList += Get-AllUserAttributes
-        $masterList += (Get-AdUser -Server $ConfigHash.defaultDC -Identity $env:USERNAME -Properties *).PsObject.Properties.Name
+        $masterList += (Get-AdUser -Filter * -ResultSetSize 1 -Server $ConfigHash.defaultDC -Properties *).PsObject.Properties.Name
     }
     else { 
         $masterList += Get-AllCompAttributes 
-        $masterList += (Get-ADComputer -Server $ConfigHash.defaultDC -Identity -Server $ConfigHash.defaultDC -Properties *).PsObject.Properties.Name    
+        $masterList += (Get-ADComputer -Filter * -ResultSetSize 1 -Server $ConfigHash.defaultDC -Properties *).PsObject.Properties.Name    
     }
 
     $attributeList = [System.Collections.ArrayList]@()
 
     foreach ($object in ($masterList | Sort-Object -Unique )) {
-        if ($type -eq 'User') { 
-           #convert to friendly name from ldap name - if possible
-           if  ($configHash.adPropertyMapInverse[$object]) { $object = $configHash.adPropertyMapInverse[$object]}
-                $attributeList.Add(((Get-ADUser -Server $ConfigHash.defaultDC -ResultSetSize 1 -filter * -Properties $object -ErrorAction SilentlyContinue | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
-        else  { 
-           if  ($configHash.adPropertyMapInverse[$object]) { $object = $configHash.adPropertyMapInverse[$object]}
-            $attributeList.Add(((Get-ADComputer -Server $ConfigHash.defaultDC -ResultSetSize 1 -filter * -Properties $object -ErrorAction SilentlyContinue | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
+        try {
+            if ($type -eq 'User') { 
+               #convert to friendly name from ldap name - if possible
+               if  ($configHash.adPropertyMapInverse[$object]) { $object = $configHash.adPropertyMapInverse[$object]}
+               $attributeList.Add(((Get-ADUser -Server $ConfigHash.defaultDC -Filter * -ResultSetSize 1 -Properties $object -ErrorAction Stop | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
+            else  { 
+               if  ($configHash.adPropertyMapInverse[$object]) { $object = $configHash.adPropertyMapInverse[$object]}
+               $attributeList.Add(((Get-ADComputer -Server $ConfigHash.defaultDC  -Filter * -ResultSetSize 1 -Properties $object -ErrorAction Stop | Select-Object $object).PSObject.Properties | Select-Object -Property Name, TypeNameofValue)) | Out-Null}
+        }
+
+        catch {}
     }
 
     $attributeList
@@ -403,7 +407,7 @@ function Set-InfoPaneContent {
 }
 
 function Set-CustomVariables {
-    param ($VarHash) 
+    param ($VarHash, $configHash) 
 
     $global:PSDefaultParameterValues = @{"*-AD*:Server"=$configHash.defaultDC;"Choose-ADOrganizationalUnit:Domain"=$configHash.configuredDomain}
 
@@ -1599,7 +1603,7 @@ function Add-CustomToolControls {
                                         Param($toolID, $ConfigHash, $queryHash, $window, $varHash, $confirmWindow, $textBlock, $queue)
 
                                         $toolName = ($ConfigHash.objectToolConfig[$toolID - 1].toolName).ToUpper()                                     
-                                        Set-CustomVariables -VarHash $varHash
+                                        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
                                         if ($configHash.objectToolConfig[$toolID - 1].objectType -eq 'Standalone') {Remove-Variable ActiveObject, ActiveObjectType, ActiveObjectData -ErrorAction SilentlyContinue}
 
                                         try {             
@@ -1658,7 +1662,7 @@ function Add-CustomToolControls {
                                         $target = $rsVars.target
                                         $targetType = $rsVars.targetType
                                                       
-                                        Set-CustomVariables -VarHash $varHash
+                                        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
 
                                         $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.itemTooListBoxProgress.Visibility = 'Visible' })
                     
@@ -1746,7 +1750,7 @@ function Add-CustomToolControls {
                                         $target = $rsVars.target
                                         $targetType = $rsVars.targetType
                                         
-                                        Set-CustomVariables -VarHash $varHash
+                                        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
                                                       
                                         $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.itemToolGridProgress.Visibility = 'Visible' })
                                 
@@ -1820,7 +1824,7 @@ function Add-CustomToolControls {
                                 Start-RSJob @rsArgs -ScriptBlock {
                                     param($ConfigHash, $SyncHash, $toolID, $varHash)
                                   
-                                    Set-CustomVariables -VarHash $varHash
+                                    Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
 
                                     $SyncHash.Window.Dispatcher.Invoke([Action] { $SyncHash.itemCommandGridProgress.Visibility = 'Visible' })
                                     $source = $ConfigHash.objectToolConfig[$toolID - 1].toolCommandGridConfig
@@ -2661,7 +2665,7 @@ function Get-CustomItem {
     Start-RSJob @rsArgs -ScriptBlock {
         param($ConfigHash, $SyncHash, $toolID, $Control, $varHash, $Type, $Scope)
 
-        Set-CustomVariables -VarHash $varHash
+        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
         
        
         $SyncHash.Window.Dispatcher.Invoke([Action] {
@@ -2724,7 +2728,7 @@ function Get-CustomItemBox {
     Start-RSJob @rsArgs -ScriptBlock {
         param($ConfigHash, $SyncHash, $toolID, $Control, $varHash, $type)
 
-        Set-CustomVariables -VarHash $varHash
+        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
        
        
         $configHash.customDialogClosed = $false
@@ -2783,7 +2787,7 @@ function Start-ItemToolAction {
         param($ConfigHash, $ItemList, $queue, $toolID, $window, $varHash) 
 
         $toolName = $ConfigHash.objectToolConfig[$toolID - 1].toolName
-        Set-CustomVariables -VarHash $varHash
+        Set-CustomVariables -VarHash $varHash -ConfigHash $configHash
 
         try {
             
@@ -3477,6 +3481,7 @@ function Find-ObjectLogs {
             param($queryHash, $ConfigHash, $match, $SyncHash) 
             Start-Sleep -Milliseconds 500
             $startID = $queryHash.$($match.SamAccountName).QueryID
+            $global:PSDefaultParameterValues = @{"*-AD*:Server"=$configHash.defaultDC}
         
             if ($ConfigHash.UserLogPath -and (Test-Path (Join-Path -Path $ConfigHash.UserLogPath -ChildPath "$($match.SamAccountName)`.*"))) {
                 $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.userCompOutdated.Tag = 'HasLogs'})
@@ -3658,6 +3663,7 @@ function Find-ObjectLogs {
             param($queryHash, $ConfigHash, $match, $SyncHash) 
             Start-Sleep -Milliseconds 500                               
             $startID = $queryHash.$($match.Name).QueryID
+            $global:PSDefaultParameterValues = @{"*-AD*:Server"=$configHash.defaultDC}
 
             if ($ConfigHash.compLogPath -and (Test-Path (Join-Path -Path $ConfigHash.compLogPath -ChildPath "$($match.Name)`.*"))) {
                 $syncHash.Window.Dispatcher.Invoke([Action]{$syncHash.userCompOutdated.Tag = 'HasLogs'})
