@@ -9,12 +9,12 @@ Requires:<br>
 For the end user (a tier-I, tier-II, or other support technician), the tool provides a quick interface to easily search a user or computer from within ADDS, pull relevant information, and execute various actions. All of this - the shown information and its presentation, the executable actions, and even the search term themselves are all definable from within the tool itself using PowerShell script blocks.
 
 <b>Technician view:</b>
-![Alt text](web/000.png "Overview")
+![Alt text](web/overView.gif "Overview")
 
 All settings are internally configurable. These include ADDS computer and user properties, login log definitions, standalone PowerShell scripts, remote access clients, and more.
 
 <b>Configuration view:</b>
-<img align="center" src="web/01.png">
+<img align="center" src="web/configView.gif">
 
 
 <b>Configuration view (general settings):</b>
