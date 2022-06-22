@@ -9,7 +9,7 @@ Requires:<br>
 For the end user (a tier-I, tier-II, or other support technician), the tool provides a quick interface to easily search a user or computer from within ADDS, pull relevant information, and execute various actions. All of this - the shown information and its presentation, the executable actions, and even the search term themselves are all definable from within the tool itself using PowerShell script blocks.
 
 <b>Overview:</b>
-<img align="center" src="web/overView.gif">
+<img align="center" src="web/overview.gif">
 
 <b>Technician view:</b>
 <img align="center" src="web/techView.gif">
